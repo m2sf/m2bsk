@@ -1,0 +1,102 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE NonTerminals;
+
+(* FIRST/FOLLOW set database for Modula-2 R10 Bootstrap Kernel *)
+
+FROM M2Token IMPORT Token;
+FROM M2TokenSet IMPORT TokenSet;
+
+
+(* Productions *)
+
+TYPE Production =
+  ( CompilationUnit,
+    ProgramModule,
+    DefintionModule,
+    Blueprint,
+    IdentList,
+    ModuleTypeSpec,
+    PropertySpec,
+    LiteralSpec,
+    ProtoLiteral,
+    StructuredProtoLiteral,
+    ReqValueCount,
+    Requirement,
+    ConstRequirement,
+    SimpleConstRequirement,
+    ProcedureRequirement,
+    EntityToBindTo,
+    LibGenDirective,
+    ImportDirective,
+    IdentifiersToImport,
+    Block,
+    StatementSequence,
+    Definition,
+    ConstDefinition,
+    VariableDeclaration,
+    Declaration,
+    Type,
+    DerivedSubType,
+    Range,
+    EnumType,
+    SetType,
+    ArrayType,
+    RecordType,
+    PointerType,
+    CoroutineType,
+    ProcedureType,
+    FormalType,
+    SimpleFormalType,
+    AttributedFormalType,
+    VariadicFormalType,
+    SimpleVariadicFormalType,
+    NonVariadicFormalType,
+    ProcedureHeader,
+    ProcedureSignature,
+    FormalParameters,
+    AttributedFormalParams,
+    VariadicFormalParams,
+    NonVariadicFormalParams,
+    Qualident,
+    Statement,
+    MemMgtOperation,
+    UpdateOrProcCall,
+    IfStatement,
+    CaseStatement,
+    Case,
+    LoopStatement,
+    WhileStatement,
+    RepeatStatement,
+    ForStatement,
+    Designator,
+    DesignatorTail,
+    ExprListOrSlice,
+    Expression,
+    SimpleExpression,
+    Term,
+    FactorOrNegation,
+    FactorOrTypeConv,
+    Factor,
+    ActualParameters,
+    ExpressionList,
+    StructuredValue,
+    ValueComponent );
+
+
+(* Operations *)
+
+PROCEDURE FIRST ( p : Production ) : TokenSet;
+(* Returns a reference to the FIRST set of production p. *)
+
+PROCEDURE inFIRST ( p : Production; token : Token ) : BOOLEAN;
+(* Returns TRUE if token is an element of FIRST(p), otherwise FALSE. *)
+
+PROCEDURE FOLLOW ( p : Production ) : TokenSet;
+(* Returns a reference to the FOLLOW set of production p. *)
+
+PROCEDURE inFOLLOW ( p : Production; token : Token ) : BOOLEAN;
+(* Returns TRUE if token is an element of FOLLOW(p), otherwise FALSE. *)
+
+
+END NonTerminals.

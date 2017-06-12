@@ -1,0 +1,46 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE LexQueue;
+
+(* Lexeme Queue for Modula-2 R10 Bootstrap Kernel *)
+
+FROM LexTab IMPORT Lexeme;
+
+
+TYPE LexQueue; (* OPAQUE *)
+
+
+(* Operations *)
+
+PROCEDURE New ( VAR queue : LexQueue );
+(* Allocates a new empty queue object and passes it back in queue.
+   Passes NIL if the allocation failed. *)
+
+PROCEDURE enqueue ( queue : LexQueue; lexeme : Lexeme ) : Queue;
+(* Adds lexeme to the head of queue and returns queue, or NIL on failure. *)
+
+PROCEDURE enqueueUnique ( queue : LexQueue; lexeme : Lexeme ) : Queue;
+(* Adds lexeme to the head of queue if and only if the value is not already
+ * present in queue.  Returns queue on success, or NIL on failure. *)
+
+PROCEDURE dequeue ( queue : LexQueue ) : Lexeme;
+(* Removes the lexeme at the tail queue and returns it, or NIL on failure. *)
+
+PROCEDURE isEmpty ( queue : LexQueue ) : BOOLEAN;
+(* Returns TRUE if queue is empty, otherwise FALSE. *)
+
+PROCEDURE isElem ( queue : LexQueue; lexeme : Lexeme ) : BOOLEAN;
+(* Returns TRUE if node is stored in queue, otherwise FALSE. *)
+
+PROCEDURE count ( queue : LexQueue ) : CARDINAL;
+(* Returns the number of nodes in queue. *)
+
+PROCEDURE Reset ( queue : LexQueue ) : AST;
+(* Removes all nodes from queue but does not deallocate it.
+   Returns queue on success, or NIL if queue is NIL. *)
+
+PROCEDURE Release ( VAR queue : LexQueue );
+(* Releases queue and passes back NIL if successful. *)
+
+
+END LexQueue.

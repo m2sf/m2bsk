@@ -1,0 +1,173 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE AstNodeType;
+
+(* AST Node Type Definitions for Modula-2 R10 Bootstrap Kernel *)
+
+TYPE AstNodeType =
+  ( Invalid,
+  
+  (* Empty Node Type *)
+  
+  Empty,
+  
+  (* Root Node Type *)
+  
+  Root,
+  
+  (* Definition Module Non-Terminal Node Types *)
+  
+  DefMod,             (* definition module node type *)
+  ImpList,            (* qualified import list node type *)
+  Import,             (* qualified import list node type *)
+  DefList,            (* definition list node type *)
+  
+  ConstDef,           (* constant definition node type *)
+  TypeDef,            (* type definition node type *)
+  ProcDef,            (* procedure definition node type *)
+  
+  Subr,               (* subrange type node type *)
+  Enum,               (* enumeration type node type *)
+  Set,                (* set type node type *)
+  Array,              (* array type node type *)
+  Record,             (* simple record type node type *)
+  Pointer,            (* pointer type node type *)
+  Proctype,           (* procedure type node type *)
+  
+  ExtRec,             (* extensible record type node type *)
+  
+  IndexList,          (* array index type list node type *)
+  
+  FieldListSeq,       (* field list sequence node type *)
+  FieldList,          (* field list node type *)
+  CLabelList,         (* case label list node type *)
+  Clabels,            (* case labels node type *)
+  
+  FTypeList,          (* formal type list node type *)
+  ArgList,            (* variadic parameter list formal type node type *)
+  OpenArray,          (* open array formal type node type *)
+  ConstP,             (* CONST formal type node type *)
+  VarP,               (* VAR formal type node type *)
+  FParamList,         (* formal parameter list node type *)
+  FParams,            (* formal parameters node type *)
+
+  (* Implementation/Program Module AST Node Types *)
+  
+  ImpMod,             (* implementation/program module node type *)
+  Block,              (* block node type *)
+  DeclList,           (* declaration list node type *)
+  
+  TypeDecl,           (* type declaration node type *)
+  VarDecl,            (* variable declaration node type *)
+  Proc,               (* procedure declaration node type *)
+  ModDecl,            (* local module declaration node type *)
+  
+  VSR,                (* variable size record type node type *)
+  VSField,            (* variable size field node type *)
+    
+  StmtSeq,            (* statement sequence node type *)
+  
+  Assign,             (* assignment node type *)
+  PCall,              (* procedure call node type *)
+  Return,             (* RETURN statement node type *)
+  IF,                 (* IF statement node type *)
+  Switch,             (* CASE statement node type *)
+  Loop,               (* LOOP statement node type *)
+  While,              (* WHILE statement node type *)
+  Repeat,             (* REPEAT statement node type *)
+  For,                (* FOR IN statement node type *)
+  Exit,               (* EXIT statement node type *)
+  
+  Args,               (* actual parameter list node type *)
+  
+  ElsifSeq,           (* ELSIF branch sequence node type *)
+  Elsif,              (* ELSIF branch node type *)
+  CaseList,           (* case list node type *)
+  Case,               (* case branch node type *)
+  ElemList,           (* element list node type *)
+  Range,              (* expression range node type *)
+  
+  (* Designator Subnode Types *)
+  
+  Field,              (* record field selector node type *)
+  Index,              (* array subscript node type *)
+  
+  (* Expression Node Types *)
+  
+  Desig,              (* designator node type *)
+  Deref,              (* pointer dereference node type *)
+  
+  Neg,                (* arithmetic negation sub-expression node *)
+  Not,                (* logical negation sub-expression node *)
+  
+  Eq,                 (* equality sub-expression node *)
+  NEq,                (* inequality sub-expression node *)
+  Lt,                 (* less-than sub-expression node *)
+  LtEq,               (* less-than-or-equal sub-expression node *)
+  Gt,                 (* greater-than sub-expression node *)
+  GtEq,               (* greater-than-or-equal sub-expression node *)
+  In,                 (* set membership sub-expression node *)
+  Plus,               (* plus sub-expression node *)
+  Minus,              (* minus sub-expression node *)
+  Or,                 (* logical disjunction sub-expression node *)
+  Star,               (* asterisk sub-expression node *)
+  Slash,              (* solidus sub-expression node *)
+  Div,                (* euclidean division sub-expression node *)
+  Mod,                (* modulus sub-expression node *)
+  And,                (* logical conjunction expression node *)
+  
+  FCall,              (* function call node *)
+  SetVal,             (* set value node *)
+  
+  (* Identifier Node Types *)
+  
+  Ident,              (* identifier node type *)
+  Qualident,          (* qualified identifier node type *)
+  
+  (* Literal Value Node Types *)
+  
+  IntVal,             (* whole number value node *)
+  RealVal,            (* real number value node *)
+  ChrVal,             (* character code value node *)
+  QuotedVal,          (* quoted literal value node *)
+  
+  IdentList,          (* identifier list node type *)
+  
+  (* Compilation Parameter Node Types *)
+  
+  Filename,           (* filename node type *)
+  Options);           (* compiler option list node type *)
+
+
+(* Introspection *)
+
+PROCEDURE isValid ( t : AstNodeType ) : BOOLEAN;
+(* Returns TRUE if t is a valid node type, otherwise FALSE. *)
+
+PROCEDURE isNonTerminal ( t : AstNodeType ) : BOOLEAN;
+(* Returns TRUE if t is a non-terminal node type, otherwise FALSE. *)
+
+PROCEDURE isTerminal ( t : AstNodeType ) : BOOLEAN;
+(* Returns TRUE if t is a terminal node type, otherwise FALSE. *)
+
+PROCEDURE isNonTerminalList ( t : AstNodeType ) : BOOLEAN;
+(* Returns TRUE if t is a non-terminal list node type, otherwise FALSE. *)
+
+PROCEDURE isTerminalList ( t : AstNodeType ) : BOOLEAN;
+(* Returns TRUE if t is a terminal list node type, otherwise FALSE. *)
+
+PROCEDURE isLegalSubnodeCount
+  ( t : AstNodeType; count : CARDINAL ) : BOOLEAN;
+(* Returns TRUE if the given subnode count is legal for node type t,
+   otherwise FALSE. *)
+
+PROCEDURE isLegalSubnodeType
+  ( t, subnodeType : AstNodeType; atIndex : CARDINAL) : BOOLEAN;
+(* Returns TRUE if the given subnode type is legal at the given index
+   for node type t, otherwise FALSE. *)
+
+PROCEDURE nameForNodeType ( t : AstNodeType ) : String;
+(* Returns a human readable name for node type t. *)
+
+
+END AstNodeType.

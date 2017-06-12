@@ -1,0 +1,57 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE String;
+
+(* Variable Length String Library *)
+
+FROM Hash IMPORT HashT;
+
+
+TYPE String; (* OPAQUE *)
+
+TYPE StringT = String; (* for unqualified use *)
+
+(* The payload of a string is stored with its meta-data: length, hash value and
+   reference count.  Upon initialisation, the reference count is set to one. *)
+
+
+(* Operations *)
+
+PROCEDURE New ( VAR s : String; initWith : ARRAY OF CHAR );
+(* Passes back a newly allocated string in s, initialised with the contents of
+   initWith.  Passes back NIL if unsuccessful. *)
+
+PROCEDURE NewWithSlice
+  ( VAR s : String; copyFrom : ARRAY OF CHAR; start, end : CARDINAL );
+(* Passes back a newly allocated string in s, initialised with the contents of
+   slice copyFrom[start .. end]. Passes back NIL if unsuccessful. *)
+
+PROCEDURE Retain ( s : String );
+(* Increments the reference count of s. *)
+
+PROCEDURE Release ( VAR s : String );
+(* Decrements the reference count of s, deallocates if the result is zero.
+   Passes back NIL in s if s has been deallocated. *)
+
+PROCEDURE length ( s : String ) : CARDINAL;
+(* Returns the length of s.  Returns zero if s is NIL. *)
+
+
+PROCEDURE hash ( s : String ) : HashT;
+(* Returns the hash value of s.  Returns zero if s is NIL. *)
+
+
+PROCEDURE toAOC ( s : String; VAR aoc : ARRAY OF CHAR );
+(* Passes back the contents of s as an ASCII.NUL terminated character array
+   in aoc.  Passes back ASCII.NUL if the operation is unsuccessful. *)
+
+
+PROCEDURE matches ( s1, s2 : String ) : BOOLEAN;
+(* Returns TRUE if the contents of s1 and s2 match, otherwise FALSE. *)
+
+
+PROCEDURE matchesAOC ( s : String; aoc : ARRAY OF CHAR ) : BOOLEAN;
+(* Returns TRUE if the contents of s match those of aoc, otherwise FALSE. *)
+
+
+END String.

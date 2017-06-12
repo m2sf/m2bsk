@@ -1,0 +1,25 @@
+(*!m2r10*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE FiFo;
+
+(* FIRST/FOLLOW set database for Modula-2 R10 Bootstrap Kernel *)
+
+FROM Token IMPORT TokenT;
+From TokenSet IMPORT TokenSetT;
+From NonTerminals IMPORT ProductionT;
+
+
+PROCEDURE FIRST ( p : ProductionT ) : TokenSetT;
+(* Returns a reference to the FIRST set of production p. *)
+
+PROCEDURE FOLLOW ( p : Production ) : TokenSetT;
+(* Returns a reference to the FOLLOW set of production p. *)
+
+PROCEDURE inFIRST ( p : ProductionT; token : TokenT ) : BOOLEAN;
+(* Returns TRUE if token is an element of FIRST(p), otherwise FALSE. *)
+
+PROCEDURE inFOLLOW ( p : ProductionT; token : TokenT ) : BOOLEAN;
+(* Returns TRUE if token is an element of FOLLOW(p), otherwise FALSE. *)
+
+
+END FiFo.

@@ -1,0 +1,23 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Symbol;
+
+(* Symbol Definition for Modula-2 R10 Bootstrap Kernel *)
+
+FROM Token IMPORT TokenT;
+FROM Lexeme IMPORT LexemeT;
+FROM Diagnostic IMPORT DiagnosticT;
+
+
+(* Symbol to be returned by lexer *)
+
+TYPE Symbol = RECORD
+  token : TokenT;
+  line, col : CARDINAL;
+  lexeme : LexemeT;
+  diagnostic : DiagnosticT
+END; (* Symbol *)
+
+TYPE SymbolT = Symbol; (* for unqualified use *)
+
+END Symbol.

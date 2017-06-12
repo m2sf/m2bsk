@@ -1,0 +1,99 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE SimpleFileIO;
+
+(* Simple File IO library for Modula-2 R10 Bootstrap Kernel *)
+
+TYPE File; (* OPAQUE *)
+
+TYPE Mode = ( Read, Write, Append );
+
+TYPE Status = ( Success, Failure ); (* TO DO: refine *)
+
+
+(* Operations *)
+
+(* Support for an operation depends on the mode in which the file has
+ * been opened. Any attempt to carry out an unsupported operation will
+ * fail with status failure.
+ *
+ * operation     supported in file mode
+ *               Read    Write   Append
+ * ------------------------------------
+ * Open          yes     yes     yes
+ * Close         yes     yes     yes
+ * GetMode       yes     yes     yes
+ * GetStatus     yes     yes     yes
+ * GetPos        yes     yes     no
+ * SetPos        yes     no      no
+ * eof           yes     no      no
+ * ReadOctets    yes     no      no
+ * ReadChars     yes     no      no
+ * WriteOctets   no      yes     yes
+ * WriteChars    no      yes     yes
+ * ------------------------------------
+ *)
+
+
+(* Open and close *)
+
+PROCEDURE Open
+  ( VAR f : File; filename : ARRAY OF CHAR; mode : Mode; VAR s : Status );
+(* Opens file filename in mode. Passes file handle in f and status in s.
+   If the file does not exist, it will be created when opened in write mode,
+   otherwise status failure is passed back in s.  When opening an already
+   existing file in write mode, all of its current contents are replaced. *)
+
+PROCEDURE Close ( VAR f : File; s : Status );
+(* Closes file associated with file handle f. Passes status in s. *)
+
+
+(* Introspection *)
+
+PROCEDURE GetMode ( f : File; VAR m : Mode );
+(* Passes the mode of file f in m. *)
+
+PROCEDURE GetStatus ( f : File; VAR s : Status );
+(* Passes the status of the last operation on file f in s. *)
+
+
+(* Positioning *)
+
+PROCEDURE GetPos ( f : File; VAR pos : LONGCARD );
+(* Passes the current reading or writing position of file f in pos. *)
+
+PROCEDURE SetPos ( f : File; pos : LONGCARD );
+(* Sets the reading position of file f to pos. *)
+
+PROCEDURE eof ( f : File ) : BOOLEAN;
+(* Returns TRUE if the end of file f has been reached, otherwise FALSE. *)
+
+
+(* IO operations *)
+
+PROCEDURE ReadOctets
+  ( f : File; VAR buffer : ARRAY OF OCTET; VAR octetsRead : LONGCARD );
+(* Reads contents starting at the current reading position of file f into
+   buffer until either buffer is full or eof is reached. The number of octets
+   actually read is passed in bytesRead. *)
+
+PROCEDURE ReadChars
+  ( f : File; VAR buffer : ARRAY OF CHAR; VAR charsRead : LONGCARD );
+(* Reads contents starting at the current reading position of file f into
+   buffer until either the pen-ultimate index of buffer is written or eof
+   is reached. The buffer is then terminated with ASCII NUL. The number of
+   characters actually read is passed in charsRead. *)
+
+PROCEDURE WriteOctets
+  ( f : File; buffer : ARRAY OF OCTET; VAR octetsWritten : LONGCARD );
+(* Writes the contents of buffer at the current writing position to file f.
+   The number of octets actually written is passed in bytesWritten. *)
+
+PROCEDURE WriteChars
+  ( f : File; buffer : ARRAY OF CHAR; VAR charsWritten : LONGCARD );
+(* Writes the contents of buffer up to and excluding the first ASCII NUL
+   character code at the current writing position to file f.
+   The number of characters actually written is passed in charsWritten. *)
+
+
+END SimpleFileIO.

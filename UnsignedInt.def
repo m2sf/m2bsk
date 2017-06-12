@@ -1,0 +1,18 @@
+(*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE UnsignedInt;
+
+(* PIM compliant Unsigned Integers for Modula-2 R10 Bootstrap Kernel *)
+
+
+CONST
+  MaxInteger = MAX(INTEGER);
+  MaxLongInt = MAX(LONGINT);
+
+
+TYPE
+  UINTEGER = INTEGER [0..MaxInteger];
+  ULONGINT = LONGINT [0..MaxLongInt];
+
+
+END UnsignedInt.

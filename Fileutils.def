@@ -1,0 +1,76 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Fileutils;
+
+(* File Utility Interface for Modula-2 R10 Bootstrap Kernel *)
+
+FROM UnsignedInt IMPORT ULONGINT;
+
+
+(* --------------------------------------------------------------------------
+ * function fileExists(path)
+ * --------------------------------------------------------------------------
+ * Returns TRUE if path is a valid pathname to an existing file system entry,
+ * otherwise FALSE.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE fileExists ( path : ARRAY OF CHAR ) : BOOLEAN;
+
+
+(* --------------------------------------------------------------------------
+ * function isDirectory(path)
+ * --------------------------------------------------------------------------
+ * Returns TRUE if path is a valid pathname to an existing directory,
+ * otherwise FALSE.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE isDirectory ( path : ARRAY OF CHAR ) : BOOLEAN;
+
+
+(* --------------------------------------------------------------------------
+ * function isRegularFile(path)
+ * --------------------------------------------------------------------------
+ * Returns TRUE if path is a valid pathname to an existing regular file,
+ * otherwise FALSE.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE isRegularFile ( path : ARRAY OF CHAR ) : BOOLEAN;
+
+
+(* --------------------------------------------------------------------------
+ * procedure getFileSize(path, valid, size)
+ * --------------------------------------------------------------------------
+ * Tests if path is a valid pathname indicating an existing regular file and
+ * if so, passes TRUE in out-parameter valid and the file's size in out-para-
+ * meter size.  Otherwise it passes FALSE in out-parameter valid and leaves
+ * out-parameter size unmodified.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE GetFileSize
+  ( path : ARRAY OF CHAR; VAR valid : BOOLEAN; VAR size : ULONGINT );
+
+
+(* --------------------------------------------------------------------------
+ * procedure GetFileTime(path, valid, time)
+ * --------------------------------------------------------------------------
+ * Tests if path is a valid pathname indicating an existing regular file and
+ * if so, it passes TRUE in out-parameter valid and the file's last modifica-
+ * tion time to out-parameter time.  Otherwise it passes FALSE in out-para-
+ * meter valid and leaves out-parameter time unmodified.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE GetFileTime
+  ( path : ARRAY OF CHAR; VAR valid : BOOLEAN; VAR time : LONGINT );
+
+
+(* --------------------------------------------------------------------------
+ * procedure NewPathWithCurrentWorkdir(path)
+ * --------------------------------------------------------------------------
+ * Returns a newly allocated NUL terminated character string containing the
+ * absolute path of the current working directory.  Returns NIL on failure.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE newPathWithCurrentWorkdir : String;
+
+
+END Fileutils.

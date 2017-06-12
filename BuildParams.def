@@ -1,0 +1,29 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE BuildParams;
+
+(* Build Parameters for Modula-2 R10 Bootstrap Kernel *)
+
+
+(* In-File Parameters *)
+
+CONST
+  MaxInFileSize = 65536;
+  MaxInFileLines = 12000;
+  MaxInFileColumns = 160;
+
+TYPE
+  LineCounter = CARDINAL [0 .. MaxInFileLines-1];
+  ColumnCounter = CARDINAL [0 .. MaxInFileColums-1];
+
+
+(* Lexical Parameters *)
+
+CONST
+  MaxIdentLength = 32;
+  MaxNumberLength = 32;
+  MaxStringLength = 160;
+  MaxCommentLength = 4096;
+
+
+END BuildParams.

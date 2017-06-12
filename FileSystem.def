@@ -1,0 +1,54 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE FileSystem;
+
+(* File System Access library for Modula-2 Bootstrap Kernel *)
+
+
+TYPE Access = ( Read, Write, Execute );
+
+TYPE AccessFlags = SET OF Access;
+
+TYPE Permissions = RECORD
+  owner, group, world : AccessFlags;
+END;
+
+TYPE Timestamp = RECORD
+  year : CARDINAL [1970..9999];
+  month : CARDINAL [1..12];
+  day : CARDINAL [1..31];
+  hour : CARDINAL [0..23];
+  minute,
+  second : CARDINAL [0..59];
+  millisec : CARDINAL [0..999]
+END;
+
+
+(* Operations *)
+
+PROCEDURE fileExists ( path : ARRAY OF CHAR ) : BOOLEAN;
+
+PROCEDURE isDirectory ( path : ARRAY OF CHAR ) : BOOLEAN;
+
+PROCEDURE GetFileSize
+  ( path : ARRAY OF CHAR; VAR size : LONGINT; VAR s : Status );
+
+PROCEDURE GetPermissions
+  ( path : ARRAY OF CHAR; VAR p : Permissions; VAR s : Status );
+
+PROCEDURE GetCreationTimeStamp
+  ( path : ARRAY OF CHAR; VAR ts : Timestamp; VAR s : Status );
+
+PROCEDURE GetModificationTimeStamp
+  ( path : ARRAY OF CHAR; VAR ts : Timestamp; VAR s : Status );
+
+PROCEDURE CreateFile ( path : ARRAY OF CHAR; VAR s : Status );
+
+PROCEDURE RemoveFile ( path : ARRAY OF CHAR; VAR s : Status );
+
+PROCEDURE CreateDir ( path : ARRAY OF CHAR; VAR s : Status );
+
+PROCEDURE RemoveDir ( path : ARRAY OF CHAR; VAR s : Status );
+
+
+END FileSystem.

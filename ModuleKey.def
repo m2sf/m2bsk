@@ -1,0 +1,23 @@
+(*!m2pim*) (* Copyright (c) 2016 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE ModuleKey;
+
+(* Module Key Generator for Modula-2 Bootstrap Kernel *)
+
+
+CONST
+  BitsPerKey = 128;
+  KeySize = BitsPerKey DIV 8;
+
+
+(* Key Type *)
+
+TYPE Key = ARRAY [0..KeySize] OF CHAR;
+
+
+(* Key Generator *)
+
+PROCEDURE GenKey ( VAR key : Key; forBuffer : ARRAY OF CHAR ); 
+
+
+END ModuleKey.
