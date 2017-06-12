@@ -1,0 +1,928 @@
+/* M2BSK -- EBNF Grammar for Modula-2 R10 Bootstrap Kernel (subset).
+ *
+ * Copyright (c) 2016 The Modula-2 Software Foundation
+ *
+ * Author & Maintainer: Benjamin Kowarsch <org.m2sf>
+ *
+ * @synopsis
+ *
+ * Modula-2 BSK is a subset of Modula-2 R10 for bootstrapping a compiler.
+ *
+ * This document describes the grammar of Modula-2 BSK in EBNF.
+ *
+ * @repository
+ *
+ * https://github.com/m2sf/m2r10
+ *
+ * @file
+ *
+ * m2bsk-grammar.gll
+ *
+ * Grammar of Modula-2 BSK source files.
+ *
+ */
+
+grammar m2bsk;
+
+/* * *   R e s e r v e d   W o r d s   * * */
+
+reserved
+  ALIAS, AND, ARGLIST, ARRAY, BARE, BEGIN, CASE, CONST, DEFINITION, DIV, DO,
+  ELSE, ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION, IMPORT, IN, LOOP, MOD,
+  MODULE, NEW, NOT, OF, OPAQUE, OR, POINTER, PROCEDURE, RECORD, RELEASE,
+  REPEAT, RETURN, SET, THEN, TO, TYPE, UNTIL, VAR, WHILE;
+
+
+/* * *   N o n - T e r m i n a l   S y m b o l s   * * */
+
+/* Compilation Unit */
+
+compilationUnit :=
+  definitionModule | implOrPrgmModule
+  ;
+
+
+/*** Definition Module Syntax ***/
+
+/* Definition Module */
+
+definitionModule :=
+  DEFINITION MODULE moduleIdent ';'
+  import* definition* END moduleIdent '.'
+  ;
+
+/* Module Identifier */
+
+alias moduleIdent = StdIdent ;
+
+
+/* Import */
+
+import :=
+  IMPORT libIdent ( ',' libIdent )* ';'
+  ;
+
+/* Library Identifier */
+
+alias libIdent = StdIdent ;
+
+
+/* Identifier */
+
+ident :=
+  StdIdent | ForeignIdent
+  ;
+
+
+/* Qualified Identifier */
+
+qualident :=
+  ident ( '.' ident )*
+  ;
+
+
+/* Identifier List */
+
+identList :=
+  ident ( ',' ident )*
+  ;
+
+
+/* Definition */
+
+definition :=
+  CONST ( constDefinition ';' )+ |
+  TYPE ( typeDefinition ';' )+ |
+  VAR ( identList ':' typeIdent ';' )+ |
+  procedureHeader ';' |
+  toDoList ';'
+  ;
+
+
+/* Constant Definition */
+
+constDefinition :=
+  ident '=' constExpression
+  ;
+
+/* Constant Expression */
+
+alias constExpression = expression ;
+
+
+/* Type Definition */
+
+typeDefinition :=
+  ident '=' ( OPAQUE | type )
+  ;
+
+
+/* Type */
+
+type :=
+  aliasType | derivedType | subrangeType | enumType | setType |
+  arrayType | recordType | pointerType | procedureType
+  ;
+
+
+/* Alias Type */
+
+aliasType :=
+  ALIAS OF typeIdent
+  ;
+
+/* Type Identifier */
+
+alias typeIdent = qualident ;
+
+
+/* Derived Type */
+
+alias derivedType = typeIdent ;
+
+
+/* Subrange Type */
+
+subrangeType :=
+  range OF ordinalType
+  ;
+
+/* Range */
+
+range :=
+  '[' lowerBound '..' upperBound ']'
+  ;
+
+/* Lower Bound  */
+
+alias lowerBound = constExpression ;
+
+
+/* Upper Bound */
+
+alias upperBound = constExpression ;
+
+/* Ordinal Type */
+
+alias ordinalType = typeIdent ;
+
+
+/* Enumeration Type */
+
+enumType :=
+  '(' ( '+' enumTypeToExtend ',' )? identList ')'
+  ;
+
+/* Enumeration Type To Extend */
+
+alias enumTypeToExtend = enumTypeIdent ;
+
+/* Enumeration Type Identifier */
+
+alias enumTypeIdent = typeIdent ;
+
+
+/* Set Type */
+
+setType :=
+  SET OF enumTypeIdent
+  ;
+
+
+/* Array Type */
+
+arrayType :=
+  ARRAY valueCount OF typeIdent
+  ;
+
+/* Value Count */
+
+alias valueCount = constExpression ;
+
+
+/* Record Type */
+
+recordType :=
+  RECORD ( '(' recTypeToExtend ')' )?
+  fieldList ( ';' fieldList )* END
+  ;
+
+/* Record Type To Extend */
+
+recTypeToExtend :=
+  typeIdent | NIL
+  ;
+
+
+/* Field List */
+
+alias fieldList = varOrFieldDeclaration ;
+
+
+/* Pointer Type */
+
+pointerType :=
+  POINTER TO typeIdent
+  ;
+
+
+/* Procedure Type */
+
+procedureType :=
+  PROCEDURE ( '(' formalType ( ',' formalType )* ')' )? ( ':' returnedType )?
+  ;
+
+
+/* Formal Type */
+
+formalType :=
+  nonAttrFormalType | attributedFormalType
+  ;
+
+/* Returned Type */
+
+alias returnedType = typeIdent ;
+
+
+/* Non-Attributed Formal Type */
+
+nonAttrFormalType :=
+  ( ARRAY ident? OF )? typeIdent | castingFormalType
+  ;
+
+
+/* Casting Formal Type */
+
+castingFormalType :=
+  CAST ( BARE ARRAY OF OCTET | addressTypeIdent )
+  ;
+
+/* Address Type Identifier */
+
+addressTypeIdent :=
+  ( UNSAFE '.' )? ADDRESS
+  ;
+
+
+/* Attributed Formal Type */
+
+attributedFormalType :=
+  ( CONST | VAR ) ( nonAttrFormalType | simpleVariadicFormalType )
+  ;
+
+
+/* Simple Variadic Formal Type */
+
+simpleVariadicFormalType :=
+  ARGLIST OF nonAttrFormalType
+  ;
+
+
+/* Procedure Header */
+
+procedureHeader :=
+  PROCEDURE procedureSignature
+  ;
+
+
+/* Procedure Signature */
+
+procedureSignature :=
+  ident ( '(' formalParams ( ';' formalParams )* ')' )?
+  ( ':' returnedType )?
+  ;
+
+
+/* Formal Parameters */
+
+formalParams :=
+  identList ':' ( nonAttrFormalType | simpleVariadicFormalType ) |
+  attributedFormalParams
+  ;
+
+
+/* Attributed Formal Parameters */
+
+attributedFormalParams :=
+  ( CONST | VAR ) identList ':'
+  ( nonAttrFormalType | simpleVariadicFormalType )
+  ;
+
+
+/*** Implementation and Program Module Syntax ***/
+
+/* Implementation or Program Module */
+
+implOrPrgmModule :=
+  IMPLEMENTATION MODULE moduleIdent ';'
+  privateImport* block moduleIdent '.'
+  ;
+
+
+/* Private Import */
+
+alias privateImport = import ;
+
+
+/* Block */
+
+block :=
+  declaration*
+  BEGIN statementSequence END
+  ;
+
+
+/* Declaration */
+
+declaration :=
+  ALIAS ( aliasDeclaration ';' )+ |
+  CONST ( ident '=' constExpression ';' )+ |
+  TYPE ( typeDeclaration ';' )+ |
+  VAR ( varOrFieldDeclaration ';' )+ |
+  procedureHeader ';' block ident ';' |
+  toDoList ';'
+  ;
+
+
+/* Alias Declaration */
+
+aliasDeclaration :=
+  namedAliasDecl | wildcardAliasDecl
+  ;
+
+/* Named Alias Declaration */
+
+namedAliasDecl :=
+  aliasName
+    ( '=' qualifiedName | ( ',' aliasName )* '=' qualifiedWildcard )
+  ;
+
+/* Alias Name */
+
+alias aliasName = StdIdent ;
+
+/* Qualified Name */
+
+alias qualifiedName = qualident ;
+
+/* Qualified Wildcard */
+
+qualifiedWildcard :=
+  qualident '.*'
+  ;
+
+/* Wildcard Alias Declaration */
+
+wildcardAliasDecl :=
+  '*' '=' qualifiedWildcard
+  ;
+
+
+/* Type Declaration */
+
+typeDeclaration :=
+  ident '=' ( indeterminateType |  type )
+  ;
+
+/* Indeterminate Type */
+
+indeterminateType :=
+  IN RECORD fieldDeclaration ( fieldDeclaration ';' ) indeterminateField END
+  ;
+
+/* Field Declaration */
+
+alias fieldDeclaration = varOrFieldDeclaration ;
+
+/* Indeterminate Field */
+
+indeterminateField :=
+  '+' ident ':' BARE ARRAY discriminantFieldIdent OF typeIdent 
+  ;
+
+/* Discriminant Field Identifier */
+
+alias discriminantFieldIdent = ident ;
+
+
+/* Variable or Field Declaration */
+
+varOrFieldDeclaration :=
+  identList ':' ( typeIdent | anonType )
+  ;
+
+/* Anonymous Type */
+
+  ARRAY valueCount OF typeIdent |
+  subrangeType |
+  procedureType
+  ;
+
+
+/* Statement Sequence */
+
+statementSequence :=
+  statement ( ';' statement )*
+  ;
+
+
+/* Statement */
+
+statement :=
+  emptyStatement | memMgtOperation | updateOrProcCall | returnStatement |
+  ifStatement | caseStatement | loopStatement | whileStatement |
+  repeatStatement | forStatement | EXIT
+  ;
+
+/* Empty Statement */
+
+alias emptyStatement = toDoList ;
+
+
+/* TO DO List */
+
+toDoList :=
+  TO DO trackingRef? taskToDo ( ';' taskToDo )* END
+  ;
+
+/* Issue Tracking Reference */
+
+trackingRef :=
+  '(' issueId ',' weight ')'
+  ;
+
+/* Issue ID */
+
+alias issueId = wholeNumber ;
+
+/* Whole Number */
+
+alias wholeNumber = NumberLiteral ;
+
+/* TO DO Task */
+
+taskToDo :=
+  description ( ',' estimatedHours )?
+  ;
+
+/* Description */
+
+alias description = StringLiteral ;
+
+/* Weight */
+
+alias weight = constExpression ;
+
+/* Estimated Hours */
+
+alias estimatedHours = constExpression ;
+
+
+/* Memory Management Operation */
+
+memMgtOperation :=
+  NEW designator ( OF initSize )? |
+  RELEASE designator
+  ;
+
+/* Initialisation Size */
+
+alias initSize = expression ;
+
+
+/* Update Or Procedure Call */
+
+updateOrProcCall :=
+  designator ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )?
+  ;
+
+/* Increment Or Decrement Suffix */
+
+.IncOrDecSuffix := '++' | '--' ;
+
+
+/* RETURN Or YIELD Statement */
+
+returnStatement :=
+  RETURN expression?
+  ;
+
+
+/* IF Statement */
+
+ifStatement :=
+  IF boolExpression THEN statementSequence
+  ( ELSIF boolExpression THEN statementSequence )*
+  ( ELSE statementSequence )?
+  END
+  ;
+
+/* Boolean Expression */
+
+alias boolExpression = expression ;
+
+
+/* CASE Statement */
+
+caseStatement :=
+  CASE expression OF ( '|' case )+ ( ELSE statementSequece )? END
+  ;
+
+/* Case */
+
+case :=
+  caseLabels ( ',' caseLabels )* : StatementSequence
+  ;
+
+/* Case Labels */
+
+caseLabels :=
+  constExpression ( .. constExpression )?
+  ;
+
+
+/* LOOP Statement */
+
+loopStatement :=
+  LOOP statementSequence END
+  ;
+
+
+/* WHILE Statement */
+
+whileStatement :=
+  WHILE boolExpression DO statementSequence END
+  ;
+
+
+/* REPEAT Statement */
+
+repeatStatement :=
+  REPEAT statementSequence UNTIL boolExpression
+  ;
+
+
+/* FOR Statement */
+
+forStatement :=
+  FOR forLoopVariants IN iterableExpr DO statementSequence END
+  ;
+
+/* FOR Loop Variants */
+
+forLoopVariants :=
+  accessor ascOrDesc? ( ',' value )?
+  ;
+
+/* Accessor */
+
+alias accessor = ident ;
+
+/* Value */
+
+alias value = ident ;
+
+/* Ascender Or Descender */
+
+alias ascOrDesc = IncOrDecSuffix ;
+
+
+/* Iterable Expression */
+
+iterableExpr :=
+  ordinalRange OF ordinalType | designator
+  ;
+
+/* Ordinal Range */
+
+ordinalRange :=
+  '[' firstValue '..' lastValue ']'
+  ;
+
+/* First Value */
+
+alias firstValue = expression ;
+
+/* Last Value */
+
+alias lastValue = expression ;
+
+/* Ordinal Type */
+
+alias ordinalType = typeIdent ;
+
+
+/* Designator */
+
+designator :=
+  qualident designatorTail?
+  ;
+
+/* Designator Tail */
+
+designatorTail :=
+  ( ( '[' exprOrSlice ']' | '^' ) ( '.' ident )* )+
+  ;
+
+/* Expression Or Slice */
+
+exprOrSlice :=
+  expression sliceTail?
+  ;
+
+/* Slice Tail */
+
+sliceTail :=
+  '..' expression?
+  ;
+
+
+/* Expression List */
+
+expressionList :=
+  expression ( ',' expression )*
+  ;
+
+
+/* Expression */
+
+expression :=
+  simpleExpression ( OperL1 simpleExpression )?
+  ;
+
+/* Level-1 Operator */
+
+.OperL1 :=
+  '=' | '#' | '<' | '<=' | '>' | '>=' | IN
+  ;
+
+
+/* Simple Expression */
+
+simpleExpression :=
+  term ( OperL2 term )* | '-' simpleFactor
+  ;
+
+/* Level-2 Operator */
+
+.OperL2 :=
+  '+' | '-' | OR | ConcatOp | SetDiffOp
+  ;
+
+/* Concatenation Operator */
+
+alias ConcatOp = '&' ;
+
+/* Set Difference Operator */
+
+alias SetDiffOp = '\' ;
+
+
+/* Term */
+
+term :=
+  simpleTerm ( OperL3 simpleTerm )*
+  ;
+
+/* Level-3 Operator */
+
+.OperL2 :=
+  '*' | '/' | DIV | MOD | AND
+  ;
+
+
+/* Simple Term */
+
+simpleTerm :=
+  NOT? factor
+  ;
+
+
+/* Factor */
+
+factor :=
+  simpleFactor ( TypeConvOp typeIdent )?
+  ;
+
+/* Type Conversion Operator */
+
+alias TypeConvOp = '::' ;
+
+
+/* Simple Factor */
+
+simpleFactor :=
+  NumberLiteral | StringLiteral |
+  structuredValue | designatorOrFuncCall | '(' expression ')'
+  ;
+
+/* Designator Or Function Call */
+
+designatorOrFuncCall :=
+  designator ( '(' expressionList? ')' )?
+  ;
+
+/* Structured Value */
+ structuredValue :=
+   '{' valueComponent ( ',' valueComponent )* '}'
+   ;
+
+/* Value Component */
+
+valueComponent :=
+  constExpression ( '..' constExpression )? |
+  runtimeExpression
+  ;
+
+/* Runtime Expression */
+
+alias runtimeExpression = expression ;
+
+
+/* * *   T e r m i n a l   S y m b o l s   * * */
+
+/* Identifier */
+
+StdIdent :=
+  Letter ( Letter | Digit )*
+  ;
+
+/* Foreign Identifier */
+
+ForeignIdent :=
+  '$' ( Letter | Digit ) ForeignIdentTail* |
+  StdIdent ForeignIdentTail+
+  ;
+
+/* Foreign Identifier Tail */
+
+.ForeignIdentTail :=
+  ( '$' | '_' ) ( Letter | Digit )+
+  ;
+
+
+/* Number Literal */
+
+NumberLiteral :=
+  '0' ( RealNumberTail | 'b' Base2DigitSeq | ( 'x' | 'u' ) Base16DigitSeq )? |
+  ( '1' .. '9' ) DecimalNumberTail?
+  ;
+
+/* Decimal Number Tail */
+
+.DecimalNumberTail :=
+  DigitSep? DigitSeq RealNumberTail?
+  ;
+
+/* Real Number Tail */
+
+.RealNumberTail :=
+  '.' DigitSeq ( 'e' ( '+' | '-' )? DigitSeq )?
+  ;
+
+/* Digit Sequence */
+
+.DigitSeq :=
+  Digit+ ( DigitSep Digit+ )*
+  ;
+
+/* Base-2 Digit Sequence */
+
+.Base2DigitSeq :=
+  Base2Digit+ ( DigitSep Base2Digit+ )*
+  ;
+
+/* Base-16 Digit Sequence */
+
+.Base16DigitSeq :=
+  Base16Digit+ ( DigitSep Base16Digit+ )*
+  ;
+
+/* Digit Separator */
+
+alias DigitSep = "'" ;
+
+/* Digit */
+
+.Digit := '0' .. '9' ;
+
+/* Base-2 Digit */
+
+.Base2Digit := '0' | '1' ;
+
+/* Base-16 Digit */
+
+.Base16Digit := Digit | ( 'A' .. 'F' ) ;
+
+
+/* String Literal */
+
+StringLiteral :=
+  SingleQuotedString | DoubleQuotedString
+  ;
+
+/* Single-Quoted String Literal */
+
+.SingleQuotedString :=
+  "'" ( QuotableCharacter | '"' )* "'"
+  ;
+
+/* Double-Quoted String Literal */
+
+.DoubleQuotedString :=
+  '"' ( QuotableCharacter | "'" )* '"'
+  ;
+
+/* Quotable Character */
+
+.QuotableCharacter :=
+  Digit | Letter | Space | NonAlphaNumQuotable | EscapedCharacter
+  ;
+
+/* Letter */
+
+.Letter := 'a' .. 'z' | 'A' .. 'Z' ;
+
+/* Whitespace */
+
+.Space := 0u20 ;
+
+/* Non-Alphanumeric Quotable Character */
+
+.NonAlphaNumQuotable :=
+  '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' | '+' | ',' |
+  '-' | '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' |
+  '[' | '\' | ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~'
+  ;
+
+/* Escaped Character */
+
+.EscapedCharacter :=
+  '\' ( 'n' | 't' | '\' )
+  ;
+
+
+/* * *   I g n o r e   S y m b o l s   * * */
+
+/* Whitespace */
+
+Whitespace :=
+  Space | Tabulator
+  ;
+
+/* Tabulator */
+.Tabulator := 0u9 ;
+
+
+/* Line Comment */
+
+LineComment :=
+  '!' CommentCharacter* EndOfLine
+  ;
+
+/* Block Comment */
+
+BlockComment :=
+  '(*' ( CommentCharacter | BlockComment | EndOfLine )* '*)'
+  ;
+
+/* Comment Character */
+
+.CommentCharacter :=
+  Digit | Letter | Whitespace | NonAlphaNumQuotable | '\' | "'" | '"'
+  ; /* greedy */
+
+
+/* End of Line Marker */
+
+EndOfLine :=
+  LF | CR ( LF )?
+  ;
+
+/* ASCII LF */
+
+.LF := 0uA ;
+
+/* ASCII CR */
+
+.CR := 0uD ;
+
+
+/*** Recommended Debugging Aid ***/
+
+/* Not part of the language specification */
+
+/* Disabled Code Section */
+
+DisabledCodeSection :=
+  '?<' /* strictly in first column of a line */
+  ( AnyPrintable | BlockComment | EndOfLine )*
+  '>?' /* strictly in first column of a line */
+  ;
+
+.AnyPrintable := 0u20 .. 0u7E ; /* greedy */
+
+
+endg m2bsk.
+
+/* END OF FILE */
