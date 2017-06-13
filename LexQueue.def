@@ -4,7 +4,6 @@ DEFINITION MODULE LexQueue;
 
 (* Lexeme Queue for Modula-2 R10 Bootstrap Kernel *)
 
-FROM AST IMPORT AstT;
 FROM Lexeme IMPORT LexemeT;
 
 
@@ -38,7 +37,7 @@ PROCEDURE isElem ( queue : LexQueue; lexeme : LexemeT ) : BOOLEAN;
 PROCEDURE count ( queue : LexQueue ) : CARDINAL;
 (* Returns the number of nodes in queue. *)
 
-PROCEDURE Reset ( queue : LexQueue ) : AstT;
+PROCEDURE Reset ( queue : LexQueue ) : LexQueue;
 (* Removes all nodes from queue but does not deallocate it.
    Returns queue on success, or NIL if queue is NIL. *)
 
