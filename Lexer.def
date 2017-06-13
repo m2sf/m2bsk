@@ -4,7 +4,6 @@ DEFINITION MODULE Lexer;
 
 (* Lexer for Modula-2 R10 Bootstrap Kernel *)
 
-
 FROM Symbol IMPORT SymbolT;
 FROM String IMPORT StringT;
 
