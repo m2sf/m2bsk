@@ -142,6 +142,9 @@ TYPE AstNodeType =
   Options);           (* compiler option list node type *)
 
 
+TYPE AstNodeTypeT = AstNodeType; (* for unqualified use *)
+
+
 (* Introspection *)
 
 PROCEDURE isValid ( t : AstNodeType ) : BOOLEAN;
