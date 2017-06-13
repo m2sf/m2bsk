@@ -4,11 +4,13 @@ DEFINITION MODULE AST;
 
 (* AST for Modula-2 R10 Bootstrap Kernel *)
 
-FROM AstQueue IMPORT AstQueue;
-FROM LexQueue IMPORT LexQueue;
-FROM AstNodeType IMPORT AstNodeType;
+FROM AstQueue IMPORT AstQueueT;
+FROM LexQueue IMPORT LexQueueT;
+FROM AstNodeType IMPORT AstNodeTypeT;
 
 TYPE AST; (* OPAQUE *)
+
+Type AstT = AST; (* for unqualified use *)
 
 
 (* Operations *)
