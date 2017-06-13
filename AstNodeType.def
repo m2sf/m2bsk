@@ -4,6 +4,9 @@ DEFINITION MODULE AstNodeType;
 
 (* AST Node Type Definitions for Modula-2 R10 Bootstrap Kernel *)
 
+FROM String IMPORT StringT;
+
+
 TYPE AstNodeType =
   ( Invalid,
   
@@ -166,7 +169,7 @@ PROCEDURE isLegalSubnodeType
 (* Returns TRUE if the given subnode type is legal at the given index
    for node type t, otherwise FALSE. *)
 
-PROCEDURE nameForNodeType ( t : AstNodeType ) : String;
+PROCEDURE nameForNodeType ( t : AstNodeType ) : StringT;
 (* Returns a human readable name for node type t. *)
 
 
