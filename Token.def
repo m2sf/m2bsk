@@ -1,0 +1,167 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Token;
+
+(* Token Definitions for Modula-2 R10 Bootstrap Kernel *)
+
+
+(* Semantic Tokens *)
+
+TYPE Semantic = Token [Invalid..EOF];
+
+
+(* All Tokens *)
+
+TYPE Token =
+  ( Invalid,         (* 0 *)
+  
+  (* Reserved Words *)
+    Alias,           (* 1 *)
+    And,             (* 2 *)
+    Arglist,         (* 3 *)
+    Array,           (* 4 *)
+    Bare,            (* 5 *)
+    Begin,           (* 6 *)
+    By,              (* 7 *)   (* reserved for future use *)
+    Case,            (* 8 *)
+    Const,           (* 9 *)
+    Definition,     (* 10 *)
+    Div,            (* 11 *)
+    Do,             (* 12 *)
+    Else,           (* 13 *)
+    Elsif,          (* 14 *)
+    End,            (* 15 *)
+    Exit,           (* 16 *)
+    For,            (* 17 *)
+    If,             (* 18 *)
+    Implementation, (* 19 *)
+    Import,         (* 20 *)
+    In,             (* 21 *)
+    Loop,           (* 22 *)
+    Mod,            (* 23 *)
+    Module,         (* 24 *)
+    New,            (* 25 *)
+    Not,            (* 26 *)
+    Of,             (* 27 *)
+    Opaque,         (* 28 *)
+    Or,             (* 29 *)
+    Pointer,        (* 30 *)
+    Procedure,      (* 31 *)
+    Record,         (* 32 *)
+    Release,        (* 33 *)
+    Repeat,         (* 34 *)
+    Return,         (* 35 *)
+    Set,            (* 36 *)
+    Then,           (* 37 *)
+    To,             (* 38 *)
+    Type,           (* 39 *)
+    Until,          (* 40 *)
+    Var,            (* 41 *)
+    While,          (* 42 *)
+    
+  (* Dual-Use Identifiers *)
+    Address,        (* 43 *)
+    Cast,           (* 44 *)
+    Nil,            (* 45 *)
+    Octet,          (* 46 *)
+    Unsafe,         (* 47 *)
+    
+  (* Any Other Identifiers *)
+    OtherIdent,     (* 48 *)
+  
+  (* Literals *)
+    WholeNumber,    (* 49 *)
+    RealNumber,     (* 50 *)
+    Character,      (* 51 *)
+    QuotedString,   (* 52 *)
+    
+  (* Punctuation *)
+    Dot,            (* 53 *)
+    Comma,          (* 54 *)
+    Colon,          (* 55 *)
+    Semicolon,      (* 56 *)
+    VerticalBar,    (* 57 *)
+    Deref,          (* 58 *)
+    DotDot,         (* 59 *)
+    Assign,         (* 60 *)
+    PlusPlus,       (* 61 *)
+    MinusMinus,     (* 62 *)
+    DotStar,        (* 63 *)
+    
+  (* Paired Delimiters *)
+    LParen,         (* 64 *)
+    RParen,         (* 65 *)
+    LBracket,       (* 66 *)
+    RBracket,       (* 67 *)
+    LBrace,         (* 68 *)
+    RBrace,         (* 69 *)
+    
+  (* Operators *)
+  
+  (* Non-Resword Level-1 Operators *)
+    Equal,          (* 70 *)
+    NotEqual,       (* 71 *)
+    Greater,        (* 72 *)
+    GreaterOrEq,    (* 73 *)
+    Less,           (* 74 *)
+    LessOrEq,       (* 75 *)
+    
+  (* Non-Resword Level-2 Operators *)
+    Plus,           (* 76 *)   (* also used as punctuation *)
+    Minus,          (* 77 *)   (* also used as punctuation *)
+    Concat,         (* 78 *)
+    SetDiff,        (* 79 *)
+    
+  (* Non-Resword Level-3 Operators *)
+    Asterisk,       (* 80 *)   (* also used as punctuation *)
+    RealDiv,        (* 81 *)
+    
+  (* Non-Resword Level-4 Operators *)
+    Power,          (* 82 *)   (* reserved for future use *)
+    
+  (* Non-Resword Level-5 Operators *)
+    TypeConv,       (* 83 *)
+    
+  (* End Of File Marker *)
+    EOF,            (* 84 *)
+    
+  (* Pragmas & Comments *)
+    Pragma,         (* 85 *)
+    LineComment,    (* 86 *)
+    BlockComment);  (* 87 *)
+
+
+TYPE TokenT = Token; (* for unqualified use *)
+
+
+(* Functions To Determine Token Classification *)
+
+PROCEDURE isResWord ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is a reserved word, otherwise FALSE. *)
+
+PROCEDURE isIdentifier ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is an identifier, otherwise FALSE. *)
+
+PROCEDURE isNumber ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is a number literal, otherwise FALSE. *)
+
+PROCEDURE isCharOrString ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is a character or string, otherwise FALSE. *)
+
+PROCEDURE isOperL1 ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is a level-1 operator, otherwise FALSE. *)
+
+PROCEDURE isOperL2 ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is a level-2 operator, otherwise FALSE. *)
+
+PROCEDURE isOperL3 ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is a level-3 operator, otherwise FALSE. *)
+
+PROCEDURE isPragma ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is a pragma, otherwise FALSE. *)
+
+PROCEDURE isComment ( t : Token ) : BOOLEAN;
+ (* Returns TRUE if t is a comment, otherwise FALSE. *)
+
+
+END Token.
