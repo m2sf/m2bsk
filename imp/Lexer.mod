@@ -174,7 +174,7 @@ BEGIN
   Source.GetLineAndColumn(source, sym.line, sym.column);
   
   (* skip any disabled code section *)
-  WHILE next = "?" AND sym.column = 1 DO
+  WHILE next = "?" AND Source.la2Char() = "<" AND sym.column = 1 DO
     MatchLex.DisabledCodeBlock(source);
     next := Source.lookahead(source);
     Source.GetLineAndColumn(source, sym.line, sym.column)
@@ -190,7 +190,7 @@ BEGIN
     CASE next OF
     
     (* next symbol is line comment *)
-    | "!" :
+      "!" :
         Source.MarkLexeme(source, sym.line, sym.column);
         MatchLex.LineComment(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
