@@ -141,6 +141,7 @@ BEGIN
     RETURN Symbol.NilSymbol;
   END;
   
+  (* shorthand *)
   source := lexer^.source;
   
   (* all decisions are based on lookahead *)
@@ -152,45 +153,38 @@ BEGIN
     next := Source.consumeChar(source)
   END; (* WHILE *)
   
+  (* skip comments unless comments are to be preserved *)
+  IF Capabilities.isDisabled(Capabilities.PreserveComments) THEN
+    
+    (* skip any line comment *)
+    WHILE next = "!" DO
+      MatchLex.LineComment(source, sym.token);
+      next := Source.lookahead(source)
+    END; (* WHILE *)
+    
+    (* skip any block comment *)
+    WHILE next = "(" AND source.la2Char = "*" DO
+      MatchLex.BlockComment(source, sym.token);
+      next := Source.lookahead(source)
+    END (* WHILE *)
+    
+  END; (* IF *)
+  
   (* get current position *)
   Source.GetLineAndColumn(source, sym.line, sym.column);
-
+  
+  (* skip any disabled code section *)
+  WHILE next = "?" AND sym.column = 1 DO
+    MatchLex.DisabledCodeBlock(source);
+    next := Source.lookahead(source);
+    Source.GetLineAndColumn(source, sym.line, sym.column)
+  END; (* WHILE *)
+  
   (* check for end-of-file *)
   IF Source.eof(source) THEN
     sym.token := TokenT.EOF;
     sym.lexeme := 0
-  
-  (* check for identifier *)
-  ELSIF next >= "a" AND next <= "z" THEN
-    Source.MarkLexeme(source, sym.line, sym.column);
-    MatchLex.Ident(source, sym.token);
-    Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
-
-  (* check for identifier or reserved word *)
-  ELSIF next >= "A" AND next <= "Z" THEN
-    Source.MarkLexeme(source, sym.line, sym.column);
-    MatchLex.IdentOrResword(source, sym.token);
-    Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
-
-  (* check for numeric literal *)
-  ELSIF next >= "0" AND next <= "9" THEN 
-    Source.MarkLexeme(source, sym.line, sym.column);
-    MatchLex.NumericLiteral(source, sym.token);
-    Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
-
-  (* check for quoted literal *)
-  ELSIF next = "'" OR next = '"' THEN
-    Source.MarkLexeme(source, sym.line, sym.column);
-    MatchLex.QuotedLiteral(source, sym.token);
-    Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
-    
-  (* check for optional OpenVMS identifier starting with "$" *)
-  ELSIF next = "$" AND
-        Capabilities.isEnabled(Capabilities.DollarIdentifiers) THEN
-    Source.MarkLexeme(source, sym.line, sym.column);
-    MatchLex.ForeignIdent(source, sym.token);
-    Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
-    
+      
   (* check for any other symbol *)
   ELSE
     CASE next OF
@@ -201,6 +195,12 @@ BEGIN
         MatchLex.LineComment(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
+    (* next symbol is quoted literal *)
+    | '"', "'" :
+        Source.MarkLexeme(source, sym.line, sym.column);
+        MatchLex.QuotedLiteral(source, sym.token);
+        Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
+    
     (* next symbol is "#" *)
     | "#" :
         (* consume "#" *)
@@ -208,6 +208,12 @@ BEGIN
         Source.GetLineAndColumn(source, sym.line, sym.column);
         sym.token := TokenT.NotEqual;
         sym.lexeme := Token.lexemeForToken(TokenT.NotEqual)
+    
+    (* next symbol is foreign identifier *)
+    | "$" :
+        Source.MarkLexeme(source, sym.line, sym.column);
+        MatchLex.ForeignIdent(source, sym.token);
+        Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
     (* next symbol is "&" *)
     | "&" :
@@ -328,6 +334,12 @@ BEGIN
         sym.token := TokenT.RealDiv;
         sym.lexeme := Token.lexemeForToken(TokenT.RealDiv)
     
+    (* next symbol is numeric literal *)
+    | "0" .. "9" :
+        Source.MarkLexeme(source, sym.line, sym.column);
+        MatchLex.NumericLiteral(source, sym.token);
+        Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
+    
     (* next symbol is ":", ":=" or "::" *)
     | ":" :
         (* consume ":" *)
@@ -418,6 +430,12 @@ BEGIN
         
         END (* ">" or ">=" *)
     
+    (* next symbol is identifier or reserved word *)
+    | "A" .. "Z" :
+        Source.MarkLexeme(source, sym.line, sym.column);
+        MatchLex.IdentOrResword(source, sym.token);
+        Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
+    
     (* next symbol is "[" *)
     | "[" :
         (* consume "[" *)
@@ -449,6 +467,12 @@ BEGIN
         Source.GetLineAndColumn(source, sym.line, sym.column);
         sym.token := TokenT.Deref;
         sym.lexeme := Token.lexemeForToken(TokenT.Deref)
+    
+    (* next symbol is identifier *)
+    | "a" .. "z" :
+        Source.MarkLexeme(source, sym.line, sym.column);
+        MatchLex.Ident(source, sym.token);
+        Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
     (* next symbol is "{" *)
     | "{" :
