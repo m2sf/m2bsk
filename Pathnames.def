@@ -28,7 +28,7 @@ PROCEDURE isValidPathname ( path : ARRAY OF CHAR ) : BOOLEAN;
  * --------------------------------------------------------------------------
  * Verifies path against the host system's prevailing pathname grammar and
  * returns a status code.  If path is valid, its directory path component and
- * filename component are copied to newly allocated NUL terminated C strings
+ * filename component are copied to newly allocated NUL terminated strings
  * and passed back in out-parameters dirpath and filename respectively.  If
  * path does not contain a directory path component, NULL is passed back in
  * dirpath.  If path does not contain a filename component, NULL is passed
@@ -61,7 +61,7 @@ PROCEDURE isValidFilename ( filename : ARRAY OF CHAR ) : BOOLEAN;
  * --------------------------------------------------------------------------
  * Verifies filename against the host system's prevailing pathname grammar
  * and returns a status code.  If filename is valid, its basename and suffix
- * components are copied to newly allocated NUL terminated C strings and
+ * components are copied to newly allocated NUL terminated strings and
  * passed back in out-parameters basename and suffix respectively.  If
  * filename does not contain a suffix component, NIL is passed back in
  * suffix.  However, if NIL is passed in for an out-parameter, the out-
@@ -100,7 +100,7 @@ PROCEDURE isModSuffix ( suffix : ARRAY OF CHAR ) : BOOLEAN;
 (* --------------------------------------------------------------------------
  * function newPathFromComponents(dirpath, basename, suffix)
  * --------------------------------------------------------------------------
- * Returns a newly allocated NUL terminated C string containing a pathname
+ * Returns a newly allocated NUL terminated string containing a pathname
  * composed of components dirpath, basename and file suffix.  Returns NIL
  * if any of dirpath or basename is NIL or empty or if allocation failed.
  * --------------------------------------------------------------------------
