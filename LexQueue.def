@@ -4,10 +4,13 @@ DEFINITION MODULE LexQueue;
 
 (* Lexeme Queue for Modula-2 R10 Bootstrap Kernel *)
 
-FROM LexTab IMPORT Lexeme;
+FROM AST IMPORT AstT;
+FROM Lexeme IMPORT LexemeT;
 
 
 TYPE LexQueue; (* OPAQUE *)
+
+TYPE LexQueueT = LexQueue; (* for unqualified use *)
 
 
 (* Operations *)
@@ -16,26 +19,26 @@ PROCEDURE New ( VAR queue : LexQueue );
 (* Allocates a new empty queue object and passes it back in queue.
    Passes NIL if the allocation failed. *)
 
-PROCEDURE enqueue ( queue : LexQueue; lexeme : Lexeme ) : Queue;
+PROCEDURE enqueue ( queue : LexQueue; lexeme : LexemeT ) : LexQueue;
 (* Adds lexeme to the head of queue and returns queue, or NIL on failure. *)
 
-PROCEDURE enqueueUnique ( queue : LexQueue; lexeme : Lexeme ) : Queue;
+PROCEDURE enqueueUnique ( queue : LexQueue; lexeme : LexemeT ) : LexQueue;
 (* Adds lexeme to the head of queue if and only if the value is not already
  * present in queue.  Returns queue on success, or NIL on failure. *)
 
-PROCEDURE dequeue ( queue : LexQueue ) : Lexeme;
+PROCEDURE dequeue ( queue : LexQueue ) : LexemeT;
 (* Removes the lexeme at the tail queue and returns it, or NIL on failure. *)
 
 PROCEDURE isEmpty ( queue : LexQueue ) : BOOLEAN;
 (* Returns TRUE if queue is empty, otherwise FALSE. *)
 
-PROCEDURE isElem ( queue : LexQueue; lexeme : Lexeme ) : BOOLEAN;
+PROCEDURE isElem ( queue : LexQueue; lexeme : LexemeT ) : BOOLEAN;
 (* Returns TRUE if node is stored in queue, otherwise FALSE. *)
 
 PROCEDURE count ( queue : LexQueue ) : CARDINAL;
 (* Returns the number of nodes in queue. *)
 
-PROCEDURE Reset ( queue : LexQueue ) : AST;
+PROCEDURE Reset ( queue : LexQueue ) : AstT;
 (* Removes all nodes from queue but does not deallocate it.
    Returns queue on success, or NIL if queue is NIL. *)
 
