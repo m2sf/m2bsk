@@ -4,6 +4,9 @@ DEFINITION MODULE SimpleFileIO;
 
 (* Simple File IO library for Modula-2 R10 Bootstrap Kernel *)
 
+FROM UnsignedInt IMPORT ULONGINT;
+
+
 TYPE File; (* OPAQUE *)
 
 TYPE Mode = ( Read, Write, Append );
@@ -59,10 +62,10 @@ PROCEDURE GetStatus ( f : File; VAR s : Status );
 
 (* Positioning *)
 
-PROCEDURE GetPos ( f : File; VAR pos : LONGCARD );
+PROCEDURE GetPos ( f : File; VAR pos : ULONGINT );
 (* Passes the current reading or writing position of file f in pos. *)
 
-PROCEDURE SetPos ( f : File; pos : LONGCARD );
+PROCEDURE SetPos ( f : File; pos : ULONGINT );
 (* Sets the reading position of file f to pos. *)
 
 PROCEDURE eof ( f : File ) : BOOLEAN;
@@ -72,25 +75,25 @@ PROCEDURE eof ( f : File ) : BOOLEAN;
 (* IO operations *)
 
 PROCEDURE ReadOctets
-  ( f : File; VAR buffer : ARRAY OF OCTET; VAR octetsRead : LONGCARD );
+  ( f : File; VAR buffer : ARRAY OF OCTET; VAR octetsRead : ULONGINT );
 (* Reads contents starting at the current reading position of file f into
    buffer until either buffer is full or eof is reached. The number of octets
    actually read is passed in bytesRead. *)
 
 PROCEDURE ReadChars
-  ( f : File; VAR buffer : ARRAY OF CHAR; VAR charsRead : LONGCARD );
+  ( f : File; VAR buffer : ARRAY OF CHAR; VAR charsRead : ULONGINT );
 (* Reads contents starting at the current reading position of file f into
    buffer until either the pen-ultimate index of buffer is written or eof
    is reached. The buffer is then terminated with ASCII NUL. The number of
    characters actually read is passed in charsRead. *)
 
 PROCEDURE WriteOctets
-  ( f : File; buffer : ARRAY OF OCTET; VAR octetsWritten : LONGCARD );
+  ( f : File; buffer : ARRAY OF OCTET; VAR octetsWritten : ULONGINT );
 (* Writes the contents of buffer at the current writing position to file f.
    The number of octets actually written is passed in bytesWritten. *)
 
 PROCEDURE WriteChars
-  ( f : File; buffer : ARRAY OF CHAR; VAR charsWritten : LONGCARD );
+  ( f : File; buffer : ARRAY OF CHAR; VAR charsWritten : ULONGINT );
 (* Writes the contents of buffer up to and excluding the first ASCII NUL
    character code at the current writing position to file f.
    The number of characters actually written is passed in charsWritten. *)
