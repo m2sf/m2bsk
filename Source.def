@@ -1,0 +1,127 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Source;
+
+(* Source File Reader for Modula-2 R10 Bootstrap Kernel *)
+
+FROM String IMPORT StringT;
+
+
+TYPE Source; (* OPAQUE *)
+
+TYPE SourceT = Source; (* for unqualified use *)
+
+
+TYPE Status =
+  ( Success,
+    InvalidReference,
+    InvalidFileType,
+    MaxFileSizeExceeded,
+    AllocationFailed );
+
+
+(* ---------------------------------------------------------------------------
+ *  Definitions
+ *
+ *  start position :
+ *    the position of the first character in the source.
+ *
+ *  end position :
+ *    the position of the last character in the source.
+ *
+ *  lookahead position :
+ *    the position of the character to be consumed next.
+ *
+ *  second lookahead position :
+ *    the position immediately following the lookahead position.
+ *
+ *  marked position :
+ *    a position recorded as the start of a lexeme.
+ *    it is end position + 1 if no marker has been set.
+ *
+ *  lookahead character :
+ *    the character at the lookahead position,
+ *    it is ASCII.NUL if its position > end position or if eof is set.
+ *
+ *  second lookahead character :
+ *    the character at the second lookahead position,
+ *    it is ASCII.NUL if its position > end position or if eof is set.
+ *
+ *  marked lexeme :
+ *    a character sequence that starts at the marked position (inclusively)
+ *    and ends at the lookahead position (exclusively).
+ *
+ *  character consumption :
+ *    a character is consumed by advancing the lookahead position
+ *    to the character's second lookahead position or by setting eof.
+ *
+ *  end-of-line marker:
+ *    an ASCII.LF,
+ *    or a sequence consisting of an ASCII.CR followed by an ASCII.LF,
+ *    or a sole ASCII.CR that is not immediately followed by ASCII.LF.
+ *
+ *    The lookahead position of an end-of-line marker is the position
+ *    following the last character of the end-of-line marker.
+ *
+ *  end-of-file flag:
+ *    abbreviated as eof flag, is a boolean value that is set when
+ *    the character at the end position has been consumed.
+ *
+ * ---------------------------------------------------------------------------
+ *)
+
+
+(* Operations *)
+
+PROCEDURE New
+  ( VAR s : Source; filename : StringT; VAR status : Status );
+(* Passes back a newly allocated source instance associated with name in s.
+   The associated file is opened for reading and the lookahead position is
+   set to the start position.  Passes back NIL in s if unsuccessful.
+   The status of the operation is passed back in status. *)
+
+
+PROCEDURE GetChar ( s : Source; VAR ch, next : CHAR );
+(* Passes back the lookahead character in ch and consumes it.
+   Passes back the new lookahead character in next without consuming it. *)
+
+
+PROCEDURE consumeChar ( s : Source ) : CHAR;
+(* Consumes the current character of s, returns new lookahead character. *)
+
+
+PROCEDURE lookaheadChar ( s : Source ) : CHAR;
+(* Returns the lookahead character of s.
+   Does not consume any character and does not set eof. *)
+
+
+PROCEDURE la2Char ( s : Source ) : CHAR;
+(* Returns the second lookahead character of s.
+   Does not consume any character and does not set eof. *)
+
+
+PROCEDURE MarkLexeme ( s : Source; VAR line, col : CARDINAL );
+(* Marks the lookahead position in s as the start of the marked lexeme.
+   Passes back lookahead position line and column counters in line and col. *)
+
+
+PROCEDURE CopyLexeme ( s : Source; dict : LexDict; VAR handle : DictHandle );
+(* Adds the marked lexeme in s to lexeme dictionary dict, passes its access
+   handle back in handle and clears the lexeme marker.  If no lexeme marker
+   has been set, no content is copied and zero is passed back in handle. *)
+
+
+PROCEDURE GetLineAndColumn ( s : Source; VAR line, col : CARDINAL );
+(* Passes back the current line and column counters of s in line and col. *)
+
+
+PROCEDURE eof ( s : Source ) : BOOLEAN;
+(* Returns TRUE if the last character in s has been consumed, else FALSE. *)
+
+
+PROCEDURE Release ( VAR s : Source; VAR status : Status );
+(* Deallocates s.  Passes back NIL in s if successful.
+   The status of the operation is passed back in status. *)
+
+
+END Source.
