@@ -158,13 +158,13 @@ BEGIN
     
     (* skip any line comment *)
     WHILE next = "!" DO
-      MatchLex.LineComment(source, sym.token);
+      MatchLex.LineComment(source);
       next := Source.lookahead(source)
     END; (* WHILE *)
     
     (* skip any block comment *)
     WHILE next = "(" AND Source.la2Char(source) = "*" DO
-      MatchLex.BlockComment(source, sym.token);
+      MatchLex.BlockComment(source);
       next := Source.lookahead(source)
     END (* WHILE *)
     
