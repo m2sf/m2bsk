@@ -138,7 +138,7 @@ BEGIN
   (* ensure source is valid *)
   IF lexer = NIL THEN
   (* TO DO: report and handle error *)
-    RETURN Symbol.NilSymbol;
+    RETURN Symbol.NilSymbol
   END;
   
   (* shorthand *)
@@ -163,7 +163,7 @@ BEGIN
     END; (* WHILE *)
     
     (* skip any block comment *)
-    WHILE next = "(" AND source.la2Char = "*" DO
+    WHILE next = "(" AND Source.la2Char(source) = "*" DO
       MatchLex.BlockComment(source, sym.token);
       next := Source.lookahead(source)
     END (* WHILE *)
