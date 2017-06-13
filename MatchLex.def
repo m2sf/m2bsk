@@ -5,47 +5,48 @@ DEFINITION MODULE MatchLex;
 (* Lexer Support Library for Modula-2 R10 Bootstrap Kernel *)
 
 FROM Source IMPORT SourceT;
+FROM Diagnostic IMPORT DiagnosticT;
 
 
 (* Semantic Symbols *)
 
-PROCEDURE Ident ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE Ident ( source : SourceT; VAR diag : DiagnosticT );
 (* Matches the input in source to an identifier and consumes it. *)
 
 
-PROCEDURE IdentOrResword ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE IdentOrResword ( source : SourceT; VAR diag : DiagnosticT );
 (* Matches the input in source to an identifier or reserved word
    and consumes it. *)
 
 
-PROCEDURE NumericLiteral ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE NumericLiteral ( source : SourceT; VAR diag : DiagnosticT );
 (* Matches the input in source to a numeric literal and consumes it. *)
 
 
-PROCEDURE QuotedLiteral ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE QuotedLiteral ( source : SourceT; VAR diag : DiagnosticT );
 (* Matches the input in source to a quoted literal and consumes it. *)
 
 
 (* Non-Semantic Symbols *)
 
-PROCEDURE LineComment ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE LineComment ( source : SourceT; VAR diag : DiagnosticT );
 (* Matches the input in source to an opening line comment delimiter and
    consumes the line, including its closing NEWLINE control character. *)
 
 
-PROCEDURE BlockComment ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE BlockComment ( source : SourceT; VAR diag : DiagnosticT );
 (* Matches the input in source to an opening block comment delimiter
    and consumes the comment, including its closing delimiter. *)
 
 
-PROCEDURE Pragma ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE Pragma ( source : SourceT; VAR diag : DiagnosticT );
 (* Matches the input in source to an opening pragma delimiter
    and consumes the pragma, including its closing delimiter. *)
 
 
 (* Disabled Code Sections *)
 
-PROCEDURE DisabledCodeBlock ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE DisabledCodeBlock ( source : SourceT; VAR diag : DiagnosticT );
 (* Matches the input in source to an opening disabled code block delimiter
    and consumes the disabled code block, including its closing delimiter. *)
 
