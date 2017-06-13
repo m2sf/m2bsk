@@ -16,50 +16,50 @@ TYPE AstT = AST; (* for unqualified use *)
 (* Operations *)
 
 PROCEDURE NewUnaryNode
-  ( VAR ast : AST; nodeType : AstNodeType; subnode : AST );
+  ( VAR ast : AST; nodeType : AstNodeTypeT; subnode : AST );
 (* Allocates a new branch node of the given node type, stores the given
    subnode in node and passes back node, or NIL on failure. *)
 
 PROCEDURE NewBinaryNode
-  ( VAR ast : AST; nodeType : AstNodeType; subnode1, subnode2 : AST );
+  ( VAR ast : AST; nodeType : AstNodeTypeT; subnode1, subnode2 : AST );
 (* Allocates a new branch node of the given node type, stores the given
    subnodes in node and passes back node, or NIL on failure. *)
 
 PROCEDURE New3aryNode
   ( VAR ast : AST;
-    nodeType : AstNodeType; subnode1, subnode2, subnode3 : AST );
+    nodeType : AstNodeTypeT; subnode1, subnode2, subnode3 : AST );
 (* Allocates a new branch node of the given node type, stores the given
    subnodes in node and passes back node, or NIL on failure. *)
 
 PROCEDURE New4aryNode
   ( VAR ast : AST;
-    nodeType : AstNodeType; subnode1, subnode2, subnode3, subnode4 : AST );
+    nodeType : AstNodeTypeT; subnode1, subnode2, subnode3, subnode4 : AST );
 (* Allocates a new branch node of the given node type, stores the given
    subnodes in node and passes back node, or NIL on failure. *)
 
 PROCEDURE New5aryNode
   ( VAR ast : AST;
-    nodeType : AstNodeType;
+    nodeType : AstNodeTypeT;
     subnode1, subnode2, subnode3, subnode4, subnode5 : AST );
 (* Allocates a new branch node of the given node type, stores the given
    subnodes in node and passes back node, or NIL on failure. *)
 
 PROCEDURE NewListNode
-  ( VAR ast : AST; nodeType : AstNodeType; subnodes : AstQueue );
+  ( VAR ast : AST; nodeType : AstNodeTypeT; subnodes : AstQueueT );
 (* Allocates a new branch node of the given node type, stores the subnodes of
  * the given node queue in the node and passes back node, or NIL on failure. *)
 
 PROCEDURE NewTerminalNode
-  ( VAR ast : AST; nodeType : AstNodeType; value : Lexeme );
+  ( VAR ast : AST; nodeType : AstNodeTypeT; value : LexemeT );
 (* Allocates a new terminal node of the given node type, stores the given
    value in the node and passes back node, or NIL on failure. *)
 
 PROCEDURE NewTerminalListNode
-  ( VAR ast : AST; nodeType : AstNodeType; values : LexQueue );
+  ( VAR ast : AST; nodeType : AstNodeTypeT; values : LexQueueT );
 (* Allocates a new terminal node of the given node type, stores the values of
    the given value queue in the node and passes node, or NIL on failure. *)
 
-PROCEDURE nodeType ( node : AST ) : AstNodeType;
+PROCEDURE nodeType ( node : AST ) : AstNodeTypeT;
 (* Returns the node type of node, or AST.Invalid if node is NIL. *)
 
 PROCEDURE subnodeCount ( node : AST ) : CARDINAL;
@@ -69,11 +69,11 @@ PROCEDURE subnodeForIndex ( node : AST; index : CARDINAL ) : AST;
 (* Returns the subnode of node with the given index or NIL if no subnode of
    the given index is stored in node. *)
 
-PROCEDURE valueForIndex ( node : AST; index : CARDINAL ) : Lexeme;
+PROCEDURE valueForIndex ( node : AST; index : CARDINAL ) : LexemeT;
 (* Returns the value stored at the given index in a terminal node,
  * or NIL if the node does not store any value at the given index. *)
 
-PROCEDURE value ( node : AST ) : Lexeme;
+PROCEDURE value ( node : AST ) : LexemeT;
 (* Calls function valueForIndex with an index of zero. *)
 
 PROCEDURE replaceSubnode
@@ -81,7 +81,7 @@ PROCEDURE replaceSubnode
 (* Replaces a subnode and returns the replaced node, or NIL on failure. *)
 
 PROCEDURE replaceValue
-  ( node : AST; atIndex : CARDINAL; withValue : Lexeme ) : Lexeme;
+  ( node : AST; atIndex : CARDINAL; withValue : LexemeT ) : LexemeT;
 (* Replaces a subnode and returns the replaced value, or NIL on failure. *)
 
 PROCEDURE Release ( VAR ast : AST );
