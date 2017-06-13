@@ -329,7 +329,7 @@ END QuotedLiteral;
  * EBNF
  *
  * Pragma :=
- *   "<*" ( QuotableCharacter | QuotedLiteral )* "*>"
+ *   '<*' ( QuotableCharacter | QuotedLiteral )* '*>'
  *   ;
  *
  * pre-conditions:
@@ -393,7 +393,7 @@ BEGIN
  * EBNF
  *
  * LineComment :=
- *   "!" CommentCharacter* EndOfLine
+ *   '!' CommentCharacter* EndOfLine
  *   ;
  *
  * pre-conditions:
@@ -474,11 +474,11 @@ BEGIN
   WHILE NOT Source.eof(source) AND (nestLevel > 0) DO
     Source.GetChar(source, ch, next);
     
-    IF (ch = "*") AND (next = ")") THEN
+    IF (ch = '*') AND (next = ')') THEN
       Source.ConsumeChar(source);
       nestLevel--
     
-    ELSIF (ch = "(") AND (next = "*") THEN
+    ELSIF (ch = '(') AND (next = '*') THEN
       Source.ConsumeChar(source);
       nestLevel++
       
