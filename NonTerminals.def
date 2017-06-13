@@ -4,8 +4,8 @@ DEFINITION MODULE NonTerminals;
 
 (* FIRST/FOLLOW set database for Modula-2 R10 Bootstrap Kernel *)
 
-FROM M2Token IMPORT Token;
-FROM M2TokenSet IMPORT TokenSet;
+FROM Token IMPORT TokenT;
+FROM TokenSet IMPORT TokenSetT;
 
 
 (* Productions *)
@@ -83,19 +83,21 @@ TYPE Production =
     StructuredValue,
     ValueComponent );
 
+TYPE ProductionT = Production; (* for unqualified use *)
+
 
 (* Operations *)
 
-PROCEDURE FIRST ( p : Production ) : TokenSet;
+PROCEDURE FIRST ( p : Production ) : TokenSetT;
 (* Returns a reference to the FIRST set of production p. *)
 
-PROCEDURE inFIRST ( p : Production; token : Token ) : BOOLEAN;
+PROCEDURE inFIRST ( p : Production; token : TokenT ) : BOOLEAN;
 (* Returns TRUE if token is an element of FIRST(p), otherwise FALSE. *)
 
-PROCEDURE FOLLOW ( p : Production ) : TokenSet;
+PROCEDURE FOLLOW ( p : Production ) : TokenSetT;
 (* Returns a reference to the FOLLOW set of production p. *)
 
-PROCEDURE inFOLLOW ( p : Production; token : Token ) : BOOLEAN;
+PROCEDURE inFOLLOW ( p : Production; token : TokenT ) : BOOLEAN;
 (* Returns TRUE if token is an element of FOLLOW(p), otherwise FALSE. *)
 
 
