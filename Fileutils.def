@@ -5,6 +5,7 @@ DEFINITION MODULE Fileutils;
 (* File Utility Interface for Modula-2 R10 Bootstrap Kernel *)
 
 FROM UnsignedInt IMPORT ULONGINT;
+FROM String IMPORT StringT;
 
 
 (* --------------------------------------------------------------------------
@@ -70,7 +71,7 @@ PROCEDURE GetFileTime
  * absolute path of the current working directory.  Returns NIL on failure.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE newPathWithCurrentWorkdir : String;
+PROCEDURE newPathWithCurrentWorkdir : StringT;
 
 
 END Fileutils.
