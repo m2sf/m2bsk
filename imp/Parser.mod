@@ -52,15 +52,14 @@ END parseMod;
 (* Private Operations *)
 
 (* --------------------------------------------------------------------------
- * private function matchToken(p, expected_Token, resyncSet)
+ * private function matchToken(expected_Token)
  * --------------------------------------------------------------------------
  * Matches the lookahead symbol to expectedToken and returns TRUE if they
  * match.  If they don't match, a syntax error is reported, the error count
  * is incremented and FALSE is returned.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE matchToken
-  ( expectedToken : TokenT; resyncSet : TokenSetT ) : BOOLEAN;
+PROCEDURE matchToken ( expectedToken : TokenT ) : BOOLEAN;
 
 VAR
   lookahead : SymbolT;
@@ -85,31 +84,6 @@ BEGIN
   END (* IF *)
 
 END matchToken;
-
-
-(* --------------------------------------------------------------------------
- * private function skipToToken(resyncToken)
- * --------------------------------------------------------------------------
- * Cconsumes symbols until the lookahead symbol's token matches the given
- * resync token and returns the new lookahead symbol.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE skipToToken ( resyncToken : TokenT ) : SymbolT;
-
-VAR
- lookahead : SymbolT;
- 
-BEGIN
-
-  lookahead := Lexer.lookaheadSym(lexer);
-
-  (* skip symbols until lookahead token matches resync token *)
-  WHILE lookahead.token # resyncToken DO
-    lookahead = Lexer.consumeSym(lexer);
-  END; (* WHILE *)
-  
-  RETURN lookahead
-END skipToToken;
 
 
 (* --------------------------------------------------------------------------
@@ -148,13 +122,13 @@ END matchSet;
 
 
 (* --------------------------------------------------------------------------
- * private function skipToTokenInSet(resyncSet)
+ * private function skipToMatchToken(resyncToken)
  * --------------------------------------------------------------------------
- * Cconsumes symbols until the lookahead symbol's token matches one of the
- * tokens in the given resync set and returns the new lookahead symbol.
+ * Cconsumes symbols until the lookahead symbol's token matches the given
+ * resync token and returns the new lookahead symbol.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE skipToTokenInSet ( resyncSet : TokenSetT ) : SymbolT;
+PROCEDURE skipToMatchToken ( resyncToken : TokenT ) : SymbolT;
 
 VAR
  lookahead : SymbolT;
@@ -163,13 +137,65 @@ BEGIN
 
   lookahead := Lexer.lookaheadSym(lexer);
 
-  (* skip symbols until lookahead matches resyncSet *)
-  WHILE NOT TokenSet.isElement(resyncSet, lookahead.token) DO
-    lookahead = Lexer.consumeSym(lexer);
+  (* skip symbols until lookahead token matches resync token *)
+  WHILE lookahead.token # resyncToken DO
+    lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
   
   RETURN lookahead
-END skipToTokenInSet;
+END skipToMatchToken;
+
+
+(* --------------------------------------------------------------------------
+ * private function skipToMatchSet(resyncSet)
+ * --------------------------------------------------------------------------
+ * Cconsumes symbols until the lookahead symbol's token matches one of the
+ * tokens in the given resync set and returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToMatchSet ( resyncSet : TokenSetT ) : SymbolT;
+
+VAR
+ lookahead : SymbolT;
+ 
+BEGIN
+
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* skip symbols until lookahead matches resyncSet *)
+  WHILE NOT TokenSet.isElement(resyncSet, lookahead.token) DO
+    lookahead = Lexer.consumeSym(lexer)
+  END; (* WHILE *)
+  
+  RETURN lookahead
+END skipToMatchSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function skipToMatchTokenOrSet(resyncToken, resyncSet)
+ * --------------------------------------------------------------------------
+ * Cconsumes symbols until the lookahead symbol's token matches one of the
+ * tokens in the given resync set and returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToMatchTokenOrSet
+  ( resyncToken : TokenT; resyncSet : TokenSetT ) : SymbolT;
+
+VAR
+ lookahead : SymbolT;
+ 
+BEGIN
+
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* skip symbols until lookahead matches resyncToken or resyncSet *)
+  WHILE (lookahead.token # resyncToken) AND
+    (NOT TokenSet.isElement(resyncSet, lookahead.token)) DO
+    lookahead = Lexer.consumeSym(lexer)
+  END; (* WHILE *)
+  
+  RETURN lookahead
+END skipToMatchTokenOrSet;
 
 
 
