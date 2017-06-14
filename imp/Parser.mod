@@ -52,7 +52,7 @@ END parseMod;
 (* Private Operations *)
 
 (* --------------------------------------------------------------------------
- * private function matchToken(expected_Token)
+ * private function matchToken(expectedToken)
  * --------------------------------------------------------------------------
  * Matches the lookahead symbol to expectedToken and returns TRUE if they
  * match.  If they don't match, a syntax error is reported, the error count
@@ -87,14 +87,14 @@ END matchToken;
 
 
 (* --------------------------------------------------------------------------
- * private function matchSet(p, expectedSet, resyncSet)
+ * private function matchSet(expectedSet)
  * --------------------------------------------------------------------------
  * Matches the lookahead symbol to set expectedSet and returns TRUE if it
  * matches any of the tokens in the set.  If there is no match, a syntax
  * error is reported, the error count is incremented and FALSE is returned.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE matchSet ( expectedSet, resyncSet : TokenSetT ) : BOOLEAN;
+PROCEDURE matchSet ( expectedSet : TokenSetT ) : BOOLEAN;
 
 VAR
   lookahead : SymbolT;
@@ -204,7 +204,7 @@ END skipToMatchTokenOrSet;
  * ************************************************************************ *)
 
 (* --------------------------------------------------------------------------
- * private function compilation_unit()
+ * private function compilationUnit()
  * --------------------------------------------------------------------------
  * compilationUnit :=
  *   definitionModule | implOrPrgmModule
@@ -238,7 +238,7 @@ END compilationUnit;
 
 
 (* --------------------------------------------------------------------------
- * private function definition_module(astNode)
+ * private function definitionModule(astNode)
  * --------------------------------------------------------------------------
  * Parses rule definitionModule, constructs its AST node, passes the node
  * back in out-parameter astNode and returns the new lookahead symbol.
