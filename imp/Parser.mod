@@ -5,18 +5,20 @@ IMPLEMENTATION MODULE Parser;
 (* Parser for Modula-2 R10 Bootstrap Kernel *)
 
 IMPORT
-  AST, AstNodeType, AstQueue,
+  AST, AstNodeType, AstQueue, NonTerminals,
   Lexer, LexQueue, Symbol, Token, TokenSet, String;
 
-FROM AST IMPORT AstT;
-FROM AstNodeType IMPORT AstNodeTypeT;
-FROM AstQueue IMPORT AstQueueT;
-FROM Lexer IMPORT LexerT;
-FROM LexQueue IMPORT LexQueueT;
-FROM Symbol IMPORT SymbolT;
-FROM Token IMPORT TokenT;
-FROM TokenSet IMPORT TokenSetT;
-FROM String IMPORT StringT;
+FROM AST IMPORT AstT; (* AST.AST *)
+FROM AstNodeType IMPORT AstNodeTypeT; (* AstNodeType.AstNodeType *)
+FROM AstQueue IMPORT AstQueueT; (* AstQueue.AstQueue *)
+FROM Lexer IMPORT LexerT; (* Lexer.Lexer *)
+FROM LexQueue IMPORT LexQueueT; (* LexQueue.LexQueue *)
+FROM Symbol IMPORT SymbolT; (* Symbol.Symbol *)
+FROM Token IMPORT TokenT; (* Token.Token *)
+FROM TokenSet IMPORT TokenSetT; (* TokenSet.TokenSet *)
+FROM String IMPORT StringT; (* String.String *)
+
+FROM NonTerminals IMPORT FIRST, FOLLOW;
 
 
 (* Parser context *)
@@ -54,8 +56,7 @@ END parseMod;
  * --------------------------------------------------------------------------
  * Matches the lookahead symbol to expectedToken and returns TRUE if they
  * match.  If they don't match, a syntax error is reported, the error count
- * is incremented, symbols are consumed until the lookahead symbol matches
- * one of the symbols in resyncSet and FALSE is returned.
+ * is incremented and FALSE is returned.
  * --------------------------------------------------------------------------
  *)
 PROCEDURE matchToken
@@ -80,11 +81,6 @@ BEGIN
     (* update error count *)
     stats.syntaxErrors := stats.syntaxErrors + 1;
     
-    (* skip symbols until lookahead matches resyncSet *)
-    WHILE NOT TokenSet.isElement(resyncSet, lookahead.token) DO
-      lookahead = Lexer.consumeSym(lexer);
-    END; (* WHILE *)
-    
     RETURN FALSE
   END (* IF *)
 
@@ -92,13 +88,36 @@ END matchToken;
 
 
 (* --------------------------------------------------------------------------
+ * private function skipToToken(resyncToken)
+ * --------------------------------------------------------------------------
+ * Cconsumes symbols until the lookahead symbol's token matches the given
+ * resync token and returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToToken ( resyncToken : TokenT ) : SymbolT;
+
+VAR
+ lookahead : SymbolT;
+ 
+BEGIN
+
+  lookahead := Lexer.lookaheadSym(lexer);
+
+  (* skip symbols until lookahead token matches resync token *)
+  WHILE lookahead.token # resyncToken DO
+    lookahead = Lexer.consumeSym(lexer);
+  END; (* WHILE *)
+  
+  RETURN lookahead
+END skipToToken;
+
+
+(* --------------------------------------------------------------------------
  * private function matchSet(p, expectedSet, resyncSet)
  * --------------------------------------------------------------------------
  * Matches the lookahead symbol to set expectedSet and returns TRUE if it
  * matches any of the tokens in the set.  If there is no match, a syntax
- * error is reported, the error count is incremented, symbols are consumed
- * until the lookahead symbol matches one of the symbols in resyncSet and
- * FALSE is returned.
+ * error is reported, the error count is incremented and FALSE is returned.
  * --------------------------------------------------------------------------
  *)
 PROCEDURE matchSet ( expectedSet, resyncSet : TokenSetT ) : BOOLEAN;
@@ -123,14 +142,35 @@ BEGIN
     (* update error count *)
     stats.syntaxErrors := stats.syntaxErrors + 1;
     
-    (* skip symbols until lookahead matches resyncSet *)
-    WHILE NOT TokenSet.isElement(resyncSet, lookahead.token) DO
-      lookahead = Lexer.consumeSym(lexer);
-    END; (* WHILE *)
-    
     RETURN FALSE
   END (* IF *)
 END matchSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function skipToTokenInSet(resyncSet)
+ * --------------------------------------------------------------------------
+ * Cconsumes symbols until the lookahead symbol's token matches one of the
+ * tokens in the given resync set and returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToTokenInSet ( resyncSet : TokenSetT ) : SymbolT;
+
+VAR
+ lookahead : SymbolT;
+ 
+BEGIN
+
+  lookahead := Lexer.lookaheadSym(lexer);
+
+  (* skip symbols until lookahead matches resyncSet *)
+  WHILE NOT TokenSet.isElement(resyncSet, lookahead.token) DO
+    lookahead = Lexer.consumeSym(lexer);
+  END; (* WHILE *)
+  
+  RETURN lookahead
+END skipToTokenInSet;
+
 
 
 (* ************************************************************************ *
@@ -147,7 +187,7 @@ END matchSet;
  * astnode: defModuleNode | impModuleNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE compilationUnit : SymbolT;
+PROCEDURE compilationUnit ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
@@ -159,12 +199,12 @@ BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
   CASE lookahead.token OF
-    TokenT.Definition :
-      lookahead := definitionModule()
+    Token.Definition :
+      lookahead := definitionModule(astNode)
       
-  | TokenT.Implementation,
-    TokenT.Module :
-      lookahead := implOrPrgmModule()
+  | Token.Implementation,
+    Token.Module :
+      lookahead := implOrPrgmModule(astNode)
   END; (* CASE *)
   
   RETURN lookahead
@@ -172,8 +212,11 @@ END compilationUnit;
 
 
 (* --------------------------------------------------------------------------
- * private function definition_module()
+ * private function definition_module(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule definitionModule, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * definitionModule :=
  *   DEFINITION MODULE moduleIdent ';'
  *   import* definition* END moduleIdent '.'
@@ -181,16 +224,16 @@ END compilationUnit;
  *
  * moduleIdent := Ident ;
  *
- * astnode: (DEFMOD identNode implist deflist)
+ * astNode: (DEFMOD moduleIdent implist deflist)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE definitionModule : SymbolT;
+PROCEDURE definitionModule ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  id, implist, deflist : AST;
-  ident1, ident2 : String;
-  tmplist : AstQueue;
-  lookahead : Symbol;
+  moduleIdent, implist, deflist : AstT;
+  ident1, ident2 : StringT;
+  tmplist : AstQueueT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("definitionModule");
@@ -199,60 +242,58 @@ BEGIN
   lookahead := Lexer.consumeSym(lexer);
   
   (* MODULE *)
-  IF matchToken
-    (TokenT.Module, NonTerminals.Resync(ImportOrDefinitionOrEnd)) THEN
+  IF matchToken(Token.Module) THEN
     lookahead := Lexer.consumeSym(lexer);
     
     (* moduleIdent *)
-    IF matchToken
-      (TokenT.Identifier, NonTerminals.Resync(ImportOrDefinitionOrEnd)) THEN
+    IF matchToken(Token.StdIdent) THEN
       ident1 = lookahead.lexeme;
       lookahead := Lexer.consumeSym(lexer);
       
       (* ';' *)
-      IF matchToken
-        (TokenT.Semicolon, NonTerminals.Resync(ImportOrDefinitionOrEnd)) THEN
+      IF matchToken(Token.Semicolon) THEN
         lookahead := Lexer.consumeSym(lexer)
       ELSE (* resync *)
-        lookahead := Lexer.lookaheadSym(lexer)
+        lookahead := skipToMatchSet(FOLLOW(Import))
       END (* IF *)
+      
     ELSE (* resync *)
-      lookahead := Lexer.lookaheadSym(lexer)
+      lookahead := skipToMatchSet(FOLLOW(Import))
     END (* IF *)
+    
   ELSE (* resync *)
-    lookahead := Lexer.lookaheadSym(lexer);
+    lookahead := skipToMatchSet(FOLLOW(Import))
   END; (* IF *)
   
   tmplist := AstQueue.New();
 
   (* import* *)
-  WHILE lookahead.token = TokenT.Import DO
-    lookahead := import();
-    AstQueue.Enqueue(tmplist, ast)
+  WHILE lookahead.token = Token.Import DO
+    lookahead := import(implist);
+    AstQueue.Enqueue(tmplist, implist)
   END (* WHILE *)
   
   implist := AST.NewListNode(AstNodeTypeT.ImpList, tmplist);
   tmplist:= AstQueue.ResetQueue(tmplist);
   
   (* definition* *)
-  while lookahead.token = TokenT.Const OR
-        lookahead.token = TokenT.Type OR
-        lookahead.token = TokenT.Var OR
-        lookahead.token = TokenT.Procedure DO
-    lookahead := definition();
-    AstQueue.Enqueue(tmplist, ast)
+  while lookahead.token = Token.Const OR
+        lookahead.token = Token.Type OR
+        lookahead.token = Token.Var OR
+        lookahead.token = Token.Procedure DO
+    lookahead := definition(deflist);
+    AstQueue.Enqueue(tmplist, deflist)
   END (* WHILE *)
   
   deflist := AST.NewListNode(AstNodeTypeT.DefList, tmplist);
   tmplist := AstQueue.ResetQueue(tmplist);
   
   (* END *)
-  IF matchToken(TokenT.End, NonTerminals.FOLLOW(DefinitionModule)) THEN
+  IF matchToken(Token.End) THEN
     lookahead := Lexer.consumeSym(lexer);
     
     (* moduleIdent *)
-    IF matchToken
-       (TokenT.OtherIdent, NonTerminals.FOLLOW(DefinitionModule)) THEN
+    IF matchToken(Token.StdIdent) THEN
       lookahead := Lexer.ConsumeSym(lexer);
       ident2 := lookahead.lexeme;
     
@@ -261,34 +302,49 @@ BEGIN
       END; (* IF *)
     
       (* '.' *)
-      IF matchToken(TokenT.Period, FOLLOW(DefinitionModule)) THEN
+      IF matchToken(Token.Period, FOLLOW(DefinitionModule)) THEN
         lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(DefinitionModule))
       END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(DefinitionModule))
     END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(DefinitionModule))
   END (* IF *)
   
-  (* build AST node and pass it back in ast *)
-  id := AST.NewTerminalNode(AstNodeTypeT.Ident, ident1);
-  ast := AST.NewNode(AstNodeTypeT.DefMod, id, implist, deflist);
+  (* build AST node and pass it back in astNode *)
+  moduleIdent := AST.NewTerminalNode(AstNodeType.Ident, ident1);
+  astNode := AST.NewNode(AstNodeType.DefMod, moduleIdent, implist, deflist);
   
   RETURN lookahead
 END definitionModule;
 
 
 (* --------------------------------------------------------------------------
- * private function import()
+ * private function import(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule import, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * import :=
  *   IMPORT libIdent ( ',' libIdent )* ';'
  *   ;
  *
  * alias libIdent := StdIdent ;
  *
- * astnode: (IMPORT implist)
+ * astNode: (IMPORT implist)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE import : SymbolT;
+PROCEDURE import ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  libId, implist : AstT;
+  tmplist : AstQueueT;
+  
 BEGIN
   PARSER_DEBUG_INFO("import");
 
@@ -298,94 +354,183 @@ BEGIN
   templist := LexQueue.New();
   
   (* libIdent *)
-  IF matchToken
-      (TokenT.Identifier, NonTerminals.Resync(ImportOrDefinitionOrEnd)) THEN
+  IF matchToken(Token.StdIdent) THEN
     lookahead := Lexer.consumeSym(lexer);
-    id := AstNewTerminalNode(AstNodeTypeT.Ident, lookahead.lexeme);
-    LexQueue.Enqueue(id, templist);
+    libId := AstNewTerminalNode(AstNodeTypeT.Ident, lookahead.lexeme);
+    LexQueue.Enqueue(tmplist, libId);
         
     (* ( ',' libIdent )* *)
-    WHILE lookahead.token = TokenT.Comma DO
+    WHILE lookahead.token = Token.Comma DO
       lookahead := Lexer.consumeSym(lexer);
       
       (* libIdent *)
-      IF matchToken
-        (TokenT.Identifier, NonTerminals.Resync(ImportOrDefinitionOrEnd)) THEN
+      IF matchToken(Token.StdIdent) THEN
         lookahead := Lexer.ConsumeSym(lexer);
-        id := AstNewTerminalNode(AstNodeTypeT.Ident, lookahead.lexeme);
-        LexQueue.Enqueue(id, templist)
+        libId := AstNewTerminalNode(AstNodeTypeT.Ident, lookahead.lexeme);
+        LexQueue.Enqueue(templist, libId)
         
       ELSE (* resync *)
-        lookahead := Lexer.lookaheadSym(lexer)
+        lookahead := skipToMatchSet(FOLLOW(Import))
       END (* IF *)
     END (* WHILE *)
-  ELSE
-    (* resync *)
-    lookahead := Lexer.lookaheadSym(lexer)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Import))
   END; (* IF *)
   
-  (* build AST node and pass it back in ast *)
-  ast := AST.NewListNode(AstNodeTypeT.Implist, templist);
-  AstQueue.Release(templist);
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewListNode(AstNodeTypeT.Implist, tmplist);
+  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END import;
 
 
 (* --------------------------------------------------------------------------
- * private function ident()
+ * private function ident(astNode)
  * --------------------------------------------------------------------------
- * import :=
+ * Parses rule ident, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * ident :=
  *   StdIdent | ForeignIdent
  *   ;
  *
- * astnode: (IDENT "lexeme")
+ * astNode: (IDENT "lexeme")
  * --------------------------------------------------------------------------
  *)
-PROCEDURE ident : SymbolT;
+PROCEDURE ident ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  lexeme : LexemeT;
+  
 BEGIN
+  PARSER_DEBUG_INFO("ident");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  lexeme := lookahead.lexeme;
 
+  (* StdIdent | ForeignIdent *)
+  lookahead := Lexer.consumeSym(lexer)
+    
+  (* build AST node and pass it back in astNode *)
+  ast := AST.NewTerminalNode(AstNodeTypeT.Ident, lexeme);
+  
+  RETURN lookahead
 END ident;
 
 
 (* --------------------------------------------------------------------------
- * private function qualident()
+ * private function qualident(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule qualident, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * qualident :=
  *   ident ( '.' ident )*
  *   ;
  *
- * astnode: (QUALIDENT "lexeme1" "lexeme2" ... "lexemeN" )
+ * astNode: (QUALIDENT "lexeme1" "lexeme2" ... "lexemeN" )
  * --------------------------------------------------------------------------
  *)
-PROCEDURE qualident : SymbolT;
+PROCEDURE qualident ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  tmplist : LexQueue;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("qualident");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  LexQueue.New(tmplist);
+  LexQueue.Enqueue(tmplist, lookahead.lexeme);
+  
+  (* ident *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( '.' ident )* *)
+  WHILE lookahead.token = Token.Dot DO
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* ident *)
+    IF matchSet(FIRST(Ident)) THEN
+      LexQueue.Enqueue(tmplist, lookahead.lexeme);
+      lookahead := Lexer.consumeSym(lexer)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(Ident))
+    END (* IF *)
+    
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewTerminalListNode(AstNodeTypeT.Qualident, tmplist);
+  LexQueue.Release(tmplist);
+  
+  RETURN lookahead
 END qualident;
 
 
 (* --------------------------------------------------------------------------
- * private function identList()
+ * private function identList(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule identList, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * identList :=
  *   ident ( ',' ident )*
  *   ;
  *
- * astnode: (IDENTLIST "lexeme1" "lexeme2" ... "lexemeN" )
+ * astNode: (IDENTLIST "lexeme1" "lexeme2" ... "lexemeN" )
  * --------------------------------------------------------------------------
  *)
-PROCEDURE identList : SymbolT;
+PROCEDURE identList ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  tmplist : LexQueue;
 
 BEGIN
+  PARSER_DEBUG_INFO("identList");
 
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  LexQueue.New(tmplist);
+  LexQueue.Enqueue(tmplist, lookahead.lexeme);
+  
+  (* ident *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( ',' ident )* *)
+  WHILE lookahead.token = Token.Comma DO
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* ident *)
+    IF matchSet(FIRST(Ident)) THEN
+      LexQueue.EnqueueUnique(tmplist, lookahead.lexeme);
+      lookahead := Lexer.consumeSym(lexer)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(Ident))
+    END (* IF *)
+    
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewTerminalListNode(AstNodeTypeT.IdentList, tmplist);
+  LexQueue.Release(tmplist);
+  
+  RETURN lookahead
 END identList;
 
 
 (* --------------------------------------------------------------------------
- * private function definition()
+ * private function definition(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule definition, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * definition :=
  *   CONST ( constDefinition ';' )+ |
  *   TYPE ( typeDefinition ';' )+ |
@@ -394,57 +539,307 @@ END identList;
  *   toDoList ';'
  *   ;
  *
- * astnode: CONSTDEF or TYPEDEF or VARDECL or PROCDEF or TODO
+ * astNode: constDefNode | typeDefNode | varDeclNode | procDefNode | toDoNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE definition : SymbolT;
+PROCEDURE definition ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
+  PARSER_DEBUG_INFO("definition");
 
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  CASE lookahead.token OF
+    (* CONST *)
+    Token.Const :
+      lookahead := constDefSection(astNode)
+      
+  | Token.Type :
+      lookahead := typeDefSection(astNode)
+  
+  | Token.Var :
+      lookahead := varDeclSection(astNode)
+  
+  | Token.Procedure :
+      (* procedureHeader *)
+      lookahead := procedureHeader(astNode);
+      
+      (* ';' *)
+      IF matchToken(Token.Semicolon) THEN
+        (* consume semicolon *)
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(Definition))
+      END (* IF *)
+      
+  | Token.To :
+      lookahead := Lexer.consumeSym(lexer);
+      (* toDoList *)
+      lookahead := toDoList(astNode);
+      
+      (* ';' *)
+      IF matchToken(Token.Semicolon) THEN
+        (* consume semicolon *)
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(Definition))
+      END (* IF *)
+      
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Definition))
+  
+  END; (* CASE *)
+    
+  RETURN lookahead
 END definition;
 
 
 (* --------------------------------------------------------------------------
- * private function constDefinition()
+ * private function constDefSection(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule constDefSection, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * constDefSection :=
+ *   CONST ( constDefinition ';' )+
+ *   ;
+ *
+ * astNode: constDefListNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE constDefSection ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  constDef : AstT;
+  tmplist : AstQueueT;
+
+BEGIN
+  PARSER_DEBUG_INFO("constDefSection");
+  
+  AstQueue.New(tmplist);
+  
+  (* CONST *)
+  lookahead := Lexer.ConsumeSym(lexer);
+  
+  (* constDefinition *)
+  IF matchSet(FIRST(ConstDefinition)) THEN
+    lookahead := constDefinition(constDef);
+    AstQueue.Enqueue(tmplist, constDef)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(ConstDefinition))
+  END (* IF *)
+  
+  (* ';' *)
+  IF matchToken(Token.Semicolon) THEN
+    (* consume semicolon *)
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(ConstDefinition))
+  END (* IF *)
+  
+  (* ( constDefinition ';' )* *)
+  WHILE inFIRST(ConstDefinition, lookahead.token) DO
+    (* constDefinition *)
+    lookahead := constDefinition(constDef);
+    AstQueue.Enqueue(tmplist, constDef)
+    
+    (* ';' *)
+    IF matchToken(Token.Semicolon) THEN
+      (* consume semicolon *)
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(ConstDefinition))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewListNode(AstNodeType.DefList, tmplist);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
+END constDefSection;
+
+
+(* --------------------------------------------------------------------------
+ * private function constDefinition(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule constDefinition, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * constDefinition :=
  *   ident '=' constExpression
  *   ;
  *
  * alias constExpression = expression ;
  *
- * astnode: (CONSTDEF identNode exprNode)
+ * astNode: (CONSTDEF constId expr)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE constDefinition : SymbolT;
+PROCEDURE constDefinition ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  constId, expr : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("constDefinition");
+  
+  (* ident *)
+  lookahead := ident(constId);
+  
+  (* '=' *)
+  IF matchToken(Token.Equal) THEN
+    (* consume '=' *)
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(ConstDefinition))
+  END; (* IF *)
+  
+  (* constExpression *)
+  IF matchSet(FIRST(Expression)) THEN
+    (* alias constExpression = expression *)
+    lookahead := expression(expr)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Expression))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeTypeT.ConstDef, constId, expr);
+  
+  RETURN lookahead
 END constDefinition;
 
 
 (* --------------------------------------------------------------------------
- * private function typeDefinition()
+ * private function typeDefSection(astNode)
  * --------------------------------------------------------------------------
- * typeDefinition :=
- *   ident '=' ( OPAQUE | type )
+ * Parses rule typeDefSection, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * constDefSection :=
+ *   TYPE ( typeDefinition ';' )+
  *   ;
  *
- * alias constExpression = expression ;
- *
- * astnode: (TYPEDEF identNode typeNode)
+ * astNode: typeDefListNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE typeDefinition : SymbolT;
+PROCEDURE typeDefSection ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  typeDef : AstT;
+  tmplist : AstQueueT;
 
 BEGIN
+  PARSER_DEBUG_INFO("typeDefSection");
+  
+  AstQueue.New(tmplist);
+  
+  (* TYPE *)
+  lookahead := Lexer.ConsumeSym(lexer);
+  
+  (* typeDefinition *)
+  IF matchSet(FIRST(TypeDefinition)) THEN
+    lookahead := typeDefinition(typeDef)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(TypeDefinition))
+  END (* IF *)
+  
+  (* ';' *)
+  IF matchToken(Token.Semicolon) THEN
+    (* consume semicolon *)
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(TypeDefinition))
+  END (* IF *)
+  
+  (* ( typeDefinition ';' )* *)
+  WHILE inFIRST(TypeDefinition, lookahead.token) DO
+    (* typeDefinition *)
+    lookahead := typeDefinition(typeDef);
+    
+    (* ';' *)
+    IF matchToken(Token.Semicolon) THEN
+      (* consume semicolon *)
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(TypeDefinition))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewListNode(AstNodeType.DefList, tmplist);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
+END typeDefSection;
 
+
+(* --------------------------------------------------------------------------
+ * private function typeDefinition(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule typeDefinition, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * typeDefinition :=
+ *   ident '=' typeDefinitionTail
+ *   ;
+ *
+ * typeDefinitionTail :=
+ *   ( OPAQUE | type )
+ *   ;
+ *
+ * astNode: (TYPEDEF identNode typeNode)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE typeDefinition ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  typeId, typeDef : AstT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("typeDefinition");
+  
+  (* ident *)
+  lookahead := ident(typeId);
+  
+  (* '=' *)
+  IF matchToken(Token.Equal) THEN
+    (* consume '=' *)
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE
+    (* resync *)
+    lookahead := skipToMatchSet(NonTerminals.Resync(OpaqueOrType))
+  END; (* IF *)
+  
+  (* OPAQUE | type *)
+  IF matchSet(FIRST(TypeDefinitionTail)) THEN
+    
+    (* OPAQUE | *)
+    IF lookahead.token = Token.Opaque THEN
+      lookahead := Lexer.consumeSym(lexer)
+      typeDef := AST.emptyNode()
+      
+    (* type *)
+    ELSE
+      lookahead := type(typeDef)
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(TypeDefinition))
+  END; (* IF *)
+    
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeTypeT.TypeDef, typeId, typeDef);
+  
+  RETURN lookahead
 END typeDefinition;
 
 
 (* --------------------------------------------------------------------------
- * private function type()
+ * private function type(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule type, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * type :=
  *   aliasType | derivedType | subrangeType | enumType | setType |
  *   arrayType | recordType | pointerType | procedureType
@@ -454,57 +849,121 @@ END typeDefinition;
  *
  * alias typeIdent = qualident ;
  *
- * astnode: typeNode
+ * astNode: typeNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE type : SymbolT;
+PROCEDURE type ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("type");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  CASE lookahead.token OF
+  (* aliasType | *)
+    Token.Alias :
+      lookahead := aliasType(astNode)
+      
+  (* derivedType | *)
+  | Token.StdIdent,
+    Token.ForeignIdent :
+      (* alias typeIdent = qualident *)
+      lookahead := qualident(astNode)
+    
+  (* subrangeType | *)
+  | Token.LeftBracket :
+      lookahead := subrangeType(astNode)
+  
+  (* enumType | *)
+  | Token.LeftParen :
+      lookahead := enumType(astNode)
+  
+  (* setType | *)
+  | Token.Set :
+      lookahead := setType(astNode)
+  
+  (* arrayType | *)
+  | Token.Array :
+      lookahead := arrayType(astNode)
+  
+  (* recordType | *)
+  | Token.Record :
+      lookahead := recordType(astNode)
+  
+  (* pointerType | *)
+  | Token.Pointer :
+      lookahead := pointerType(astNode)
+  
+  (* procedureType *)
+  | Token.Procedure :
+      lookahead := procedureType(astNode)
+  
+  END; (* CASE *)
+  
+  RETURN lookahead
 END type;
 
 
 (* --------------------------------------------------------------------------
- * private function aliasType()
+ * private function aliasType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule aliasType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * aliasType :=
  *   ALIAS OF typeIdent
  *   ;
  *
  * alias typeIdent = qualident ;
  *
- * astnode: (ALIAS qualidentNode )
+ * astNode: (ALIAS baseType)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE aliasType : SymbolT;
+PROCEDURE aliasType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  baseType : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("aliasType");
+  
+  (* ALIAS *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* OF *)
+  IF matchToken(Token.Of) THEN
+    (* consume OF *)
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(Qualident))
+  END; (* IF *)
+  
+  (* typeIdent *)
+  IF matchSet(FIRST(Qualident)) THEN
+    (* alias typeIdent = qualident *)
+    lookahead := qualident(baseType)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(AliasType))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeTypeT.AliasType, baseType);
+  
+  RETURN lookahead
 END aliasType;
 
 
 (* --------------------------------------------------------------------------
- * private function subrangeType()
+ * private function subrangeType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule subrangeType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * subrangeType :=
  *   range OF ordinalType
  *   ;
  *
- * alias ordinalType = typeIdent ;
- *
- * astnode: (SUBR rangeNode identNode)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE subrangeType : SymbolT;
-
-BEGIN
-
-END subrangeType;
-
-
-(* --------------------------------------------------------------------------
- * private function range()
- * --------------------------------------------------------------------------
  * range :=
  *   '[' lowerBound '..' upperBound ']'
  *   ;
@@ -513,19 +972,83 @@ END subrangeType;
  *
  * alias upperBound = constExpression ;
  *
- * astnode: (RANGE exprNode exprNode)
+ * alias ordinalType = typeIdent ;
+ *
+ * astNode: (SUBR lowerBound upperBound baseType)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE range : SymbolT;
+PROCEDURE subrangeType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  lowerBound, upperBound, baseType : AstT;
+  
 BEGIN
-
-END range;
+  PARSER_DEBUG_INFO("subrangeType");
+  
+  (* '[' *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* lowerBound *)
+  IF matchSet(FIRST(Expression)) THEN
+    lookahead := expression(lowerBound);
+    
+    (* '..' *)
+    IF matchToken(Token.DotDot) THEN
+      lookahead := Lexer.consumeSym();
+      
+      (* upperBound *)
+      IF matchSet(FIRST(Expression) THEN
+        lookahead := expression(upperBound);
+        
+        (* ']' *)
+        IF matchToken(Token.RightBracket) THEN
+          lookahead := Lexer.consumeSym()
+        ELSE (* resync *)
+          lookahead := skipToMatchSet(FOLLOW(Range))
+        END (* IF *)
+        
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(Range))
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(Range))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Range))
+  END; (* IF *)
+  
+  (* OF *)
+  IF matchToken(Token.Of) THEN
+    lookahead := Lexer.consumeSym();
+    
+    (* ordinalType *)
+    IF matchSet(FIRST(Qualident)) THEN
+      lookahead := qualident(baseType)
+      
+    ELSE (* resync *)
+      skipToMatchSet(FOLLOW(SubrangeType))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(SubrangeType))
+  END; (* IF *)
+    
+  (* build AST node and pass it back in astNode *)
+  astNode :=
+    AST.NewNode(AstNodeType.SubrType, lowerBound, upperBound, baseType);
+  
+  RETURN lookahead
+END subrangeType;
 
 
 (* --------------------------------------------------------------------------
- * private function enumType()
+ * private function enumType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule enumType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * enumType :=
  *   '(' ( '+' enumTypeToExtend ',' )? identList ')'
  *   ;
@@ -534,57 +1057,175 @@ END range;
  *
  * alias enumTypeIdent = typeIdent ;
  *
- * astnode: (ENUM identNode identListNode)
+ * astNode: (ENUM baseType valueList)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE enumType : SymbolT;
+PROCEDURE enumType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  baseType, valueList : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("enumType");
+  
+  (* '(' *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( '+' enumTypeToExtend ',' )? *)
+  IF lookahead.token = Token.Plus THEN
+    (* '+' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* enumTypeToExtend *)
+    IF matchSet(FIRST(Qualident)) THEN
+      lookahead := qualident(baseType);
+      
+      (* ',' *)
+      IF matchToken() THEN
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FIRST(IdentList))
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FIRST(IdentList))
+    END (* IF *)
+  END; (* IF *)
+  
+  (* identList *)
+  IF matchSet(FIRST(IdentList)) THEN
+    lookahead := identList(valueList);
+    
+    (* ')' *)
+    IF matchToken(Token.RightParen) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(EnumType))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(EnumType))
+  END; (* IF *)
+    
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeTypeT.EnumType, baseType, valueList);
+  
+  RETURN lookahead
 END enumType;
 
 
 (* --------------------------------------------------------------------------
- * private function setType()
+ * private function setType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule setType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * setType :=
  *   SET OF enumTypeIdent
  *   ;
  *
  * alias enumTypeIdent = typeIdent ;
  *
- * astnode: (SET identNode)
+ * astNode: (SET elemType)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE setType : SymbolT;
+PROCEDURE setType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  elemType : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("setType");
+  
+  (* SET *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* OF *)
+  IF matchToken(Token.Of) THEN
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* enumTypeIdent *)
+    IF matchSet(FIRST(Qualident)) THEN
+      lookahead := qualident(elemType)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(SetType))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(SetType))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in ast *)
+  astNode := AST.NewNode(AstNodeTypeT.SetType, elemType);
+  
+  RETURN lookahead
 END setType;
 
 
 (* --------------------------------------------------------------------------
- * private function arrayType()
+ * private function arrayType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule arrayType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * arrayType :=
  *   ARRAY valueCount OF typeIdent
  *   ;
  *
  * alias valueCount = constExpression ;
  *
- * astnode: (ARRAY exprNode qualidentNode)
+ * astNode: (ARRAY valueCount baseType)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE arrayType : SymbolT;
+PROCEDURE arrayType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  valueCount, baseType : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("arrayType");
+  
+  (* ARRAY *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* valueCount *)
+  IF matchSet(FIRST(Expression)) THEN
+    (* alias valueCount = constExpression *)
+    lookahead := expression(valueCount);
+    
+    (* OF *)
+    IF matchToken(Token.Of) THEN
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* typeIdent *)
+      IF matchSet(FIRST(Qualident)) THEN
+        lookahead := qualident(baseType);
+        
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(ArrayType))
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(ArrayType))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(ArrayType))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeTypeT.ArrayType, valueCount, baseType);
+  
+  RETURN lookahead
 END arrayType;
 
 
 (* --------------------------------------------------------------------------
- * private function recordType()
+ * private function recordType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule recordType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * recordType :=
  *   RECORD ( '(' recTypeToExtend ')' )?
  *   fieldList ( ';' fieldList )* END
@@ -594,36 +1235,138 @@ END arrayType;
  *
  * alias fieldList = varOrFieldDeclaration ;
  *
- * astnode: (RECORD fieldListNode) | (EXTREC qualidentNode fieldListNode)
+ * astNode: (RECORD baseType fieldListSeq)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE recordType : SymbolT;
+PROCEDURE recordType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  baseType, listNode, fieldListSeq : AstT;
+  tmpList : AstQueue;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("recordType");
+  
+  (* RECORD *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( '(' recTypeToExtend ')' )? *)
+  IF lookahead.token = Token.LeftParen THEN
+  
+    (* '(' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* typeIdent | NIL *)
+    IF matchSet(FIRST(RecTypeToExtend)) THEN
+      lookahead := qualident(baseType)
+      
+      (* ')' *)
+      IF matchToken(Token.RightParen) THEN
+        lookahead := Lexer.consumeSym(lexer);
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FIRST(FieldList))
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FIRST(FieldList))
+    END (* IF *)
+    
+  ELSE (* non-extensible record *)
+    baseType := AST.emptyNode()
+  END; (* IF *)
+  
+  (* fieldList *)
+  IF matchSet(FIRST(FieldList)) THEN
+    lookahead := fieldList(listNode);
+    AstQueue.Enqueue(tmplist, listNode)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(FieldList))
+  END; (* IF *)
+  
+  (* ( ';' fieldList )* *)
+  WHILE lookahead.token = Token.Semicolon DO
+    (* ';' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* fieldList *)
+    IF matchSet(FIRST(FieldList)) THEN
+      lookahead := fieldList(listNode);
+      AstQueue.Enqueue(tmplist, listNode)
+      
+    ELSE
+      lookahead := skipToMatchSet(FOLLOW(FieldList))
+    END (* IF *)
+  END (* WHILE *)
+  
+  (* END *)
+  IF matchToken(Token.End) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(RecordType))
+  END; (* IF *)
+    
+  (* build AST node and pass it back in astNode *)
+  fieldListSeq := AST.NewListNode(AstNodeType.FieldListSeq, tmplist);
+  astNode := AST.NewNode(AstNodeTypeT.RecordType, baseType, fieldListSeq);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
 END recordType;
 
 
 (* --------------------------------------------------------------------------
- * private function pointerType()
+ * private function pointerType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule pointerType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * pointerType :=
  *   POINTER TO typeIdent
  *   ;
  *
- * astnode: (POINTER qualidentNode)
+ * astNode: (POINTER qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE pointerType : SymbolT;
+PROCEDURE pointerType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  baseType : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("pointerType");
+  
+  (* POINTER *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* TO *)
+  IF matchToken(Token.To) THEN
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* typeIdent *)
+    IF matchSet(FIRST(Qualident)) THEN
+      lookahead := qualident(baseType)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(PointerType))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(PointerType))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeTypeT.PointerType, baseType);
+  
+  RETURN lookahead
 END pointerType;
 
 
 (* --------------------------------------------------------------------------
- * private function procedureType()
+ * private function procedureType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule procedureType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * procedureType :=
  *   PROCEDURE
  *   ( '(' formalType ( ',' formalType )* ')' )? ( ':' returnedType )?
@@ -631,82 +1374,282 @@ END pointerType;
  *
  * alias returnedType = typeIdent ;
  *
- * astnode: (PROCTYPE formalTypeListNode qualidentNode)
+ * astNode: (PROCTYPE formalTypeListNode qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE procedureType : SymbolT;
+PROCEDURE procedureType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  formalTypeList, retType : AstT;
+  tmplist : AstQueueT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("procedureType");
+  
+  AstQueue.New(tmplist);
+  
+  (* PROCEDURE *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( '(' formalType ( ',' formalType )* ')' )? *)
+  IF lookahead.token = Token.LeftParen THEN
+    
+    (* '(' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    IF matchSet(FIRST(FormalType)) THEN
+      (* formalType *)
+      lookahead := formalType(ftype);
+      AstQueue.Enqueue(tmplist, ftype)
+      
+      (* ( ',' formalType )* *)
+      WHILE lookahead.token = Token.Comma DO
+        (* ',' *)
+        lookahead := Lexer.consumeSym(lexer);
+        
+        (* formalType *)
+        IF matchSet(FIRST(FormalType)) THEN
+          lookahead := formalType(ftype);
+          AstQueue.Enqueue(tmplist, ftype)
+        ELSE (* resync *)
+          lookahead := skipToMatchSet(FOLLOW(FormalType))
+        END (* IF *)
+      END; (* WHILE *)
+      
+      (* ')' *)
+      IF matchToken(Token.RightParen) THEN
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(<ColonOrQualidentOrSemicolon>)
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(<ColonOrQualidentOrSemicolon>)
+    END (* IF *)
+    
+  END; (* IF *)
+  
+  (* ( ':' returnedType )? *)
+  IF lookahead.token = Token.Colon THEN
+  
+    (* ':' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* returnedType *)
+    IF matchSet(FIRST(Qualident)) THEN
+      lookahead := qualident(retType)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(procedureType))
+    END (* IF *)
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  formalTypeList :=
+    AST.NewListNode(AstNodeType.FormalTypeList, tmplist);
+  astNode :=
+    AST.NewNode(AstNodeType.ProcedureType, formalTypeList, retType);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
 END procedureType;
 
 
 (* --------------------------------------------------------------------------
- * private function formalType()
+ * private function formalType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule formalType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * formalType :=
  *   nonAttrFormalType | attributedFormalType
  *   ;
  *
- * astnode: formalTypeNode
+ * astNode: formalTypeNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE formalType : SymbolT;
+PROCEDURE formalType ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("formalType");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* nonAttrFormalType | *)
+  IF inFIRST(NonAttrFormalType, lookahead.token) THEN
+    lookahead := nonAttrFormalType(astNode)
+  ELSE (* attributedFormalType *)
+    lookahead := attributedFormalType(astNode)
+  END; (* IF *) 
+  
+  RETURN lookahead
 END formalType;
 
 
 (* --------------------------------------------------------------------------
- * private function nonAttrFormalType()
+ * private function nonAttrFormalType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule nonAttrFormalType, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * nonAttrFormalType :=
- *   ( ARRAY ident? OF )? typeIdent | castingFormalType
+ *   ( ARRAY OF )? typeIdent | castingFormalType
  *   ;
  *
- * astnode:
+ * astNode:
  *  (FTYPE qualidentNode) |
  *  (ARRAYP identNode qualidentNode) |
  *  (OPENARRAYP qualidentNode) |
  *  castingFormalTypeNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE nonAttrFormalType : SymbolT;
+PROCEDURE nonAttrFormalType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  ftypeId, ftype : AstT;
+  seenArray : BOOLEAN;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("procedureType");
+  
+  seenArray := FALSE;
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* castingFormalType | *)
+  IF lookahead.token = Token.Cast THEN
+    lookahead := castingFormalType(astNode)
+  
+  ELSE (* ( ARRAY OF )? typeIdent *)
+    
+    (* ( ARRAY OF )? *)
+    IF lookahead.token = Token.Array THEN
+      (* ARRAY *)
+      lookahead := Lexer.consumeSym(lexer);
+      seenArray := TRUE;
+      
+      (* OF *)
+      IF matchToken(Token.Of) THEN
+        lookahead := Lexer.consumeSym(lexer);
+      ELSE (* resync *)
+        lookahead := skipToMatchTokenOrSet(Token.Semicolon, FIRST(Qualident))
+      END (* IF *)
+    END; (* IF *)
+    
+    (* typeIdent *)
+    IF matchSet(FIRST(Qualident)) THEN
+      lookahead := qualident(ftypeId);
+      
+      (* build AST node and pass it back in astNode *)
+      ftype := AST.NewNode(AstNodeType.FormalType, ftypeId);
+      IF seenArray THEN
+        astNode := AST.NewNode(AstNodeType.OpenArray, ftype)
+      ELSE
+        astNode := ftype
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Semicolon, FOLLOW(Qualident))
+    END (* IF *)
+  END; (* IF *)
+  
+  RETURN lookahead
 END nonAttrFormalType;
 
 
 (* --------------------------------------------------------------------------
- * private function castingFormalType()
+ * private function castingFormalType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule castingFormalType, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * castingFormalType :=
  *   CAST ( BARE ARRAY OF OCTET | addressTypeIdent )
  *   ;
  *
- * astnode: (CASTP formalTypeNode)
+ * astNode: (CASTP formalTypeNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE castingFormalType : SymbolT;
+PROCEDURE castingFormalType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  lexeme : LexemeT;
+  ftypeId, ftype : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("castingFormalType");
+  
+  (* CAST *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* addressType | BARE *)
+  IF matchSet(FIRST(CastingFormalTypeTail)) THEN
+    
+    (* addressType | *)
+    IF inFIRST(AddressTypeIdent, lookahead.token) THEN
+      lookahead := addressTypeIdent(astNode)
+    ELSE (* BARE *)
+    
+      (* BARE *)
+      IF matchToken(Token.Bare) THEN
+        lookahead := Lexer.consumeSym(lexer);
+        
+        (* ARRAY *)
+        IF matchToken(Token.Array) THEN
+          lookahead := Lexer.consumeSym(lexer);
+          
+          (* OF *)
+          IF matchToken(Token.Of) THEN
+            lookahead := Lexer.consumeSym(lexer);
+            
+            (* OCTET *)
+            IF matchToken(Token.Octet) THEN
+              lexeme := lookahead.lexeme;
+              lookahead := Lexer.consumeSym(lexer);
+              
+              (* build AST node and pass it back in astNode *)
+              ftypeId := AST.NewTerminalNode(AstNodeType.Qualident, lexeme);
+              ftype := AST.NewNode(AstNodeType.OpenArray, ftypeId);
+              astNode := AST.NewNode(AstNodeType.CastP, ftype)
+              
+            ELSE (* resync *)
+              lookahead := skipToMatchSet(FOLLOW(CastingFormalType))
+            END (* IF *)
+            
+          ELSE (* resync *)
+            lookahead := skipToMatchSet(FOLLOW(CastingFormalType))
+          END (* IF *)
+          
+        ELSE (* resync *)
+          lookahead := skipToMatchSet(FOLLOW(CastingFormalType))
+        END (* IF *)
+        
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(CastingFormalType))
+      END; (* IF *)
+    
+    END (* addressType | *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(CastingFormalType))
+  END; (* addressType | BARE *)
+    
+  RETURN lookahead
 END castingFormalType;
 
 
 (* --------------------------------------------------------------------------
- * private function addressTypeIdent()
+ * private function addressTypeIdent(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule addressTypeIdent, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * addressTypeIdent :=
  *   ( UNSAFE '.' )? ADDRESS
  *   ;
  *
- * astnode: qualidentNode
+ * astNode: qualidentNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE addressTypeIdent : SymbolT;
+PROCEDURE addressTypeIdent ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -714,67 +1657,106 @@ END addressTypeIdent;
 
 
 (* --------------------------------------------------------------------------
- * private function attributedFormalType()
+ * private function attributedFormalType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule attributedFormalType, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * attributedFormalType :=
  *   ( CONST | VAR ) ( nonAttrFormalType | simpleVariadicFormalType )
  *   ;
  *
- * astnode: formalTypeNode
+ * astNode: formalTypeNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE attributedFormalType : SymbolT;
+PROCEDURE attributedFormalType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  nodeType : AstNodeTypeT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("attributedFormalType");
+  
+  
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(nodeType, formalTypeNode);
+  
+  RETURN lookahead
 END attributedFormalType;
 
 
 (* --------------------------------------------------------------------------
- * private function simpleVariadicFormalType()
+ * private function simpleVariadicFormalType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule simpleVariadicFormalType, constructs its AST node, passes the
+ * node back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * simpleVariadicFormalType :=
  *   ARGLIST OF nonAttrFormalType
  *   ;
  *
- * astnode: (ARGLIST formalTypeNode)
+ * astNode: (ARGLIST formalTypeNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE simpleVariadicFormalType : SymbolT;
+PROCEDURE simpleVariadicFormalType ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("simpleVariadicFormalType");
+  
+  
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.ArgList, formalTypeNode);
+  
+  RETURN lookahead
 END simpleVariadicFormalType;
 
 
 (* --------------------------------------------------------------------------
- * private function procedureHeader()
+ * private function procedureHeader(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule procedureHeader, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * procedureHeader :=
  *   PROCEDURE procedureSignature
  *   ;
  *
- * astnode: (PROC identNode fparamsListNode qualidentNode)
+ * astNode: (PROC identNode fparamsListNode qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE procedureHeader : SymbolT;
+PROCEDURE procedureHeader ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  procId, fpList, retType : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("procedureHeader");
+  
+  
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Proc, procId, fpList, retType);
+  
+  RETURN lookahead
 END procedureHeader;
 
 
 (* --------------------------------------------------------------------------
- * private function procedureSignature()
+ * private function procedureSignature(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule procedureSignature, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * procedureHeader :=
  *   PROCEDURE procedureSignature
  *   ;
  *
- * astnode: (PROC identNode fparamsListNode qualidentNode)
+ * astNode: (PROC identNode fparamsListNode qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE procedureSignature : SymbolT;
+PROCEDURE procedureSignature ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -782,46 +1764,76 @@ END procedureSignature;
 
 
 (* --------------------------------------------------------------------------
- * private function formalParams()
+ * private function formalParams(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule formalParams, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * formalParams :=
  *   identList ':' ( nonAttrFormalType | simpleVariadicFormalType ) |
  *   attributedFormalParams
  *   ;
  *
- * astnode: (FPARAMS identListNode formalTypeNode) | attrFParamsNode
+ * astNode: (FPARAMS identListNode formalTypeNode) | attrFParamsNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE formalParams : SymbolT;
+PROCEDURE formalParams ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  idList, ftype : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("formalParams");
+  
+  
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.FParams, idList, ftype);
+  
+  RETURN lookahead
 END formalParams;
 
 
 (* --------------------------------------------------------------------------
- * private function attributedFormalParams()
+ * private function attributedFormalParams(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule attributedFormalParams, constructs its AST node, passes the
+ * node back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * attributedFormalParams :=
  *   ( CONST | VAR ) identList ':'
  *   ( nonAttrFormalType | simpleVariadicFormalType )
  *   ;
  *
- * astnode:
+ * astNode:
  *  (CONSTP identListNode formalTypeNode) |
  *  (VARP identListNode formalTypeNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE attributedFormalParams : SymbolT;
+PROCEDURE attributedFormalParams ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  fparams : AstT;
+  nodeType : AstNodeTypeT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("attributedFormalParams");
+  
+  
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.nodeType, fparams);
+  
+  RETURN lookahead
 END attributedFormalParams;
 
 
 (* --------------------------------------------------------------------------
- * private function implOrPrgmModule()
+ * private function implOrPrgmModule(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule implOrPrgmModule, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * implOrPrgmModule :=
  *   IMPLEMENTATION MODULE moduleIdent ';'
  *   privateImport* block moduleIdent '.'
@@ -829,10 +1841,10 @@ END attributedFormalParams;
  *
  * alias privateImport = import ;
  *
- * astnode: (IMPMOD qualidentNode implistNode blockNode)
+ * astNode: (IMPMOD qualidentNode implistNode blockNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE implOrPrgmModule : SymbolT;
+PROCEDURE implOrPrgmModule ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -840,17 +1852,20 @@ END implOrPrgmModule;
 
 
 (* --------------------------------------------------------------------------
- * private function block()
+ * private function block(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule block, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * block :=
  *   declaration*
  *   BEGIN statementSequence END
  *   ;
  *
- * astnode: (BLOCK declListNode stmtSeqNode)
+ * astNode: (BLOCK declListNode stmtSeqNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE block : SymbolT;
+PROCEDURE block ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -858,8 +1873,11 @@ END block;
 
 
 (* --------------------------------------------------------------------------
- * private function declaration()
+ * private function declaration(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule declaration, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * declaration :=
  *   ALIAS ( aliasDeclaration ';' )+ |
  *   CONST ( ident '=' constExpression ';' )+ |
@@ -869,10 +1887,10 @@ END block;
  *   toDoList ';'
  *   ;
  *
- * astnode: (DECLLIST declNode1 declNode2 ... declNodeN)
+ * astNode: (DECLLIST declNode1 declNode2 ... declNodeN)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE declaration : SymbolT;
+PROCEDURE declaration ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -880,16 +1898,19 @@ END declaration;
 
 
 (* --------------------------------------------------------------------------
- * private function aliasDeclaration()
+ * private function aliasDeclaration(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule aliasDeclaration, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * aliasDeclaration :=
  *   namedAliasDecl | wildcardAliasDecl
  *   ;
  *
- * astnode: aliasDeclNode
+ * astNode: aliasDeclNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE aliasDeclaration : SymbolT;
+PROCEDURE aliasDeclaration ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -897,8 +1918,11 @@ END aliasDeclaration;
 
 
 (* --------------------------------------------------------------------------
- * private function namedAliasDecl()
+ * private function namedAliasDecl(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule namedAliasDecl, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * namedAliasDecl :=
  *   aliasName
  *     ( '=' qualifiedName | ( ',' aliasName )* '=' qualifiedWildcard )
@@ -912,12 +1936,12 @@ END aliasDeclaration;
  *   qualident '.*'
  *   ;
  *
- * astnode:
+ * astNode:
  *  (ALIASDECL identNode qualidentNode) |
  *  (ALIASDECLLIST aliasDeclNode1 aliasDeclNode2 ... aliasDeclNodeN)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE namedAliasDecl : SymbolT;
+PROCEDURE namedAliasDecl ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -925,16 +1949,19 @@ END namedAliasDecl;
 
 
 (* --------------------------------------------------------------------------
- * private function wildcardAliasDecl()
+ * private function wildcardAliasDecl(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule wildcardAliasDecl, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * wildcardAliasDecl :=
  *   '*' '=' qualifiedWildcard
  *   ;
  *
- * astnode: (ALIASDECL (IDENT "*") qualidentNode)
+ * astNode: (ALIASDECL (IDENT "*") qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE wildcardAliasDecl : SymbolT;
+PROCEDURE wildcardAliasDecl ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -942,16 +1969,19 @@ END wildcardAliasDecl;
 
 
 (* --------------------------------------------------------------------------
- * private function typeDeclaration()
+ * private function typeDeclaration(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule typeDeclaration, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * typeDeclaration :=
  *   ident '=' ( indeterminateType |  type )
  *   ;
  *
- * astnode: (TYPEDECL identNode typeNode) | indeterminateTypeNode
+ * astNode: (TYPEDECL identNode typeNode) | indeterminateTypeNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE typeDeclaration : SymbolT;
+PROCEDURE typeDeclaration ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -959,8 +1989,11 @@ END typeDeclaration;
 
 
 (* --------------------------------------------------------------------------
- * private function indeterminateType()
+ * private function indeterminateType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule indeterminateType, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * indeterminateType :=
  *   IN RECORD
  *     fieldDeclaration ( fieldDeclaration ';' ) indeterminateField END
@@ -968,10 +2001,10 @@ END typeDeclaration;
  *
  * alias fieldDeclaration = varOrFieldDeclaration ;
  *
- * astnode: (INREC fieldListNode identNode identNode qualidentNode)
+ * astNode: (INREC fieldListNode identNode identNode qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE indeterminateType : SymbolT;
+PROCEDURE indeterminateType ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -979,18 +2012,21 @@ END indeterminateType;
 
 
 (* --------------------------------------------------------------------------
- * private function indeterminateField()
+ * private function indeterminateField(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule indeterminateField, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * indeterminateField :=
  *   '+' ident ':' BARE ARRAY discriminantFieldIdent OF typeIdent
  *   ;
  *
  * alias discriminantFieldIdent = ident ;
  *
- * astnode: (TERMLIST identNode identNode qualidentNode)
+ * astNode: (TERMLIST identNode identNode qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE indeterminateField : SymbolT;
+PROCEDURE indeterminateField ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -998,16 +2034,19 @@ END indeterminateField;
 
 
 (* --------------------------------------------------------------------------
- * private function varOrFieldDeclaration()
+ * private function varOrFieldDeclaration(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule varOrFieldDeclaration, constructs its AST node, passes the
+ * node back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * varOrFieldDeclaration :=
  *   identList ':' ( typeIdent | anonType )
  *   ;
  *
- * astnode: (VARDECL identListNode typeNode)
+ * astNode: (VARDECL identListNode typeNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE varOrFieldDeclaration : SymbolT;
+PROCEDURE varOrFieldDeclaration ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1015,18 +2054,21 @@ END varOrFieldDeclaration;
 
 
 (* --------------------------------------------------------------------------
- * private function anonType()
+ * private function anonType(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule anonType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * anonType :=
  *   ARRAY valueCount OF typeIdent |
  *   subrangeType |
  *   procedureType
  *   ;
  *
- * astnode: arrayTypeNode | subrangeTypeNode | procedureTypeNode
+ * astNode: arrayTypeNode | subrangeTypeNode | procedureTypeNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE anonType : SymbolT;
+PROCEDURE anonType ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1034,16 +2076,19 @@ END anonType;
 
 
 (* --------------------------------------------------------------------------
- * private function statementSequence()
+ * private function statementSequence(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule statementSequence, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * statementSequence :=
  *   statement ( ';' statement )*
  *   ;
  *
- * astnode: (STMTSEQ stmtNode1 stmtNode2 ... stmtNodeN)
+ * astNode: (STMTSEQ stmtNode1 stmtNode2 ... stmtNodeN)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE statementSequence : SymbolT;
+PROCEDURE statementSequence ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1051,8 +2096,11 @@ END statementSequence;
 
 
 (* --------------------------------------------------------------------------
- * private function statement()
+ * private function statement(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule statement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * statement :=
  *   emptyStatement | memMgtOperation | updateOrProcCall | returnStatement |
  *   ifStatement | caseStatement | loopStatement | whileStatement |
@@ -1061,10 +2109,10 @@ END statementSequence;
  *
  * alias emptyStatement = toDoList ;
  *
- * astnode: statementNode
+ * astNode: statementNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE statement : SymbolT;
+PROCEDURE statement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1072,8 +2120,11 @@ END statement;
 
 
 (* --------------------------------------------------------------------------
- * private function toDoList()
+ * private function toDoList(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule toDoList, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * toDoList :=
  *   TO DO trackingRef? taskToDo ( ';' taskToDo )* END
  *   ;
@@ -1094,10 +2145,10 @@ END statement;
  *
  * alias estimatedHours = constExpression ;
  *
- * astnode: (TODO intValNode exprNode quotedValNode exprNode)
+ * astNode: (TODO intValNode exprNode quotedValNode exprNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE toDoList : SymbolT;
+PROCEDURE toDoList ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1105,8 +2156,11 @@ END toDoList;
 
 
 (* --------------------------------------------------------------------------
- * private function memMgtOperation()
+ * private function memMgtOperation(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule memMgtOperation, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * memMgtOperation :=
  *   NEW designator ( OF initSize )? |
  *   RELEASE designator
@@ -1114,10 +2168,10 @@ END toDoList;
  *
  * alias initSize = expression ;
  *
- * astnode: (NEW desigNode exprNode) | (RELEASE desigNode)
+ * astNode: (NEW desigNode exprNode) | (RELEASE desigNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE memMgtOperation : SymbolT;
+PROCEDURE memMgtOperation ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1125,8 +2179,11 @@ END memMgtOperation;
 
 
 (* --------------------------------------------------------------------------
- * private function updateOrProcCall()
+ * private function updateOrProcCall(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule updateOrProcCall, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * updateOrProcCall :=
  *   designator
  *     ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )?
@@ -1134,10 +2191,10 @@ END memMgtOperation;
  *
  * IncOrDecSuffix := '++' | '--' ;
  *
- * astnode: (ASSIGN desigNode exprNode) | (PCALL exprListNode)
+ * astNode: (ASSIGN desigNode exprNode) | (PCALL exprListNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE updateOrProcCall : SymbolT;
+PROCEDURE updateOrProcCall ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1145,16 +2202,19 @@ END updateOrProcCall;
 
 
 (* --------------------------------------------------------------------------
- * private function returnStatement()
+ * private function returnStatement(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule returnStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * returnStatement :=
  *   RETURN expression?
  *   ;
  *
- * astnode: (RETURN exprNode)
+ * astNode: (RETURN exprNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE returnStatement : SymbolT;
+PROCEDURE returnStatement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1162,8 +2222,11 @@ END returnStatement;
 
 
 (* --------------------------------------------------------------------------
- * private function ifStatement()
+ * private function ifStatement(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule ifStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * ifStatement :=
  *   IF boolExpression THEN statementSequence
  *   ( ELSIF boolExpression THEN statementSequence )*
@@ -1173,10 +2236,10 @@ END returnStatement;
  *
  * alias boolExpression = expression ;
  *
- * astnode: (IF exprNode stmtSeqNode elsifSeqNode stmtSeqNode)
+ * astNode: (IF exprNode stmtSeqNode elsifSeqNode stmtSeqNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE ifStatement : SymbolT;
+PROCEDURE ifStatement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1184,16 +2247,19 @@ END ifStatement;
 
 
 (* --------------------------------------------------------------------------
- * private function caseStatement()
+ * private function caseStatement(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule caseStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * caseStatement :=
  *   CASE expression OF ( '|' case )+ ( ELSE statementSequece )? END
  *   ;
  *
- * astnode: (SWITCH exprNode caseListNode stmtSeqNode)
+ * astNode: (SWITCH exprNode caseListNode stmtSeqNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE caseStatement : SymbolT;
+PROCEDURE caseStatement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1201,16 +2267,19 @@ END caseStatement;
 
 
 (* --------------------------------------------------------------------------
- * private function case()
+ * private function case(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule case, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * case :=
  *   caseLabels ( ',' caseLabels )* : StatementSequence
  *   ;
  *
- * astnode: (CASE caseLabelListNode stmtSeqNode)
+ * astNode: (CASE caseLabelListNode stmtSeqNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE case : SymbolT;
+PROCEDURE case ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1218,16 +2287,19 @@ END case;
 
 
 (* --------------------------------------------------------------------------
- * private function caseLabels()
+ * private function caseLabels(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule caseLabels, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * caseLabels :=
  *   constExpression ( .. constExpression )?
  *   ;
  *
- * astnode: (CLABELS exprNode exprNode)
+ * astNode: (CLABELS exprNode exprNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE caseLabels : SymbolT;
+PROCEDURE caseLabels ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1235,16 +2307,19 @@ END caseLabels;
 
 
 (* --------------------------------------------------------------------------
- * private function loopStatement()
+ * private function loopStatement(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule loopStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * loopStatement :=
  *   LOOP statementSequence END
  *   ;
  *
- * astnode: (LOOP stmtSeqNode)
+ * astNode: (LOOP stmtSeqNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE loopStatement : SymbolT;
+PROCEDURE loopStatement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1252,16 +2327,19 @@ END loopStatement;
 
 
 (* --------------------------------------------------------------------------
- * private function whileStatement()
+ * private function whileStatement(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule whileStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * whileStatement :=
  *   WHILE boolExpression DO statementSequence END
  *   ;
  *
- * astnode: (WHILE exprNode stmtSeqNode)
+ * astNode: (WHILE exprNode stmtSeqNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE whileStatement : SymbolT;
+PROCEDURE whileStatement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1269,16 +2347,19 @@ END whileStatement;
 
 
 (* --------------------------------------------------------------------------
- * private function repeatStatement()
+ * private function repeatStatement(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule repeatStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * repeatStatement :=
  *   WHILE boolExpression DO statementSequence END
  *   ;
  *
- * astnode: (REPEAT stmtSeqNode exprNode)
+ * astNode: (REPEAT stmtSeqNode exprNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE repeatStatement : SymbolT;
+PROCEDURE repeatStatement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1286,16 +2367,19 @@ END repeatStatement;
 
 
 (* --------------------------------------------------------------------------
- * private function forStatement()
+ * private function forStatement(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule forStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * forStatement :=
  *   FOR forLoopVariants IN iterableExpr DO statementSequence END
  *   ;
  *
- * astnode: (FOR loopVarNode iterExprNode stmtSeqNode)
+ * astNode: (FOR loopVarNode iterExprNode stmtSeqNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE forStatement : SymbolT;
+PROCEDURE forStatement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1303,8 +2387,11 @@ END forStatement;
 
 
 (* --------------------------------------------------------------------------
- * private function forLoopVariants()
+ * private function forLoopVariants(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule forLoopVariants, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * forLoopVariants :=
  *   accessor ascOrDesc? ( ',' value )?
  *   ;
@@ -1315,10 +2402,10 @@ END forStatement;
  *
  * alias ascOrDesc = IncOrDecSuffix ;
  *
- * astnode: (FLV identNode ascOrDescNode identNode)
+ * astNode: (FLV identNode ascOrDescNode identNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE forLoopVariants : SymbolT;
+PROCEDURE forLoopVariants ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1326,8 +2413,11 @@ END forLoopVariants;
 
 
 (* --------------------------------------------------------------------------
- * private function iterableExpr()
+ * private function iterableExpr(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule iterableExpr, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * iterableExpr :=
  *   ordinalRange OF ordinalType | designator
  *   ;
@@ -1342,10 +2432,10 @@ END forLoopVariants;
  *
  * alias ordinalType = typeIdent ;
  *
- * astnode: desigNode | rangeNode
+ * astNode: desigNode | rangeNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE iterableExpr : SymbolT;
+PROCEDURE iterableExpr ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1353,8 +2443,11 @@ END iterableExpr;
 
 
 (* --------------------------------------------------------------------------
- * private function designator()
+ * private function designator(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule designator, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * designator :=
  *   qualident designatorTail?
  *   ;
@@ -1364,10 +2457,10 @@ END iterableExpr;
  *   ;
  *
  *
- * astnode: (DESIG )
+ * astNode: (DESIG )
  * --------------------------------------------------------------------------
  *)
-PROCEDURE designator : SymbolT;
+PROCEDURE designator ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1375,8 +2468,11 @@ END designator;
 
 
 (* --------------------------------------------------------------------------
- * private function designatorTail()
+ * private function designatorTail(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule designatorTail, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * designatorTail :=
  *   ( ( '[' exprOrSlice ']' | '^' ) ( '.' ident )* )+
  *   ;
@@ -1389,10 +2485,10 @@ END designator;
  *   '..' expression?
  *   ;
  *
- * astnode: (DESIG )
+ * astNode: (DESIG )
  * --------------------------------------------------------------------------
  *)
-PROCEDURE designatorTail : SymbolT;
+PROCEDURE designatorTail ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1400,16 +2496,19 @@ END designatorTail;
 
 
 (* --------------------------------------------------------------------------
- * private function expressionList()
+ * private function expressionList(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule expressionList, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * expressionList :=
  *   expression ( ',' expression )*
  *   ;
  *
- * astnode: (EXPRLIST exprNode1 exprNode2 ... exprNodeN)
+ * astNode: (EXPRLIST exprNode1 exprNode2 ... exprNodeN)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE expressionList : SymbolT;
+PROCEDURE expressionList ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1417,8 +2516,11 @@ END expressionList;
 
 
 (* --------------------------------------------------------------------------
- * private function expression()
+ * private function expression(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule expression, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * expression :=
  *   simpleExpression ( OperL1 simpleExpression )?
  *   ;
@@ -1427,10 +2529,10 @@ END expressionList;
  *   '=' | '#' | '<' | '<=' | '>' | '>=' | IN
  *   ;
  *
- * astnode: eqNode | neqNode | ltNode | ltEqNode | gtNode | gtEqNode | inNode
+ * astNode: eqNode | neqNode | ltNode | ltEqNode | gtNode | gtEqNode | inNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE expression : SymbolT;
+PROCEDURE expression ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1438,8 +2540,11 @@ END expression;
 
 
 (* --------------------------------------------------------------------------
- * private function simpleExpression()
+ * private function simpleExpression(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule simpleExpression, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * simpleExpression :=
  *   term ( OperL2 term )* | '-' simpleFactor
  *   ;
@@ -1452,11 +2557,11 @@ END expression;
  *
  * alias SetDiffOp = '\' ;
  *
- * astnode:
+ * astNode:
  *  plusNode | minusNode | orNode | concatNode | setDiffNode | negNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE simpleExpression : SymbolT;
+PROCEDURE simpleExpression ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1464,8 +2569,11 @@ END simpleExpression;
 
 
 (* --------------------------------------------------------------------------
- * private function term()
+ * private function term(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule term, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * term :=
  *   simpleTerm ( OperL3 simpleTerm )*
  *   ;
@@ -1474,10 +2582,10 @@ END simpleExpression;
  *   '*' | '/' | DIV | MOD | AND
  *   ;
  *
- * astnode: starNode | slashNode | divNode | modNode | andNode
+ * astNode: starNode | slashNode | divNode | modNode | andNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE term : SymbolT;
+PROCEDURE term ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1485,16 +2593,19 @@ END term;
 
 
 (* --------------------------------------------------------------------------
- * private function simpleTerm()
+ * private function simpleTerm(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule simpleTerm, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * simpleTerm :=
  *   NOT? factor
  *   ;
  *
- * astnode: (NOT exprNode) | factorNode
+ * astNode: (NOT exprNode) | factorNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE simpleTerm : SymbolT;
+PROCEDURE simpleTerm ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1502,18 +2613,21 @@ END simpleTerm;
 
 
 (* --------------------------------------------------------------------------
- * private function factor()
+ * private function factor(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule factor, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * factor :=
  *   simpleFactor ( TypeConvOp typeIdent )?
  *   ;
  *
  * alias TypeConvOp = '::' ;
  *
- * astnode: (CONV exprNode qualidentNode) | simpleFactorNode
+ * astNode: (CONV exprNode qualidentNode) | simpleFactorNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE factor : SymbolT;
+PROCEDURE factor ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1521,19 +2635,22 @@ END factor;
 
 
 (* --------------------------------------------------------------------------
- * private function simpleFactor()
+ * private function simpleFactor(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule simpleFactor, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * simpleFactor :=
  *   NumberLiteral | StringLiteral |
  *   structuredValue | designatorOrFuncCall | '(' expression ')'
  *   ;
  *
- * astnode:
+ * astNode:
  *  intValNode | quotedValNode | structValNode |
  *  desigNode | fcallNode | exprNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE simpleFactor : SymbolT;
+PROCEDURE simpleFactor ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1541,17 +2658,20 @@ END simpleFactor;
 
 
 (* --------------------------------------------------------------------------
- * private function designatorOrFuncCall()
+ * private function designatorOrFuncCall(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule designatorOrFuncCall, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * designatorOrFuncCall :=
  *   designator ( '(' expressionList? ')' )?
  *   ;
  *
- * astnode:
+ * astNode:
  *  desigNode | (FCALL desigNode exprListNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE designatorOrFuncCall : SymbolT;
+PROCEDURE designatorOrFuncCall ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
@@ -1559,8 +2679,11 @@ END designatorOrFuncCall;
 
 
 (* --------------------------------------------------------------------------
- * private function structuredValue()
+ * private function structuredValue(astNode)
  * --------------------------------------------------------------------------
+ * Parses rule structuredValue, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * structuredValue :=
  *   '{' valueComponent ( ',' valueComponent )* '}'
  *   ;
@@ -1572,11 +2695,11 @@ END designatorOrFuncCall;
  *
  * alias runtimeExpression = expression ;
  *
- * astnode:
+ * astNode:
  *  (STRUCTVAL exprListNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE structuredValue : SymbolT;
+PROCEDURE structuredValue ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
 
