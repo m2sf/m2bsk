@@ -1,0 +1,338 @@
+FOLLOW Sets for Modula-2 R10 Bootstrap Kernel
+
+compilationUnit =
+  { EOF };
+  
+definitionModule =
+  { EOF };
+  
+import =
+  { FIRST(import),
+    FIRST(definition),
+    FIRST(block),
+    END };
+  
+ident =
+  { Dot,
+    FOLLOW(qualident),
+    Comma,
+    FOLLOW(identList),
+    Equal,
+    OF,
+    LeftParen,
+    Colon,
+    FOLLOW(procedureSignature),
+    Semicolon,
+    PlusPlus,
+    MinusMinus,
+    FOLLOW(forLoopVariants),
+    Dot,
+    FIRST(designatorTail),
+    FOLLOW(designatorTail) };
+  
+qualident =
+  { Semicolon,
+    FOLLOW(type),
+    FOLLOW(aliasType),
+    FOLLOW(subrangeType),
+    Comma,
+    FOLLOW(setType),
+    FOLLOW(arrayType),
+    LeftParen,
+    FOLLOW(pointerType),
+    FOLLOW(procedureType),
+    FOLLOW(nonAttrFormalType),
+    FOLLOW(procedureSignature),
+    FOLLOW(namedAliasDecl),
+    FOLLOW(anonType),
+    FOLLOW(iterableExpr),
+    FOLLOW(designator),
+    FIRST(designatorTail),
+    FOLLOW(factor) };
+
+identList =
+  { Colon,
+    RightParen };
+
+definition =
+  { FIRST(definition),
+    END };
+
+constDefinition =
+  { Semicolon };
+
+typeDefinition =
+  { Semicolon };
+
+type =
+  { FOLLOW(typeDefinition),
+    FOLLOW(typeDeclaration) };
+
+aliasType =
+  { FOLLOW(type) };
+
+derivedType =
+  { FOLLOW(type) };
+
+subrangeType =
+  { FOLLOW(type),
+    FOLLOW(anonType) };
+
+range =
+  { OF };
+
+enumType =
+  { FOLLOW(type) };
+
+setType =
+  { FOLLOW(type) };
+
+arrayType =
+  { FOLLOW(type) };
+
+recordType =
+  { FOLLOW(type) };
+
+recTypeToExtend =
+  { RightParen };
+
+fieldList =
+  { Semicolon,
+    END };
+
+pointerType =
+  { FOLLOW(type) };
+
+procedureType =
+  { FOLLOW(type),
+    FOLLOW(anonType) };
+
+formalType =
+  { Comma,
+    RightParen };
+
+nonAttrFormalType =
+  { FOLLOW(formalType),
+    FOLLOW(attributedFormalType),
+    FOLLOW(simpleVariadicFormalType),
+    FOLLOW(formalParams),
+    FOLLOW(attributedFormalParams) };
+
+castingFormalType =
+  { FOLLOW(nonAttrFormalType) };
+
+addressTypeIdent =
+  { FOLLOW(castingFormalType) };
+
+attributedFormalType =
+  { FOLLOW(formalType) };
+
+simpleVariadicFormalType =
+  { FOLLOW(attributedFormalType),
+    FOLLOW(formalParams),
+    FOLLOW(attributedFormalParams) };
+
+procedureHeader =
+  { Semicolon };
+
+procedureSignature =
+  { FOLLOW(procedureHeader) };
+
+formalParams =
+  { RightParen,
+    Semicolon };
+
+attributedFormalParams =
+  { FOLLOW(formalParams) };
+
+implOrPrgmModule =
+  { EOF };
+
+block =
+  { StdIdent,
+    FIRST(ident) };
+
+declaration =
+  { FIRST(declaration),
+    BEGIN,
+    END };
+
+aliasDeclaration =
+  { Semicolon };
+  
+namedAliasDecl =
+  { FOLLOW(aliasDeclaration) };
+  
+qualifiedWildcard =
+  { FOLLOW(namedAliasDecl),
+    FOLLOW(wildcardAliasDecl) };
+  
+wildcardAliasDecl =
+  { FOLLOW(aliasDeclaration) };
+  
+typeDeclaration =
+  { Semicolon };
+  
+indeterminateType =
+  { FOLLOW(typeDeclaration) };
+  
+indeterminateField =
+  { END };
+  
+varOrFieldDeclaration =
+  { FOLLOW(fieldList),
+    Semicolon };
+  
+anonType =
+  { FOLLOW(varOrFieldDeclaration) };
+  
+statementSequence =
+  { ELSIF,
+    ELSE,
+    END,
+    FOLLOW(case),
+    UNTIL };
+
+statement =
+  { Semicolon,
+    FOLLOW(statementSequence) };
+
+toDoList =
+  { FOLLOW(statement) };
+  
+trackingRef =
+  { FIRST(taskToDo) };
+  
+taskToDo =
+  { Semicolon,
+    FOLLOW(toDoList) };
+  
+memMgtOperation =
+  { FOLLOW(statement) };
+
+updateOrProcCall =
+  { FOLLOW(statement) };
+  
+returnStatement =
+  { FOLLOW(statement) };
+  
+ifStatement =
+  { FOLLOW(statement) };
+
+caseStatement =
+  { FOLLOW(statement) };
+  
+case =
+  { VerticalBar,
+    ELSE,
+    END };
+  
+caseLabels =
+  { Comma,
+    Colon };
+  
+loopStatement =
+  { FOLLOW(statement) };
+
+whileStatement =
+  { FOLLOW(statement) };
+
+repeatStatement =
+  { FOLLOW(statement) };
+
+forStatement =
+  { FOLLOW(statement) };
+  
+forLoopVariants =
+  { IN };
+  
+iterableExpr =
+  { DO };
+  
+ordinalRange =
+  { OF };
+  
+designator =
+  { OF,
+    FOLLOW(memMgtOperation),
+    PlusPlus,
+    MinusMinus,
+    Assign,
+    LeftParen,
+    FOLLOW(iterableExpr),
+    FOLLOW(designatorOrFuncCall) };
+  
+designatorTail =
+  { FOLLOW(designator) };
+  
+exprOrSlice =
+  { RightBracket };
+  
+expressionList =
+  { RightParen };
+  
+expression =
+  { FOLLOW(constDefinition),
+    DotDot,
+    RightBracket,
+    OF,
+    Semicolon,
+    RightParen,
+    FOLLOW(taskToDo),
+    FOLLOW(memMgtOperation),
+    FOLLOW(updateOrProcCall),
+    FOLLOW(returnStatement),
+    THEN,
+    FOLLOW(caseLabels),
+    DO,
+    FOLLOW(repeatStatement),
+    FOLLOW(exprOrSlice),
+    Comma,
+    FOLLOW(expressionList),
+    FOLLOW(valueComponent) };
+  
+simpleExpression =
+  { Equal,
+    NotEqual,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    IN,
+    FOLLOW(expression) };
+  
+term =
+  { Plus,
+    Minus,
+    OR,
+    Ampersand,
+    Backslash,
+    FOLLOW(simpleExpression) };
+  
+simpleTerm =
+  { Asterisk,
+    Slash,
+    DIV,
+    MOD,
+    AND,
+    FOLLOW(term) };
+  
+factor =
+  { FOLLOW(simpleTerm) };
+  
+simpleFactor =
+  { FOLLOW(simpleExpression),
+    DoubleColon,
+    FOLLOW(factor) };
+  
+designatorOrFuncCall =
+  { FOLLOW(simpleFactor) };
+  
+structuredValue =
+  { FOLLOW(simpleFactor) };
+  
+valueComponent =
+  { Comma,
+    RightBrace };
+  
+END OF FILE

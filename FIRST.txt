@@ -1,0 +1,392 @@
+FIRST Sets for Modula-2 R10 Bootstrap Kernel
+
+compilationUnit =
+  { DEFINITION,
+    IMPLEMENTATION,
+    MODULE };
+  
+definitionModule =
+  { DEFINITION };
+  
+import =
+  { IMPORT };
+
+ident =
+  { StdIdent,
+    ForeignIdent };
+  
+qualident =
+  { StdIdent,
+    ForeignIdent };
+
+identList =
+  { StdIdent,
+    ForeignIdent };
+
+definition =
+  { CONST,
+    TYPE,
+    VAR,
+    PROCEDURE,
+    TO };
+
+constDefinition =
+  { StdIdent,
+    ForeignIdent };
+
+typeDefinition =
+  { StdIdent,
+    ForeignIdent };
+
+type =
+  { ALIAS,
+    StdIdent,
+    ForeignIdent,
+    LeftBracket,
+    LeftParen,
+    SET,
+    ARRAY,
+    RECORD,
+    POINTER,
+    PROCEDURE };
+
+aliasType =
+  { ALIAS };
+
+derivedType =
+  { StdIdent,
+    ForeignIdent };
+
+subrangeType =
+  { LeftBracket };
+
+range =
+  { LeftBracket };
+
+enumType =
+  { LeftParen };
+
+setType =
+  { SET };
+
+arrayType =
+  { ARRAY };
+
+recordType =
+  { RECORD };
+
+recTypeToExtend =
+  { StdIdent,
+    ForeignIdent,
+    NIL };
+
+fieldList =
+  { StdIdent,
+    ForeignIdent };
+
+pointerType =
+  { POINTER };
+
+procedureType =
+  { PROCEDURE };
+
+formalType =
+  { ARRAY,
+    StdIdent,
+    ForeignIdent,
+    CAST,
+    CONST,
+    VAR };
+
+nonAttrFormalType =
+  { ARRAY,
+    StdIdent,
+    ForeignIdent,
+    CAST };
+
+castingFormalType =
+  { CAST };
+
+addressTypeIdent =
+  { UNSAFE,
+    ADDRESS };
+
+attributedFormalType =
+  { CONST,
+    VAR };
+
+simpleVariadicFormalType =
+  { ARGLIST };
+
+procedureHeader =
+  { PROCEDURE };
+
+procedureSignature =
+  { StdIdent,
+    ForeignIdent };
+
+formalParameters =
+  { StdIdent,
+    ForeignIdent,
+    CONST,
+    VAR };
+
+attributedFormalParams =
+  { CONST,
+    VAR };
+
+implOrPrgmModule =
+  { IMPLEMENTATION,
+    MODULE };
+
+block =
+  { ALIAS,
+    CONST,
+    TYPE,
+    VAR,
+    PROCEDURE,
+    TO,
+    BEGIN,
+    END };
+
+declaration =
+  { ALIAS,
+    CONST,
+    TYPE,
+    VAR,
+    PROCEDURE,
+    TO };
+
+aliasDeclaration =
+  { StdIdent,
+    ForeignIdent,
+    Asterisk };
+  
+namedAliasDecl =
+  { StdIdent,
+    ForeignIdent };
+  
+qualifiedWildcard =
+  { StdIdent,
+    ForeignIdent };
+  
+wildcardAliasDecl =
+  { Asterisk };
+  
+typeDeclaration =
+  { StdIdent,
+    ForeignIdent };
+  
+indeterminateType =
+  { IN };
+  
+indeterminateField =
+  { Plus };
+  
+varOrFieldDeclaration =
+  { StdIdent,
+    ForeignIdent };
+  
+anonType =
+  { ARRAY,
+    LeftBracket,
+    PROCEDURE };
+  
+statementSequence =
+  { NEW,
+    RELEASE,
+    StdIdent,
+    ForeignIdent,
+    IF,
+    CASE,
+    LOOP,
+    WHILE,
+    REPEAT,
+    FOR,
+    RETURN,
+    EXIT };
+
+statement =
+  { NEW,
+    RELEASE,
+    StdIdent,
+    ForeignIdent,
+    IF,
+    CASE,
+    LOOP,
+    WHILE,
+    REPEAT,
+    FOR,
+    RETURN,
+    EXIT };
+
+toDoList =
+  { TO };
+  
+trackingRef =
+  { LeftParen };
+  
+taskToDo =
+  { StringLiteral };
+  
+memMgtOperation =
+  { NEW,
+    RELEASE };
+
+updateOrProcCall =
+  { StdIdent,
+    ForeignIdent };
+  
+returnStatement =
+  { RETURN };
+  
+ifStatement =
+  { IF };
+
+caseStatement =
+  { CASE };
+  
+case =
+  { NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen,
+    Minus };
+  
+caseLabels =
+  { NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen,
+    Minus };
+  
+loopStatement =
+  { LOOP };
+
+whileStatement =
+  { WHILE };
+
+repeatStatement =
+  { REPEAT };
+
+forStatement =
+  { FOR };
+  
+forLoopVariants =
+  { StdIdent,
+    ForeignIdent };
+  
+iterableExpr =
+  { LeftBracket,
+    StdIdent,
+    ForeignIdent };
+  
+ordinalRange =
+  { LeftBracket };
+  
+designator =
+  { StdIdent,
+    ForeignIdent };
+  
+designatorTail =
+  { LeftBracket,
+    Caret };
+  
+exprOrSlice =
+  { Minus,
+    NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParent };
+  
+expressionList =
+  { Minus,
+    NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParent };
+  
+expression =
+  { NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen,
+    Minus };
+  
+simpleExpression =
+  { NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen,
+    Minus };
+  
+term =
+  { NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen };
+  
+simpleTerm =
+  { NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen };
+  
+factor =
+  { NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen };
+  
+simpleFactor =
+  { NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen };
+  
+designatorOrFuncCall =
+  { StdIdent,
+    ForeignIdent };
+  
+structuredValue =
+  { LeftBrace };
+  
+valueComponent =
+  { NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    ForeignIdent,
+    LeftParen,
+    Minus };
+  
+END OF FILE
