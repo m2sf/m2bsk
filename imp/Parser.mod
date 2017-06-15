@@ -2284,12 +2284,14 @@ END block;
  *
  * declaration :=
  *   ALIAS ( aliasDeclaration ';' )+ |
- *   CONST ( ident '=' constExpression ';' )+ |
+ *   CONST ( constDeclaration ';' )+ |
  *   TYPE ( typeDeclaration ';' )+ |
  *   VAR ( varOrFieldDeclaration ';' )+ |
  *   procedureHeader ';' block ident ';' |
  *   toDoList ';'
  *   ;
+ *
+ * alias constDeclaration = constDefinition ;
  *
  * astNode: (DECLLIST declNode1 declNode2 ... declNodeN)
  * --------------------------------------------------------------------------
@@ -2297,8 +2299,118 @@ END block;
 PROCEDURE declaration ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
+  PARSER_DEBUG_INFO("declaration");
 
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  CASE lookahead.token OF
+    (* ALIAS ( aliasDeclaration ';' )+ | *)
+    Token.Alias :
+      lookahead := aliasDeclSection(astNode)
+      
+   (* CONST ( constDeclaration ';' )+ | *)
+ | Token.Const :
+      lookahead := constDeclSection(astNode)
+      
+   (* TYPE ( typeDeclaration ';' )+ | *)
+  | Token.Type :
+      lookahead := typeDeclSection(astNode)
+  
+   (* VAR ( varOrFieldDeclaration ';' )+ | *)
+  | Token.Var :
+      lookahead := varDeclSection(astNode)
+  
+   (* procedureHeader ';' block ident ';' | *)
+  | Token.Procedure :
+      (* procedureHeader *)
+      lookahead := procDeclaration(astNode);
+            
+   (* toDoList ';' *)
+  | Token.To :  
+      (* toDoList *)
+      lookahead := toDoList(astNode);
+      
+      (* ';' *)
+      IF matchToken(Token.Semicolon) THEN
+        (* consume semicolon *)
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(Declaration))
+      END (* IF *)
+      
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Declaration))
+  
+  END; (* CASE *)
+    
+  RETURN lookahead
 END declaration;
+
+
+(* --------------------------------------------------------------------------
+ * private function aliasDeclSection(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule aliasDeclSection, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * aliasDeclSection :=
+ *   ALIAS ( aliasDeclaration ';' )+
+ *   ;
+ *
+ * astNode: aliasDeclListNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE aliasDeclSection ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  aliasDecl : AstT;
+  tmplist : AstQueueT;
+
+BEGIN
+  PARSER_DEBUG_INFO("aliasDeclSection");
+  
+  AstQueue.New(tmplist);
+  
+  (* ALIAS *)
+  lookahead := Lexer.ConsumeSym(lexer);
+  
+  (* aliasDeclaration *)
+  IF matchSet(FIRST(AliasDeclaration)) THEN
+    lookahead := aliasDeclaration(aliasDecl);
+    AstQueue.Enqueue(tmplist, aliasDecl)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(AliasDeclaration))
+  END (* IF *)
+  
+  (* ';' *)
+  IF matchToken(Token.Semicolon) THEN
+    (* consume semicolon *)
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(ConstDefinition))
+  END (* IF *)
+  
+  (* ( aliasDeclaration ';' )* *)
+  WHILE inFIRST(AliasDeclaration, lookahead.token) DO
+    (* aliasDeclaration *)
+    lookahead := constDefinition(aliasDecl);
+    AstQueue.Enqueue(tmplist, aliasDecl)
+    
+    (* ';' *)
+    IF matchToken(Token.Semicolon) THEN
+      (* consume semicolon *)
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(AliasDeclaration))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewListNode(AstNodeType.AliasDecl, tmplist);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
+END aliasDeclSection;
 
 
 (* --------------------------------------------------------------------------
@@ -2317,7 +2429,18 @@ END declaration;
 PROCEDURE aliasDeclaration ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("aliasDeclSection");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* namedAliasDecl | wildcardAliasDecl *)
+  IF lookahead.token = Token.Asterisk THEN
+    lookahead := wildcardAliasDecl(astNode)
+  ELSE
+    lookahead := namedAliasDecl(astNode)
+  END; (* IF *)
+  
+  RETURN lookahead
 END aliasDeclaration;
 
 
@@ -2329,10 +2452,10 @@ END aliasDeclaration;
  *
  * namedAliasDecl :=
  *   aliasName
- *     ( '=' qualifiedName | ( ',' aliasName )* '=' qualifiedWildcard )
+ *     ( '=' qualifiedName | ( ',' aliasName )+ '=' qualifiedWildcard )
  *   ;
  *
- * alias aliasName = StdIdent ;
+ * alias aliasName = ident ;
  *
  * alias qualifiedName = qualident ;
  *
@@ -2347,8 +2470,87 @@ END aliasDeclaration;
  *)
 PROCEDURE namedAliasDecl ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  aliasId, translation: AstT;
+  tmplist : AstQueueT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("aliasDeclSection");
+  
+  AstQueue.New(tmplist);
+  
+  (* aliasName *)
+  lookahead := ident(aliasId);
+  
+  (* '=' qualifiedName | ( ',' aliasName )+ '=' qualifiedWildcard *)
+  IF matchSet(FIRST(NamedAliasDeclTail)) THEN
+    
+    (* '=' qualifiedName | *)
+    IF lookahead.token = Token.Equal THEN
+      (* '=' *)
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* qualifiedName *)
+      IF matchSet(FIRST(Qualident)) THEN
+        lookahead := qualident(translation)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(namedAliasDecl))
+      END; (* IF *)
+      
+      astNode := AST.NewNode(AstNodeType.AliasDecl, aliasId, translation)
+      
+    ELSE (* ( ',' aliasName )+ '=' qualifiedWildcard *)
+      AstQueue.Enqueue(tmplist, aliasId);
+      
+      (* ( ',' aliasName )+ *)
+      LOOP
+        IF matchToken(Token.Comma) THEN
+          (* ',' *)
+          lookahead := Lexer.consumeSym(lexer);
+          
+          (* aliasName *)
+          IF matchSet(FIRST(Ident)) THEN
+            lookahead := ident(aliasId);
+            AstQueue.Enqueue(tmplist, aliasId)
+            
+          ELSE (* resync *)
+            lookahead := skipToMatchSet(FOLLOW(Ident))
+          END (* IF *)
+          
+        ELSE (* resync *)
+          lookahead := skipToMatch();
+          EXIT
+        END (* IF *)
+        
+      END; (* LOOP *)
+      
+      (* '=' qualifiedWildcard *)
+      IF matchToken(Token.Equal) THEN
+        (* '=' *)
+        lookahead := Lexer.consumeSym(lexer);
+        
+        (* qualifiedWildcard *)
+        IF matchSet(FIRST(QualifiedWildcard)) THEN
+          lookahead := qualifiedWildcard(translation)
+          
+        ELSE (* resync *)
+          lookahead := skipToMatchSet(FOLLOW(namedAliasDecl))
+        END (* IF *)
+        
+        (* TO DO : resolve aliases in tmplist using wildcard *)
+        
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(namedAliasDecl))
+      END; (* IF *)
+      
+      astNode := AST.NewListNode(AstNodeType.AliasDeclList, tmplist)
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(namedAliasDecl))
+  END; (* IF *)
+  
+  RETURN lookahead
 END namedAliasDecl;
 
 
@@ -2368,7 +2570,31 @@ END namedAliasDecl;
 PROCEDURE wildcardAliasDecl ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("aliasDeclSection");
+  
+  (* '*' *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* '=' *)
+  IF matchToken(Token.Equal) THEN
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* qualifiedWildcard *)
+    IF matchSet(FIRST(QualifiedWildcard)) THEN
+      lookahead := qualifiedWildcard(translation);
+      
+      (* build AST node and pass it back in astNode *)
+      astNode := AST.NewNode(AstNodeType.WcAlias, translation);
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(WildcardAliasDecl))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(WildcardAliasDecl))
+  END; (* IF *)
+  
+  RETURN lookahead
 END wildcardAliasDecl;
 
 
@@ -2477,6 +2703,75 @@ PROCEDURE anonType ( VAR astNode : AstT ) : SymbolT;
 BEGIN
 
 END anonType;
+
+
+(* --------------------------------------------------------------------------
+ * private function procDeclaration(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule procDeclaration, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * procDeclaration :=
+ *   procedureHeader ';' block ident ';'
+ *   ;
+ *
+ * astNode: aliasDeclNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE procDeclaration ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  procId, procHeader, blockNode : AstT;
+  ident1, ident2 : StringT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("procDeclaration");
+    
+  (* procedureHeader *)
+  lookahead := procedureHeader(procHeader);
+  procId := AST.subnodeForIndex(procHeader, 0);
+  ident1 := AST.valueForIndex(procId, 0);
+  
+  (* ';' *)
+  IF matchToken(Token.Semicolon) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(Block))
+  END; (* IF *)
+  
+  (* block *)
+  IF matchSet(FIRST(Block)) THEN
+    lookahead := block(blockNode);
+    
+    (* ident *)
+    IF matchSet(FIRST(Ident)) THEN
+      ident2 := lookahead.lexeme;
+      lookahead := Lexer.ConsumeSym(lexer);
+    
+      IF ident1 # ident2 THEN
+        (* TO DO: report error -- procedure identifiers don't match *) 
+      END; (* IF *)
+    
+      (* ';' *)
+      IF matchToken(Token.Semicolon, FOLLOW(Declaration)) THEN
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(Declaration))
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(Declaration))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Declaration))
+  END (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.ProcDecl, procHeader, blockNode);
+  
+  RETURN lookahead
+END procDeclaration;
 
 
 (* --------------------------------------------------------------------------
