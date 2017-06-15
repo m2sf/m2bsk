@@ -24,7 +24,6 @@ FROM NonTerminals IMPORT FIRST, FOLLOW;
 (* Parser context *)
 
 VAR
-  ast : AstT;
   lexer : LexerT;
   stats : Statistics;
 
@@ -206,6 +205,9 @@ END skipToMatchTokenOrSet;
 (* --------------------------------------------------------------------------
  * private function compilationUnit()
  * --------------------------------------------------------------------------
+ * Parses rule compilationUnit, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
  * compilationUnit :=
  *   definitionModule | implOrPrgmModule
  *   ;
@@ -299,7 +301,7 @@ BEGIN
     AstQueue.Enqueue(tmplist, implist)
   END (* WHILE *)
   
-  implist := AST.NewListNode(AstNodeTypeT.ImpList, tmplist);
+  implist := AST.NewListNode(AstNodeType.ImpList, tmplist);
   tmplist:= AstQueue.ResetQueue(tmplist);
   
   (* definition* *)
@@ -311,7 +313,7 @@ BEGIN
     AstQueue.Enqueue(tmplist, deflist)
   END (* WHILE *)
   
-  deflist := AST.NewListNode(AstNodeTypeT.DefList, tmplist);
+  deflist := AST.NewListNode(AstNodeType.DefList, tmplist);
   tmplist := AstQueue.ResetQueue(tmplist);
   
   (* END *)
@@ -382,7 +384,7 @@ BEGIN
   (* libIdent *)
   IF matchToken(Token.StdIdent) THEN
     lookahead := Lexer.consumeSym(lexer);
-    libId := AstNewTerminalNode(AstNodeTypeT.Ident, lookahead.lexeme);
+    libId := AstNewTerminalNode(AstNodeType.Ident, lookahead.lexeme);
     LexQueue.Enqueue(tmplist, libId);
         
     (* ( ',' libIdent )* *)
@@ -392,7 +394,7 @@ BEGIN
       (* libIdent *)
       IF matchToken(Token.StdIdent) THEN
         lookahead := Lexer.ConsumeSym(lexer);
-        libId := AstNewTerminalNode(AstNodeTypeT.Ident, lookahead.lexeme);
+        libId := AstNewTerminalNode(AstNodeType.Ident, lookahead.lexeme);
         LexQueue.Enqueue(templist, libId)
         
       ELSE (* resync *)
@@ -405,7 +407,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewListNode(AstNodeTypeT.Implist, tmplist);
+  astNode := AST.NewListNode(AstNodeType.Implist, tmplist);
   AstQueue.Release(tmplist);
   
   RETURN lookahead
@@ -441,7 +443,7 @@ BEGIN
   lookahead := Lexer.consumeSym(lexer)
     
   (* build AST node and pass it back in astNode *)
-  ast := AST.NewTerminalNode(AstNodeTypeT.Ident, lexeme);
+  ast := AST.NewTerminalNode(AstNodeType.Ident, lexeme);
   
   RETURN lookahead
 END ident;
@@ -492,7 +494,7 @@ BEGIN
   END; (* WHILE *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewTerminalListNode(AstNodeTypeT.Qualident, tmplist);
+  astNode := AST.NewTerminalListNode(AstNodeType.Qualident, tmplist);
   LexQueue.Release(tmplist);
   
   RETURN lookahead
@@ -544,7 +546,7 @@ BEGIN
   END; (* WHILE *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewTerminalListNode(AstNodeTypeT.IdentList, tmplist);
+  astNode := AST.NewTerminalListNode(AstNodeType.IdentList, tmplist);
   LexQueue.Release(tmplist);
   
   RETURN lookahead
@@ -729,7 +731,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeTypeT.ConstDef, constId, expr);
+  astNode := AST.NewNode(AstNodeType.ConstDef, constId, expr);
   
   RETURN lookahead
 END constDefinition;
@@ -854,7 +856,7 @@ BEGIN
   END; (* IF *)
     
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeTypeT.TypeDef, typeId, typeDef);
+  astNode := AST.NewNode(AstNodeType.TypeDef, typeId, typeDef);
   
   RETURN lookahead
 END typeDefinition;
@@ -974,7 +976,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeTypeT.AliasType, baseType);
+  astNode := AST.NewNode(AstNodeType.AliasType, baseType);
   
   RETURN lookahead
 END aliasType;
@@ -1134,7 +1136,7 @@ BEGIN
   END; (* IF *)
     
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeTypeT.EnumType, baseType, valueList);
+  astNode := AST.NewNode(AstNodeType.EnumType, baseType, valueList);
   
   RETURN lookahead
 END enumType;
@@ -1182,7 +1184,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in ast *)
-  astNode := AST.NewNode(AstNodeTypeT.SetType, elemType);
+  astNode := AST.NewNode(AstNodeType.SetType, elemType);
   
   RETURN lookahead
 END setType;
@@ -1240,7 +1242,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeTypeT.ArrayType, valueCount, baseType);
+  astNode := AST.NewNode(AstNodeType.ArrayType, valueCount, baseType);
   
   RETURN lookahead
 END arrayType;
@@ -1334,7 +1336,7 @@ BEGIN
     
   (* build AST node and pass it back in astNode *)
   fieldListSeq := AST.NewListNode(AstNodeType.FieldListSeq, tmplist);
-  astNode := AST.NewNode(AstNodeTypeT.RecordType, baseType, fieldListSeq);
+  astNode := AST.NewNode(AstNodeType.RecordType, baseType, fieldListSeq);
   AstQueue.Release(tmplist);
   
   RETURN lookahead
@@ -1381,7 +1383,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeTypeT.PointerType, baseType);
+  astNode := AST.NewNode(AstNodeType.PointerType, baseType);
   
   RETURN lookahead
 END pointerType;
@@ -1677,8 +1679,46 @@ END castingFormalType;
  *)
 PROCEDURE addressTypeIdent ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+ tmplist : LexQueueT;
+ 
 BEGIN
-
+  PARSER_DEBUG_INFO("addressTypeIdent");
+  
+  LexQueue.New(tmplist);
+  
+  lookahead = Lexer.lookaheadSym(lexer);
+  
+  (* ( UNSAFE '.' )?  *)
+  IF lookahead.token = Token.Address THEN
+  
+    (* UNSAFE *)
+    LexQueue.Enqueue(tmplist, token.lexeme);
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* '.' *)
+    IF matchToken(Token.Dot) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Address, FOLLOW(addressTypeIdent))
+    END (* IF *)
+  END; (* IF *)
+  
+  (* ADDRESS *)
+  IF matchToken(Token.Address) THEN
+    LexQueue.Enqueue(tmplist, token.lexeme);
+    lookahead := Lexer.consumeSym(lexer);
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(CastingFormalType))
+  END (* IF *)
+    
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewTerminalListNode(AstNodeType.Qualident, tmplist);
+  LexQueue.Release(tmplist);
+  
+  RETURN lookahead
 END addressTypeIdent;
 
 
@@ -1698,15 +1738,41 @@ END addressTypeIdent;
 PROCEDURE attributedFormalType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
+  ftype : AstT;
   nodeType : AstNodeTypeT;
   
 BEGIN
   PARSER_DEBUG_INFO("attributedFormalType");
   
+  lookahead := Lexer.lookaheadSym(lexer);
   
+  (* CONST | VAR *)
+  IF lookahead.token = Token.Const THEN
+    (* CONST *)
+    nodeType := AstNodeType.ConstP
+  ELSE
+    (* VAR *)
+    nodeType := AstNodeType.VarP
+  END; (* IF *)
+  
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* nonAttrFormalType | simpleVariadicFormalType *)
+  IF matchSet(FIRST(attrFormalTypeTail)) THEN
+    
+    (* simpleVariadicFormalType | *)
+    IF lookahead.token = Token.ArgList THEN
+      lookahead := simpleVariadicFormalType(ftype)
+    ELSE (* nonAttrFormalType *)
+      lookahead := nonAttrFormalType(ftype)
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(attributedFormalType))
+  END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(nodeType, formalTypeNode);
+  astNode := AST.NewNode(nodeType, ftype);
   
   RETURN lookahead
 END attributedFormalType;
@@ -1727,13 +1793,32 @@ END attributedFormalType;
  *)
 PROCEDURE simpleVariadicFormalType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  ftype : AstT;
+  
 BEGIN
   PARSER_DEBUG_INFO("simpleVariadicFormalType");
   
+  (* ARGLIST *)
+  lookahead := Lexer.consumeSym(lexer);
   
+  (* OF *)
+  IF matchToken(Token.Of) THEN
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* nonAttrFormalType *)
+    IF matchSet(FIRST(NonAttrFormalType)) THEN
+      lookahead := nonAttrFormalType(ftype)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(SimpleVariadicFormalType))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(SimpleVariadicFormalType))
+  END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.ArgList, formalTypeNode);
+  astNode := AST.NewNode(AstNodeType.ArgList, ftype);
   
   RETURN lookahead
 END simpleVariadicFormalType;
