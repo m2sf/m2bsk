@@ -2599,6 +2599,38 @@ END wildcardAliasDecl;
 
 
 (* --------------------------------------------------------------------------
+ * private function qualifiedWildcard(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule qualifiedWildcard, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * qualifiedWildcard :=
+ *   qualident '.*'
+ *   ;
+ *
+ * astNode: qualidentNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE qualifiedWildcard ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+  PARSER_DEBUG_INFO("qualifiedWildcard");
+  
+  (* qualident *)
+  lookahead := qualident(astnode);
+  
+  (* '.*' *)
+  IF matchToken() THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(qualifiedWildcard))
+  END; (* IF *)
+  
+  RETURN lookahead
+END qualifiedWildcard;
+
+
+(* --------------------------------------------------------------------------
  * private function typeDeclaration(astNode)
  * --------------------------------------------------------------------------
  * Parses rule typeDeclaration, constructs its AST node, passes the node back
@@ -2613,8 +2645,43 @@ END wildcardAliasDecl;
  *)
 PROCEDURE typeDeclaration ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  typeId, typeDecl : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("typeDeclaration");
+  
+  (* ident *)
+  lookahead := ident(typeId);
+  
+  (* '=' *)
+  IF matchToken(Token.Equal) THEN
+    (* consume '=' *)
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE
+    (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSet(Token.In, FIRST(Type))
+  END; (* IF *)
+  
+  (* indeterminateType | type *)
+  IF matchTokenOrSet(Token.In, FIRST(type)) THEN
+    
+    (* indeterminateType | *)
+    IF lookahead.token = Token.In THEN
+      lookahead := indeterminateType(typeDecl)
+    ELSE (* type *)
+      lookahead := type(typeDecl)
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(typeDeclaration))
+  END; (* IF *)
+    
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.TypeDecl, typeId, typeDecl);
+  
+  RETURN lookahead
 END typeDeclaration;
 
 
@@ -2625,8 +2692,7 @@ END typeDeclaration;
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
  * indeterminateType :=
- *   IN RECORD
- *     fieldDeclaration ( fieldDeclaration ';' ) indeterminateField END
+ *   IN RECORD ( fieldDeclaration ';' )+ indeterminateField END
  *   ;
  *
  * alias fieldDeclaration = varOrFieldDeclaration ;
@@ -2636,8 +2702,64 @@ END typeDeclaration;
  *)
 PROCEDURE indeterminateType ( VAR astNode : AstT ) : SymbolT;
 
-BEGIN
+VAR
+  fieldList, fieldListSeq, inField : AstT;
+  tmplist : AstQueueT;
 
+BEGIN
+  PARSER_DEBUG_INFO("typeDeclaration");
+  
+  AstQueue.New(tmplist);
+  
+  (* IN *)
+  lookahead := Lexer.consumeSym(lexer);
+      
+  (* RECORD *)
+  IF matchToken(Token.Record) THEN
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* ( fieldDeclaration ';' )+ *)
+    REPEAT
+      (* fieldDeclaration *)
+      IF matchSet(FIRST(VarOrFieldDeclaration)) THEN
+        lookahead := varOrFieldDeclaration(fieldList);
+        AstQueue.Enqueue(tmplist, fieldList);
+        
+        (* ';' *)
+        IF matchToken(Token.Semicolon) THEN
+          lookahead := Lexer.consumeSym(lexer)
+        ELSE (* resync *)
+          lookahead := skiptToMatchSet(FIRST(VarOrFieldDeclaration))
+        END (* IF *)
+        
+      ELSE (* resync *)
+        lookahead := skiptToMatchSet(FIRST(VarOrFieldDeclaration))
+      END (* IF *)
+    UNTIL NOT inFIRST(VarOrFieldDeclaration, lookahead.token);
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(IndeterminateField))
+  END; (* IF *)
+  
+  (* indeterminateType *)
+  IF matchSet(FIRST(indeterminateField)) THEN
+    lookahead := indeterminateField(inField)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(IndeterminateType))
+  END; (* IF *)
+  
+  IF matchToken(Token.End) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE
+    lookahead := skipToMatchSet(FOLLOW(IndeterminateType))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  fieldListSeq := AST.NewListNode(AstNodeType.FieldListSeq, tmplist);
+  astNode := AST.NewNode(AstNodeType.InRec, fieldListSeq, inField);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
 END indeterminateType;
 
 
@@ -2658,8 +2780,75 @@ END indeterminateType;
  *)
 PROCEDURE indeterminateField ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  fieldId, discrId, typeId : AstT;
+  
 BEGIN
+  PARSER_DEBUG_INFO("typeDeclaration");
+  
+  (* '+' *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ident *)
+  IF matchSet(FIRST(Ident)) THEN
+    lookahead := ident(fieldId)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Colon, FOLLOW(indeterminateField))
+  END; (* IF *)
 
+  (* ':' *)
+  IF matchToken(Token.Colon) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Bare, FOLLOW(indeterminateField))
+  END; (* IF *)
+  
+  (* BARE *)
+  IF matchToken(Token.Bare) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Array, FOLLOW(indeterminateField))
+  END; (* IF *)
+  
+  (* ARRAY *)
+  IF matchToken(Token.Bare) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE
+    lookahead :=
+      skipToMatchTokenOrSet(Token.StdIdent, FOLLOW(indeterminateField))
+  END; (* IF *)
+  
+  (* discriminantFieldIdent *)
+  IF matchSet(FIRST(Ident)) THEN
+    lookahead := ident(discrId)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Of, FOLLOW(indeterminateField))
+  END; (* IF *)
+  
+  (* OF *)
+  IF matchToken(Token.Of) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE
+    lookahead :=
+      skipToMatchTokenOrSet(Token.StdIdent, FOLLOW(indeterminateField))
+  END; (* IF *)
+  
+  (* typeIdent *)
+  IF matchSet(FIRST(Ident)) THEN
+    lookahead := qualident(typeId)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Of, FOLLOW(indeterminateField))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.InField, fieldId, discrId, typeId);
+  
+  RETURN lookahead
 END indeterminateField;
 
 
