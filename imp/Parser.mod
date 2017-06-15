@@ -18,7 +18,7 @@ FROM Token IMPORT TokenT; (* Token.Token *)
 FROM TokenSet IMPORT TokenSetT; (* TokenSet.TokenSet *)
 FROM String IMPORT StringT; (* String.String *)
 
-FROM NonTerminals IMPORT FIRST, FOLLOW;
+FROM NonTerminals IMPORT FIRST, FOLLOW, inFIRST;
 
 
 (* Parser context *)
@@ -359,8 +359,8 @@ BEGIN
     
     (* moduleIdent *)
     IF matchToken(Token.StdIdent) THEN
-      lookahead := Lexer.ConsumeSym(lexer);
       ident2 := lookahead.lexeme;
+      lookahead := Lexer.ConsumeSym(lexer);
     
       IF ident1 # ident2 THEN
         (* TO DO: report error -- module identifiers don't match *) 
@@ -2107,19 +2107,105 @@ END attributedFormalParams;
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
  * implOrPrgmModule :=
- *   IMPLEMENTATION MODULE moduleIdent ';'
+ *   IMPLEMENTATION? MODULE moduleIdent ';'
  *   privateImport* block moduleIdent '.'
  *   ;
  *
  * alias privateImport = import ;
  *
- * astNode: (IMPMOD qualidentNode implistNode blockNode)
+ * astNode: (IMPMOD moduleIdent implist blockNode)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE implOrPrgmModule ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  moduleIdent, implist, blockNode : AstT;
+  ident1, ident2 : StringT;
+  tmplist : AstQueueT;
+  lookahead : SymbolT;
+  
 BEGIN
+  PARSER_DEBUG_INFO("implOrPrgmModule");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* IMPLEMENTATION? *)
+  IF lookahead.token = Token.Implementation THEN
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* TO DO: implement imp flag *)
+    
+  END; (* IF *)
+  
+  (* MODULE *)
+  IF matchToken(Token.Module) THEN
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* moduleIdent *)
+    IF matchToken(Token.StdIdent) THEN
+      ident1 = lookahead.lexeme;
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* ';' *)
+      IF matchToken(Token.Semicolon) THEN
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchTokenOrSet(Token.Import, FIRST(Block))
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Import, FIRST(Block))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.Import, FIRST(Block))
+  END; (* IF *)
+  
+  tmplist := AstQueue.New();
 
+  (* privateImport* *)
+  WHILE lookahead.token = Token.Import DO
+    (* alias privateImport = import *)
+    lookahead := import(implist);
+    AstQueue.Enqueue(tmplist, implist)
+  END (* WHILE *)
+  
+  implist := AST.NewListNode(AstNodeType.ImpList, tmplist);
+  tmplist:= AstQueue.ResetQueue(tmplist);
+    
+  (* block *)
+  IF matchSet(FIRST(Block)) THEN
+    lookahead := block(blockNode);
+    
+    (* moduleIdent *)
+    IF matchToken(Token.StdIdent) THEN
+      ident2 := lookahead.lexeme;
+      lookahead := Lexer.ConsumeSym(lexer);
+    
+      IF ident1 # ident2 THEN
+        (* TO DO: report error -- module identifiers don't match *) 
+      END; (* IF *)
+    
+      (* '.' *)
+      IF matchToken(Token.Period, FOLLOW(ImplementationnModule)) THEN
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(ImplementationnModule))
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(ImplementationnModule))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(ImplementationnModule))
+  END (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  moduleIdent := AST.NewTerminalNode(AstNodeType.Ident, ident1);
+  astNode := AST.NewNode(AstNodeType.ImpMod, moduleIdent, implist, blockNode);
+  
+  RETURN lookahead
 END implOrPrgmModule;
 
 
@@ -2131,7 +2217,7 @@ END implOrPrgmModule;
  *
  * block :=
  *   declaration*
- *   BEGIN statementSequence END
+ *   ( BEGIN statementSequence )? END
  *   ;
  *
  * astNode: (BLOCK declListNode stmtSeqNode)
@@ -2139,8 +2225,54 @@ END implOrPrgmModule;
  *)
 PROCEDURE block ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  decllist, stmtSeq : AstT;
+  tmplist : AstQueueT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("block");
+  
+  AstQueue.New(tmplist);
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* declaration* *)
+  WHILE inFIRST(Declaration, lookahead.token) DO
+    lookahead := definition(decllist);
+    AstQueue.Enqueue(tmplist, decllist)
+  END (* WHILE *)
+  
+  decllist := AST.NewListNode(AstNodeType.DeclList, tmplist);
+  tmplist := AstQueue.ResetQueue(tmplist);
+  
+  (* ( BEGIN statementSequence )? *)
+  IF lookahead.token = Token.Begin THEN
+    (* BEGIN *)
+    lookahead := Lexer.consumeSym(lexer)
+    
+    (* statementSequence *)
+    IF matchSet(FIRST(StatementSequence)) THEN
+      lookahead := statementSequence(stmtSeq)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(Block))
+    END (* IF *)
+    
+  ELSE (* no statements *)
+    stmtSeq := AST.emptyNode()
+  END; (* IF *)
+  
+  (* END *)
+  IF matchToken(Token.End) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Block))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Block, decllist, stmtSeq);
+  AstQueue.Release(tmplist);
+  
+  return lookahead
 END block;
 
 
