@@ -3221,8 +3221,63 @@ END toDoList;
  *)
 PROCEDURE memMgtOperation ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  desig, initSize : AstT;
+  
 BEGIN
-
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* NEW designator ( OF initSize )? | *)
+  IF lookahead.token = Token.New THEN
+    
+    (* NEW *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* designator *)
+    IF matchSet(FIRST(Designator)) THEN
+      lookahead := designator(desig)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Of, FOLLOW(MemMgtOperation))
+    END; (* IF *)
+    
+    (* ( OF initSize )? *)
+    IF lookahead.token = Token.Of THEN
+      
+      (* OF *)
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* initSize *)
+      IF matchSet(FIRST(Expression)) THEN
+        lookahead := expression(initSize)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(MemMgtOperation))
+      END (* IF *)
+    ELSE (* no size *)
+      initSize := AST.emptyNode()
+    END; (* IF *)
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.New, desig, initSize)
+    
+  ELSE (* RELEASE designator *)
+    
+    (* RELEASE *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* designator *)
+    IF matchSet(FIRST(Designator)) THEN
+      lookahead := designator(desig)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(MemMgtOperation))
+    END; (* IF *)
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.Release, desig)
+    
+  END; (* IF *)
+  
+  RETURN lookahead
 END memMgtOperation;
 
 
@@ -3401,7 +3456,7 @@ END whileStatement;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * repeatStatement :=
- *   WHILE boolExpression DO statementSequence END
+ *   REPEAT statementSequence UNITL boolExpression
  *   ;
  *
  * astNode: (REPEAT stmtSeqNode exprNode)
@@ -3558,9 +3613,81 @@ END designatorTail;
  *)
 PROCEDURE expressionList ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  expr : AstT;
+  tmplist : AstQueueT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("expressionList");
+  
+  AstQueue.New(tmplist);
+  
+  (* expression *)
+  lookahead := expression(expr);
+  AstQueue.Enqueue(tmplist, expr);
+  
+  (* ( ',' expression )* *)
+  WHILE lookahead.token = Token.Comma DO
+    (* ',' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* expression *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(expr);
+      AstQueue.Enqueue(tmplist, expr)
+      
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Comma), FOLLOW(Expression))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.ExprList, tmplist);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
 END expressionList;
+
+
+(* --------------------------------------------------------------------------
+ * Expression Trees
+ * --------------------------------------------------------------------------
+ * An expression  or  sub-expression  in which  all operators  have  the same
+ * precedence level, such as
+ *
+ *   a + b + c + d
+ *
+ * is evaluated  from left to right  and is thus correctly represented by the
+ * the expression tree
+ *
+ *        +
+ *       / \
+ *      +   d
+ *     / \
+ *    +   c
+ *   / \
+ *  a   b
+ *
+ * In order to construct this expression tree,  the most recently constructed
+ * expression node  always  becomes the  left subnode  of the expression node
+ * that is to be constructed next.
+ *
+ *  IF matchSet(FIRST(SimpleExpression)) THEN
+ *    lookahead := simpleExpression(leftNode);
+ *    
+ *    WHILE inFIRST(OperL1) DO
+ *      nodeType := NodeTypeForOper(lookahead.token);
+ *      lookahead := Lexer.consumeSym(lexer);
+ *      
+ *      IF matchSet(FIRST(SimpleExpression)) THEN
+ *        lookahead := simpleExpression(rightNode);
+ *        leftNode := AST.NewBinaryNode(nodeType, leftNode, rightNode)
+ *      END
+ *    END
+ *  END
+ * --------------------------------------------------------------------------
+ *)
 
 
 (* --------------------------------------------------------------------------
@@ -3611,8 +3738,54 @@ END expression;
  *)
 PROCEDURE simpleExpression ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  leftNode, rightNode : AstT;
+  nodeType : AstNodeTypeT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("term");
+    
+  (* '-' simpleFactor | *)
+  IF lookahead.token = Token.Minus THEN
+    (* '-' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* simpleFactor *)
+    IF matchSet(FIRST(SimpleFactor)) THEN
+      lookahead := simpleFactor(leftNode)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(simpleExpression))
+    END (* IF *)
+  
+  ELSE (* term ( OperL2 term )* *)
+    (* term *)
+    lookahead := term(leftNode);
+    
+    (* ( OperL2 term )* *)
+    WHILE inFIRST(OperL2) DO
+      (* OperL2 *)
+      nodeType := AstNodeType.NodeTypeForOper(lookahead.token);
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* term *)
+      IF matchSet(FIRST(term)) THEN
+        lookahead := term(rightNode);
+        
+      ELSE (* resync *)
+        lookahead :=
+          skipToMatchTokenOrSet(Token.Comma), FOLLOW(SimpleExpression))
+      END (* IF *)
+      
+      (* construct new node from previous and last leaf nodes *)
+      leftNode := AST.NewNode(nodeType, leftNode, rightNode)
+      
+    END (* WHILE *)
+  END (* IF *)
+    
+  (* pass leftNode back in astNode *)
+  astNode := leftNode;
+  
+  RETURN lookahead
 END simpleExpression;
 
 
@@ -3635,8 +3808,40 @@ END simpleExpression;
  *)
 PROCEDURE term ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  leftNode, rightNode : AstT;
+  nodeType : AstNodeTypeT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("term");
+    
+  (* simpleTerm *)
+  lookahead := simpleTerm(leftNode);
+  
+  (* ( OperL3 simpleTerm )* *)
+  WHILE inFIRST(OperL3) DO
+    (* OperL3 *)
+    nodeType := AstNodeType.NodeTypeForOper(lookahead.token);
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* simpleTerm *)
+    IF matchSet(FIRST(SimpleTerm)) THEN
+      lookahead := simpleTerm(rightNode);
+      
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Comma), FOLLOW(Expression))
+    END (* IF *)
+    
+    (* construct new node from previous and last leaf nodes *)
+    leftNode := AST.NewNode(nodeType, leftNode, rightNode)
+    
+  END; (* WHILE *)
+  
+  (* pass leftNode back in astNode *)
+  astNode := leftNode;
+  
+  RETURN lookahead
 END term;
 
 
