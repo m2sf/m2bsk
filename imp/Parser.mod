@@ -3944,7 +3944,34 @@ END simpleTerm;
 PROCEDURE factor ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("factor");
+    
+  (* simpleFactor *)
+  lookahead := simpleFactor(leftNode);
+  
+  (* ( TypeConvOp typeIdent )? *)
+  IF lookahead.token = Token.DoubleColon DO
+    (* '::' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* simpleFactor *)
+    IF matchSet(FIRST(SimpleFactor)) THEN
+      lookahead := simpleFactor(rightNode)
+      
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchSet(FOLLOW(SimpleFactor))
+    END; (* IF *)
+    
+    (* construct new node from left and right leaf nodes *)
+    leftNode := AST.NewNode(AstNodeType.TypeConv, leftNode, rightNode)
+    
+  END; (* IF *)
+  
+  (* pass leftNode back in astNode *)
+  astNode := leftNode;
+  
+  RETURN lookahead
 END factor;
 
 
@@ -3967,7 +3994,30 @@ END factor;
 PROCEDURE simpleFactor ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("factor");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  CASE lookahead.token OF
+  
+    (* NumberLiteral *)
+    Token.NumberLiteral :
+    
+    (* StringLiteral *)
+  | Token.StringLiteral :
+  
+    (* structuredValue *)
+  | Token.LeftBrace :
+      lookahead := structuredValue(astNode)
+  
+    (* '(' expression ')' *)
+  | Token.LeftParen :
+  
+  ELSE (* designatorOrFuncCall *)
+    lookahead := designatorOrFuncCall(astNode)
+  END; (* CASE *)
+  
+  RETURN lookahead
 END simpleFactor;
 
 
