@@ -4002,9 +4002,15 @@ BEGIN
   
     (* NumberLiteral *)
     Token.NumberLiteral :
-    
+      astNode := AST.NewTerminalNode(AstNodeType.IntVal, token.lexeme);
+      lookahead := Lexer.consumeSym(lexer)
+      
+      (* TO DO: real and character code values *)
+      
     (* StringLiteral *)
   | Token.StringLiteral :
+      astNode := AST.NewTerminalNode(AstNodeType.QuotedVal, token.lexeme);
+      lookahead := Lexer.consumeSym(lexer)
   
     (* structuredValue *)
   | Token.LeftBrace :
@@ -4012,7 +4018,24 @@ BEGIN
   
     (* '(' expression ')' *)
   | Token.LeftParen :
-  
+      (* '(' *)
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* expression *)
+      IF matchSet(FIRST(Expression)) THEN
+        lookahead := expression(astNode)
+      ELSE (* resync *)
+        lookahead :=
+          skipToMatchTokenOrSet(Token.RightParen, FOLLOW(simpleFactor))
+      END; (* IF *)
+      
+      (* ')' *)
+      IF matchToken(Token.RightParen) THEN
+        lookahead := Lexer.consumeSym(lexer)
+      ELSE
+        lookahead := skipToMatchSet(FOLLOW(simpleFactor))
+      END (* IF *)
+      
   ELSE (* designatorOrFuncCall *)
     lookahead := designatorOrFuncCall(astNode)
   END; (* CASE *)
