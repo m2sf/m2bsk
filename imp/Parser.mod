@@ -2867,8 +2867,40 @@ END indeterminateField;
  *)
 PROCEDURE varOrFieldDeclaration ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  idlist, typeNode : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("varOrFieldDeclaration");
+  
+  (* identList *)
+  lookahead := identList(idlist);
+  
+  (* ':' *)
+  IF matchToken(Token.Colon) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(VarOrFieldDeclTail))
+  END; (* IF *)
+  
+  (* typeIdent | anonType *)
+  IF matchSet(FIRST(VarOrFieldDeclTail)) THEN
+    
+    (* typeIdent | *)
+    IF inFIRST(Ident, lookahead.token) THEN
+      lookahead := ident(typeNode)
+    ELSE (* anonType *)
+      lookahead := anonType(typeNode)
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(varOrFieldDeclaration))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.VarDecl, idlist, typeNode);
+  
+  RETURN lookahead
 END varOrFieldDeclaration;
 
 
@@ -2889,8 +2921,52 @@ END varOrFieldDeclaration;
  *)
 PROCEDURE anonType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  valueCount, baseType : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("anonType");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* ARRAY valueCount OF typeIdent | *)
+  IF lookahead.token = Token.Array THEN
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* valueCount *)
+    IF matchSet(FIRST(Expression) THEN
+      lookahead := expression(valueCount)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Of, FOLLOW(anonType))
+    END; (* IF *)
+    
+    (* OF *)
+    IF matchToken(Token.Of) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.StdIdent, FOLLOW(anonType))
+    END; (* IF *)
+    
+    (* typeIdent *)
+    IF matchSet(FIRST(Qualident) THEN
+      lookahead := qualident(baseType)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Of, FOLLOW(anonType))
+    END; (* IF *)
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.ArrayType, valueCount, baseType)
+  
+  (* subrangeType | *)
+  ELSIF inFIRST(SubrangeType) THEN
+    lookahead := subrangeType(astNode)
+  (* procedureType *)
+  ELSE
+    lookahead := procedureType(astNode)
+  END; (* IF *)
+  
+  
+  RETURN lookahead
 END anonType;
 
 
