@@ -3727,12 +3727,12 @@ BEGIN
     
     (* simpleExpression *)
     IF matchSet(FIRST(SimpleExpression)) THEN
-      lookahead := simpleExpression(rightNode);
+      lookahead := simpleExpression(rightNode)
       
     ELSE (* resync *)
       lookahead :=
         skipToMatchTokenOrSet(Token.Comma), FOLLOW(Expression))
-    END (* IF *)
+    END; (* IF *)
     
     (* construct new node from previous and last leaf nodes *)
     leftNode := AST.NewNode(nodeType, leftNode, rightNode)
@@ -3801,12 +3801,12 @@ BEGIN
       
       (* term *)
       IF matchSet(FIRST(term)) THEN
-        lookahead := term(rightNode);
+        lookahead := term(rightNode)
         
       ELSE (* resync *)
         lookahead :=
           skipToMatchTokenOrSet(Token.Comma), FOLLOW(SimpleExpression))
-      END (* IF *)
+      END; (* IF *)
       
       (* construct new node from previous and last leaf nodes *)
       leftNode := AST.NewNode(nodeType, leftNode, rightNode)
@@ -3858,12 +3858,12 @@ BEGIN
     
     (* simpleTerm *)
     IF matchSet(FIRST(SimpleTerm)) THEN
-      lookahead := simpleTerm(rightNode);
+      lookahead := simpleTerm(rightNode)
       
     ELSE (* resync *)
       lookahead :=
         skipToMatchTokenOrSet(Token.Comma), FOLLOW(Term))
-    END (* IF *)
+    END; (* IF *)
     
     (* construct new node from previous and last leaf nodes *)
     leftNode := AST.NewNode(nodeType, leftNode, rightNode)
@@ -3892,8 +3892,37 @@ END term;
  *)
 PROCEDURE simpleTerm ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  seenNOT : BOOLEAN;
+  factorNode : AstT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("simpleTerm");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* NOT? *)
+  IF lookahead.token = Token.Not THEN
+    lookahead := Lexer.consumeSym(lexer);
+    seenNOT := TRUE
+  ELSE
+    seenNOT := FALSE
+  END; (* IF *)
+  
+  (* factor *)
+  IF matchSet(FIRST(Factor)) THEN
+    lookahead := factor(factorNode)
+  ELSE
+    lookahead := skipToMatchSet(FOLLOW(simpleTerm))
+  END;
+  
+  IF seenNOT THEN
+    astNode := AST.NewNode(AstNodeType.Not, factorNode)
+  ELSE
+    astNode := factorNode
+  END;
+  
+  RETURN lookahead
 END simpleTerm;
 
 
