@@ -67,7 +67,7 @@ BEGIN
 
   lookahead := Lexer.nextSym(lexer);
   
-  IF (expectedToken = lookahead.token) THEN
+  IF expectedToken = lookahead.token THEN
     RETURN  TRUE
   ELSE (* no match *)
     (* report error *)
@@ -103,7 +103,7 @@ BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
   (* check if lookahead matches any token in expected_set *)
-  IF TokenSet.isElement(expectedSet, lookahead) THEN
+  IF TokenSet.isElement(expectedSet, lookahead.token) THEN
     RETURN TRUE
   ELSE (* no match *)
     (* report error *)
@@ -118,6 +118,43 @@ BEGIN
     RETURN FALSE
   END (* IF *)
 END matchSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function matchTokenOrSet(expectedToken, expectedSet)
+ * --------------------------------------------------------------------------
+ * Matches the lookahead symbol to token expectedToken or set expectedSet and
+ * returns TRUE if there is a match.  If there is no match, a syntax error is
+ * reported, the error count is incremented and FALSE is returned.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE matchTokenOrSet
+  ( expectedToken : TokenT; expectedSet : TokenSetT ) : BOOLEAN;
+
+VAR
+  lookahead : SymbolT;
+
+BEGIN
+
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* check if lookahead matches any token in expected_set *)
+  IF expectedToken = lookahead.token OR 
+    TokenSet.isElement(expectedSet, lookahead.token) THEN
+    RETURN TRUE
+  ELSE (* no match *)
+    (* report error *)
+    EmitSyntaxErrorWTokenAndSet(expectedToken, expectedSet, lookahead);
+    
+    (* print source line *)
+    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
+        
+    (* update error count *)
+    stats.syntaxErrors := stats.syntaxErrors + 1;
+    
+    RETURN FALSE
+  END (* IF *)
+END matchTokenOrSet;
 
 
 (* --------------------------------------------------------------------------
@@ -1758,7 +1795,7 @@ BEGIN
   lookahead := Lexer.consumeSym(lexer);
   
   (* nonAttrFormalType | simpleVariadicFormalType *)
-  IF matchSet(FIRST(attrFormalTypeTail)) THEN
+  IF matchTokenOrSet(Token.ArgList, FIRST(nonAttrFormalType)) THEN
     
     (* simpleVariadicFormalType | *)
     IF lookahead.token = Token.ArgList THEN
@@ -1834,44 +1871,99 @@ END simpleVariadicFormalType;
  *   PROCEDURE procedureSignature
  *   ;
  *
- * astNode: (PROC identNode fparamsListNode qualidentNode)
+ * procedureSignature :=
+ *   ident ( '(' formalParams ( ';' formalParams )* ')' )?
+ *   ( ':' returnedType )?
+ *   ;
+ *
+ * astNode: (PROC procId fplist retType)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE procedureHeader ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  procId, fpList, retType : AstT;
+  procId, fparams, fpList, retType : AstT;
+  tmplist : AstQueueT;
   
 BEGIN
   PARSER_DEBUG_INFO("procedureHeader");
   
+  AstQueue.New(tmplist);
   
+  (* PROCEDURE *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* procedureSignature *)
+  IF matchSet(FIRST(ProcedureSignature)) THEN
+    
+    (* ident *)
+    IF matchSet(FIRST(Ident)) THEN
+      lookahead := ident(procId);
+      
+      (* ( '(' formalParams ( ';' formalParams )* ')' )? *)
+      IF matchToken(Token.LeftParen) THEN
+        (* '(' *)
+        lookahead := Lexer.consumeSym(lexer);
+        
+        (* formalParams *)
+        IF matchSet(FIRST(formalParams)) THEN
+          lookahead := formalParams(fparams);
+          AstQueue.Enqueue(tmplist, fparams)
+        ELSE (* resync *)
+          lookahead := skipToMatchSet(FOLLOW(FormalParams))
+        END; (* IF *)
+        
+        (* ( ';' formalParams )* *)
+        WHILE lookahead.token = Token.Semicolon DO
+          (* ';' *)
+          lookahead := Lexer.consumeSym(lexer);
+          
+          (* formalParams *)
+          IF matchSet(FIRST(formalParams)) THEN
+            lookahead := formalParams(fparams);
+            AstQueue.Enqueue(tmplist, fparams)
+          ELSE (* resync *)
+            lookahead := skipToMatchSet(FOLLOW(FormalParams))
+          END (* IF *)
+        END; (* WHILE *)
+        
+        (* ')' *)
+        IF matchToken(Token.RightParen) THEN
+          lookahead := Lexer.consumeSym(lexer)
+        ELSE (* resync *)
+          lookahead :=
+            skipToMatchTokenOrSet(Token.Colon, FOLLOW(procedureHeader))
+        END (* IF *)
+      END; (* IF *)
+      
+      (* ( ':' returnedType )? *)
+      IF matchToken(Token.Colon) THEN
+        (* ':' *)
+        lookahead := Lexer.consumeSym(lexer);
+        
+        (* returnedType *)
+        IF matchSet(FIRST(Qualident)) THEN
+          lookahead := qualident(retType)
+        ELSE (* resync *)
+          lookahead := skipToMatchSet(FOLLOW(procedureHeader))
+        END (* IF *)
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(procedureHeader))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(procedureHeader))
+  END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.Proc, procId, fpList, retType);
+  fplist := AST.NewListNode(AstNodeType.FPList, tmplist);
+  astNode := AST.NewNode(AstNodeType.Proc, procId, fplist, retType);
+  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END procedureHeader;
-
-
-(* --------------------------------------------------------------------------
- * private function procedureSignature(astNode)
- * --------------------------------------------------------------------------
- * Parses rule procedureSignature, constructs its AST node, passes the node
- * back in out-parameter astNode and returns the new lookahead symbol.
- *
- * procedureHeader :=
- *   PROCEDURE procedureSignature
- *   ;
- *
- * astNode: (PROC identNode fparamsListNode qualidentNode)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE procedureSignature ( VAR astNode : AstT ) : SymbolT;
-
-BEGIN
-
-END procedureSignature;
 
 
 (* --------------------------------------------------------------------------
@@ -1891,15 +1983,45 @@ END procedureSignature;
 PROCEDURE formalParams ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  idList, ftype : AstT;
+  idlist, ftype : AstT;
   
 BEGIN
   PARSER_DEBUG_INFO("formalParams");
   
+  lookahead := Lexer.lookaheadSym(lexer);
   
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.FParams, idList, ftype);
+  (* nonAttrFormalParams | *)
+  IF inFIRST(IdentList, lookahead.token) THEN
+    lookahead := nonAttrFormalParams(idlist);
+    
+    (* ':' *)
+    IF matchToken(Token.Colon) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE
+      lookahead :=
+        skipToMatchTokenOrSet(Token.ArgList, FIRST(nonAttrFormalType))
+    END; (* IF *)
+    
+    (* nonAttrFormalType | simpleVariadicFormalType *)
+    IF matchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType)) THEN
+      
+      (* simpleVariadicFormalType | *)
+      IF lookahead.token = Token.ArgList THEN
+        lookahead := simpleVariadicFormalType(ftype)
+      ELSE (* nonAttrFormalType *)
+        lookahead := nonAttrFormalType(ftype)
+      END (* IF *)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(formalParams))
+    END (* IF *)
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.FParams, idlist, ftype)
+    
+  ELSE (* attributedFormalParams *)
+    lookahead := attributedFormalParams(astNode)
+  END;
   
   RETURN lookahead
 END formalParams;
@@ -1924,16 +2046,55 @@ END formalParams;
 PROCEDURE attributedFormalParams ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  fparams : AstT;
+  idlist, ftype : AstT;
   nodeType : AstNodeTypeT;
   
 BEGIN
   PARSER_DEBUG_INFO("attributedFormalParams");
   
+  lookahead := Lexer.lookaheadSym(lexer);
   
+  (* CONST | *)
+  IF lookahead.token = Token.Const THEN
+    nodeType := AstNodeType.ConstP
+  ELSE (* VAR *)
+    nodeType := AstNodeType.VarP
+  END; (* IF *)
+  
+  (* identList *)
+  IF matchSet(FIRST(IdentList) THEN
+    lookahead := identList(idlist);
+    
+    (* ':' *)
+    IF matchToken(Token.Colon) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType))
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType))
+  END; (* IF *)
+  
+  (* nonAttrFormalType | simpleVariadicFormalType *)
+  IF matchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType)) THEN
+    
+    (* simpleVariadicFormalType | *)
+    IF lookahead.token = Token.ArgList THEN
+      lookahead := simpleVariadicFormalType(ftype)
+    ELSE (* nonAttrFormalType *)
+      lookahead := nonAttrFormalType(ftype)
+    END (* IF *)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(attributedFormalParams))
+  END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.nodeType, fparams);
+  ftype := AST.NewNode(nodeType, ftype);
+  astNode := AST.NewNode(AstNodeType.FParams, idlist, ftype);
   
   RETURN lookahead
 END attributedFormalParams;
