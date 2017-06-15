@@ -8,15 +8,15 @@ IMPORT
   AST, AstNodeType, AstQueue, NonTerminals,
   Lexer, LexQueue, Symbol, Token, TokenSet, String;
 
-FROM AST IMPORT AstT; (* AST.AST *)
-FROM AstNodeType IMPORT AstNodeTypeT; (* AstNodeType.AstNodeType *)
-FROM AstQueue IMPORT AstQueueT; (* AstQueue.AstQueue *)
-FROM Lexer IMPORT LexerT; (* Lexer.Lexer *)
-FROM LexQueue IMPORT LexQueueT; (* LexQueue.LexQueue *)
-FROM Symbol IMPORT SymbolT; (* Symbol.Symbol *)
-FROM Token IMPORT TokenT; (* Token.Token *)
-FROM TokenSet IMPORT TokenSetT; (* TokenSet.TokenSet *)
-FROM String IMPORT StringT; (* String.String *)
+FROM AST IMPORT AstT; (* alias for AST.AST *)
+FROM AstNodeType IMPORT AstNodeTypeT; (* alias for AstNodeType.AstNodeType *)
+FROM AstQueue IMPORT AstQueueT; (* alias for AstQueue.AstQueue *)
+FROM Lexer IMPORT LexerT; (* alias for Lexer.Lexer *)
+FROM LexQueue IMPORT LexQueueT; (* alias for LexQueue.LexQueue *)
+FROM Symbol IMPORT SymbolT; (* alias for Symbol.Symbol *)
+FROM Token IMPORT TokenT; (* alias for Token.Token *)
+FROM TokenSet IMPORT TokenSetT; (* alias for TokenSet.TokenSet *)
+FROM String IMPORT StringT; (* alias for String.String *)
 
 FROM NonTerminals IMPORT FIRST, FOLLOW, inFIRST;
 
