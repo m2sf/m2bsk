@@ -3054,8 +3054,40 @@ END procDeclaration;
  *)
 PROCEDURE statementSequence ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  stmt : AstT;
+  tmplist : AstQueueT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("statementSequence");
+  
+  AstQueue.New(tmplist);
+  
+  (* statement *)
+  lookahead := statement(stmt);
+  AstQueue.Enqueue(tmplist, stmt);
+  
+  (* ( ';' statement )* *)
+  WHILE lookahead.token = Token.Semicolon DO
+    (* ';' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* statement *)
+    IF matchSet(FIRST(Statement)) THEN
+      lookahead := statement(stmt);
+      AstQueue.Enqueue(tmplist, stmt)
+      
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Semicolon), FOLLOW(Statement))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.StmtSeq, tmplist);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
 END statementSequence;
 
 
@@ -3079,7 +3111,59 @@ END statementSequence;
 PROCEDURE statement ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
+  PARSER_DEBUG_INFO("statement");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+    
+  CASE lookahead.token OF
+  
+  (* emptyStatement | *)
+    Token.To :
+      lookahead := toDoList(astNode)
+      
+  (* memMgtOperation | *)
+  | Token.New,
+    Token.Release :
+      lookahead := memMgtOperation(astNode)
+      
+  (* returnStatement | *)
+  | Token.Return :
+      lookahead := returnStatement(astNode)
+    
+  (* ifStatement | *)
+  | Token.If :
+      lookahead := ifStatement(astNode)
+    
+   (* caseStatement | *)
+  | Token.Case :
+      lookahead := caseStatement(astNode)
+    
+  (* loopStatement | *)
+  | Token.Loop :
+      lookahead := loopStatement(astNode)
+    
+  (* whileStatement | *)
+  | Token.While :
+      lookahead := whileStatement(astNode)
+    
+  (* repeatStatement | *)
+  | Token.Repeat :
+      lookahead := repeatStatement(astNode)
+    
+  (* forStatement | *)
+  | Token.For :
+      lookahead := forStatement(astNode)
+    
+  (* EXIT | *)
+  | Token.Exit :
+      lookahead := Lexer.consumeSym(lexer);
+      astNode := AST.NewNode(AstNodeType.Exit)
+    
+  ELSE (* updateOrProcCall *)
+    lookahead := updateOrProcCall(astNode)    
+  END; (* CASE *)
+  
+  RETURN lookahead
 END statement;
 
 
