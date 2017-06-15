@@ -3661,27 +3661,27 @@ END expressionList;
  * is evaluated  from left to right  and is thus correctly represented by the
  * the expression tree
  *
- *        +
- *       / \
- *      +   d
- *     / \
- *    +   c
- *   / \
- *  a   b
+ *         +
+ *        / \
+ *       +   d
+ *      / \
+ *     +   c
+ *    / \
+ *   a   b
  *
  * In order to construct this expression tree,  the most recently constructed
  * expression node  always  becomes the  left subnode  of the expression node
  * that is to be constructed next.
  *
- *  IF matchSet(FIRST(SimpleExpression)) THEN
- *    lookahead := simpleExpression(leftNode);
+ *  IF matchSet(FIRST(Term)) THEN
+ *    lookahead := term(leftNode);
  *    
- *    WHILE inFIRST(OperL1) DO
+ *    WHILE inFIRST(OperL2) DO
  *      nodeType := NodeTypeForOper(lookahead.token);
  *      lookahead := Lexer.consumeSym(lexer);
  *      
- *      IF matchSet(FIRST(SimpleExpression)) THEN
- *        lookahead := simpleExpression(rightNode);
+ *      IF matchSet(FIRST(term)) THEN
+ *        lookahead := term(rightNode);
  *        leftNode := AST.NewBinaryNode(nodeType, leftNode, rightNode)
  *      END
  *    END
@@ -3709,8 +3709,40 @@ END expressionList;
  *)
 PROCEDURE expression ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  leftNode, rightNode : AstT;
+  nodeType : AstNodeTypeT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("expression");
+    
+  (* simpleExpression *)
+  lookahead := simpleExpression(leftNode);
+  
+  (* ( OperL1 simpleExpression )? *)
+  IF inFIRST(OperL1) DO
+    (* OperL1 *)
+    nodeType := AstNodeType.NodeTypeForOper(lookahead.token);
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* simpleExpression *)
+    IF matchSet(FIRST(SimpleExpression)) THEN
+      lookahead := simpleExpression(rightNode);
+      
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Comma), FOLLOW(Expression))
+    END (* IF *)
+    
+    (* construct new node from previous and last leaf nodes *)
+    leftNode := AST.NewNode(nodeType, leftNode, rightNode)
+    
+  END; (* IF *)
+  
+  (* pass leftNode back in astNode *)
+  astNode := leftNode;
+  
+  RETURN lookahead
 END expression;
 
 
@@ -3754,7 +3786,7 @@ BEGIN
     IF matchSet(FIRST(SimpleFactor)) THEN
       lookahead := simpleFactor(leftNode)
     ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(simpleExpression))
+      lookahead := skipToMatchSet(FOLLOW(SimpleExpression))
     END (* IF *)
   
   ELSE (* term ( OperL2 term )* *)
@@ -3830,7 +3862,7 @@ BEGIN
       
     ELSE (* resync *)
       lookahead :=
-        skipToMatchTokenOrSet(Token.Comma), FOLLOW(Expression))
+        skipToMatchTokenOrSet(Token.Comma), FOLLOW(Term))
     END (* IF *)
     
     (* construct new node from previous and last leaf nodes *)
