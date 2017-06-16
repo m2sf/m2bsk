@@ -3673,19 +3673,19 @@ END expressionList;
  * expression node  always  becomes the  left subnode  of the expression node
  * that is to be constructed next.
  *
- *  IF matchSet(FIRST(Term)) THEN
- *    lookahead := term(leftNode);
- *    
- *    WHILE inFIRST(OperL2) DO
- *      nodeType := NodeTypeForOper(lookahead.token);
- *      lookahead := Lexer.consumeSym(lexer);
- *      
- *      IF matchSet(FIRST(term)) THEN
- *        lookahead := term(rightNode);
- *        leftNode := AST.NewBinaryNode(nodeType, leftNode, rightNode)
- *      END
- *    END
- *  END
+ *   IF matchSet(FIRST(Term)) THEN
+ *     lookahead := term(leftNode);
+ *     
+ *     WHILE inFIRST(OperL2) DO
+ *       nodeType := NodeTypeForOper(lookahead.token);
+ *       lookahead := Lexer.consumeSym(lexer);
+ *       
+ *       IF matchSet(FIRST(term)) THEN
+ *         lookahead := term(rightNode);
+ *         leftNode := AST.NewBinaryNode(nodeType, leftNode, rightNode)
+ *       END
+ *     END
+ *   END
  * --------------------------------------------------------------------------
  *)
 
@@ -3943,6 +3943,9 @@ END simpleTerm;
  *)
 PROCEDURE factor ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  leftNode, rightNode : AstT;
+  
 BEGIN
   PARSER_DEBUG_INFO("factor");
     
@@ -4060,8 +4063,41 @@ END simpleFactor;
  *)
 PROCEDURE designatorOrFuncCall ( VAR astNode : AstT ) : SymbolT;
 
-BEGIN
+VAR
+  desig, exprList : AstT;
 
+BEGIN
+  PARSER_DEBUG_INFO("designatorOrFuncCall");
+  
+  (* designator *)
+  lookahead := designator(desig);
+  
+  (* ( '(' expressionList? ')' )? *)
+  IF lookahead.token = Token.LeftParen THEN
+    
+    (* '(' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* expressionList? *)
+    IF inFIRST(ExpressionList, lookahead.token) THEN
+      lookahead := expressionList(exprList)
+    ELSE
+      exprList := AST.emptyNode()
+    END; (* IF *)
+    
+    (* ')' *)
+    IF matchToken(Token.RightParen) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(ExpressionList))
+    END; (* IF *)
+    
+    astNode := AST.NewNode(AstNodeType.FCall, desig, exprList)
+  ELSE
+    astNode := desig
+  END; (* IF *)
+  
+  RETURN lookahead
 END designatorOrFuncCall;
 
 
@@ -4075,6 +4111,60 @@ END designatorOrFuncCall;
  *   '{' valueComponent ( ',' valueComponent )* '}'
  *   ;
  *
+ * astNode: (STRUCTVAL exprListNode)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE structuredValue ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+  PARSER_DEBUG_INFO("structuredValue");
+  
+  AstQueue.New(tmplist);
+  
+  (* '{' *)
+  lookahead := Lexer.consumeSym(lexer);
+    
+  (* valueComponent *)
+  lookahead := valueComponent(value);
+  AstQueue.Enqueue(tmplist, value);
+  
+  (* ( ';' statement )* *)
+  WHILE lookahead.token = Token.Semicolon DO
+    (* ';' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* valueComponent *)
+    IF matchSet(FIRST(ValueComponent)) THEN
+      lookahead := valueComponent(value);
+      AstQueue.Enqueue(tmplist, value)
+      
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Comma), FOLLOW(ValueComponent))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* '}' *)
+  IF matchToken(Token.RightBrace) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(StructuredValue))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.StructVal, tmplist);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
+END structuredValue;
+
+
+(* --------------------------------------------------------------------------
+ * private function valueComponent(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule valueComponent, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * valueComponent :=
  *   constExpression ( '..' constExpression )? |
  *   runtimeExpression
@@ -4082,15 +4172,44 @@ END designatorOrFuncCall;
  *
  * alias runtimeExpression = expression ;
  *
- * astNode:
- *  (STRUCTVAL exprListNode)
+ * astNode: expr | (VALRANGE expr expr)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE structuredValue ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE valueComponent ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  leftNode, rightNode : AstT;
+  
 BEGIN
-
-END structuredValue;
+  PARSER_DEBUG_INFO("valueComponent");
+    
+  (* constExpression *)
+  lookahead := expression(leftNode);
+  
+  (* ( .. constExpression )? *)
+  IF lookahead.token = Token.DotDot DO
+    (* '..' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* constExpression *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(rightNode)
+      
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchSet(FOLLOW(Expression))
+    END; (* IF *)
+    
+    (* construct new node from left and right leaf nodes *)
+    leftNode := AST.NewNode(AstNodeType.ValRange, leftNode, rightNode)
+    
+  END; (* IF *)
+  
+  (* pass leftNode back in astNode *)
+  astNode := leftNode;
+  
+  RETURN lookahead
+END valueComponent;
 
 
 END Parser.
