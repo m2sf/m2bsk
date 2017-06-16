@@ -3225,6 +3225,7 @@ VAR
   desig, initSize : AstT;
   
 BEGIN
+  PARSER_DEBUG_INFO("memMgtOperation");
   
   lookahead := Lexer.lookaheadSym(lexer);
   
@@ -3319,8 +3320,27 @@ END updateOrProcCall;
  *)
 PROCEDURE returnStatement ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  expr : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("returnStatement");
+  
+  (* RETURN *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* expression? *)
+  IF inFIRST(Expression, lookahead.token) THEN
+    lookahead := expression(expr)
+  ELSE
+    expr := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Return, expr);
+  
+  RETURN lookahead
 END returnStatement;
 
 
@@ -3424,8 +3444,34 @@ END caseLabels;
  *)
 PROCEDURE loopStatement ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  stmtSeq : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("loopStatement");
+  
+  (* LOOP *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* statementSequence *)
+  IF matchSet(FIRST(StatementSequence)) THEN
+    lookahead := statementSequence(stmtSeq)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.END, FOLLOW(LoopStatement))
+  END; (* IF *)
+  
+  (* END *)
+  IF matchToken(Token.End) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.END, FOLLOW(LoopStatement))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Loop, stmtSeq);
+  
+  RETURN lookahead
 END loopStatement;
 
 
@@ -3444,8 +3490,48 @@ END loopStatement;
  *)
 PROCEDURE whileStatement ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  expr, stmtSeq : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("whileStatement");
+  
+  (* WHILE *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* boolExpression *)
+  IF matchSet(FIRST(Expression)) THEN
+    lookahead := expression(expr)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.Do, FIRST(StatementSequence))
+  END; (* IF *)
+  
+  (* DO *)
+  IF matchToken(Token.Do) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(StatementSequence))
+  END; (* IF *)
+  
+  (* statementSequence *)
+  IF matchSet(FIRST(StatementSequence)) THEN
+    lookahead := statementSequence(stmtSeq)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(WhileStatement))
+  END; (* IF *)
+  
+  (* END *)
+  IF matchToken(Token.End) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(WhileStatement))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.While, expr, stmtSeq);
+  
+  RETURN lookahead
 END whileStatement;
 
 
@@ -3464,8 +3550,41 @@ END whileStatement;
  *)
 PROCEDURE repeatStatement ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  expr, stmtSeq : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("repeatStatement");
+  
+  (* REPEAT *)
+  lookahead := Lexer.consumeSym(lexer);
+    
+  (* statementSequence *)
+  IF matchSet(FIRST(StatementSequence)) THEN
+    lookahead := statementSequence(stmtSeq)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.Until, FIRST(Expression))
+  END; (* IF *)
+  
+  (* UNTIL *)
+  IF matchToken(Token.Until) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(Expression))
+  END; (* IF *)
+  
+  (* boolExpression *)
+  IF matchSet(FIRST(Expression)) THEN
+    lookahead := expression(expr)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(RepeatStatement))
+  END; (* IF *)
+    
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Repeat, stmtSeq, expr);
+  
+  RETURN lookahead
 END repeatStatement;
 
 
