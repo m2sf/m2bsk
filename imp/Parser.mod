@@ -2994,7 +2994,6 @@ BEGIN
     lookahead := procedureType(astNode)
   END; (* IF *)
   
-  
   RETURN lookahead
 END anonType;
 
@@ -3908,8 +3907,62 @@ END repeatStatement;
  *)
 PROCEDURE forStatement ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  loopVariants, iterExpr, stmtSeq : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("forStatement");
+  
+  (* FOR *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* forLoopVariants *)
+  IF matchSet(FIRST(ForLoopVariants)) THEN
+    lookahead := forLoopVariants(loopVariants)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.In, FIRST(IterableExpr))
+  END; (* IF *)
+  
+  (* IN *)
+  IF matchToken(Token.In) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(IterableExpr))
+  END; (* IF *)
+  
+  (* iterableExpr *)
+  IF matchSet(FIRST(IterableExpr)) THEN
+    lookahead := iterableExpr(iterExpr)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.Do, FIRST(StatementSequence))
+  END; (* IF *)
+  
+  (* DO *)
+  IF matchToken(Token.Do) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(StatementSequence))
+  END; (* IF *)
+  
+  (* statementSequence *)
+  IF matchSet(FIRST(StatementSequence)) THEN
+    lookahead := statementSequence(stmtSeq)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(forStatement))
+  END; (* IF *)
+  
+  (* END *)
+  IF matchToken(Token.End) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(forStatement))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.For, loopVariants, iterExpr, stmtSeq);
+  
+  RETURN lookahead
 END forStatement;
 
 
@@ -3934,8 +3987,46 @@ END forStatement;
  *)
 PROCEDURE forLoopVariants ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  accessor, value : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("forLoopVariants");
+  
+  (* accessor *)
+  lookahead := ident(accessor);
+  
+  (* ascOrDesc? *)
+  CASE lookahead.token OF
+  (* '++' *)
+    Token.PlusPlus :
+      accessor := AST.NewNode(AstNodeType.Asc, accessor)
+      
+  (* '--' *)
+  | Token.MinusMinus :
+      accessor := AST.NewNode(AstNodeType.Desc, accessor)
+  END; (* CASE *)
+  
+  (* ( ',' value )? *)
+  IF matchToken(Token.Comma) THEN
+    (* ',' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* value *)
+    IF matchSet(FIRST(Ident)) THEN
+      lookahead := ident(value)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(forLoopVariants))
+    END (* IF *)
+  ELSE (* no value given *)
+    value := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.FLV, accessor, value);
+  
+  RETURN lookahead
 END forLoopVariants;
 
 
@@ -3964,8 +4055,55 @@ END forLoopVariants;
  *)
 PROCEDURE iterableExpr ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  exprRange, typeId : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("iterableExpr");
+  
+  (* ordinalRange OF ordinalType | *)
+  IF lookahead.token = Token.LeftBracket THEN
+    
+    (* '[' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* expressionRange *)
+    IF matchSet(FIRST(ExpressionRange)) THEN
+      lookahead := expressionRange(exprRange);
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.RightBracket, FIRST(Qualident))
+    END; (* IF *)
+    
+    (* ']' *)
+    IF matchToken(Token.RightBracket) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Of, FIRST(Qualident))
+    END; (* IF *)
+    
+    (* OF *)
+    IF matchToken(Token.Of) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FIRST(Qualident))
+    END; (* IF *)
+    
+    (* typeIdent *)
+    IF matchSet(FIRST(Qualident)) THEN
+      lookahead := qualident(typeId)
+    ELSE (* rescync *)
+      lookahead := skipToMatchSet(FOLLOW(iterableExpr))
+    END (* IF *)
+    
+    astNode := AST.NewNode(AstNodeType.Subr, exprRange, typeId)
+    
+  ELSE (* designator *)
+    lookahead := designtator(astNode)
+  END; (* IF *)
+  
+  RETURN lookahead
 END iterableExpr;
 
 
