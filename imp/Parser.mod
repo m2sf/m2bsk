@@ -622,16 +622,20 @@ BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
   CASE lookahead.token OF
-    (* CONST *)
+  
+  (* CONST *)
     Token.Const :
       lookahead := constDefSection(astNode)
       
+  (* TYPE *)
   | Token.Type :
       lookahead := typeDefSection(astNode)
   
+  (* VAR *)
   | Token.Var :
       lookahead := varDeclSection(astNode)
   
+  (* PROCEDURE *)
   | Token.Procedure :
       (* procedureHeader *)
       lookahead := procedureHeader(astNode);
@@ -644,6 +648,7 @@ BEGIN
         lookahead := skipToMatchSet(FOLLOW(Definition))
       END (* IF *)
       
+  (* TO *)
   | Token.To :
       lookahead := Lexer.consumeSym(lexer);
       (* toDoList *)
@@ -657,9 +662,6 @@ BEGIN
         lookahead := skipToMatchSet(FOLLOW(Definition))
       END (* IF *)
       
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(Definition))
-  
   END; (* CASE *)
     
   RETURN lookahead
@@ -2347,7 +2349,8 @@ BEGIN
       
    (* CONST ( constDeclaration ';' )+ | *)
  | Token.Const :
-      lookahead := constDeclSection(astNode)
+      (* alias constDeclaration = constDefinition *)
+      lookahead := constDefSection(astNode)
       
    (* TYPE ( typeDeclaration ';' )+ | *)
   | Token.Type :
@@ -2676,6 +2679,71 @@ BEGIN
   
   RETURN lookahead
 END qualifiedWildcard;
+
+
+(* --------------------------------------------------------------------------
+ * private function typeDeclSection(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule typeDeclSection, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * typeDeclSection :=
+ *   TYPE ( typeDeclaration ';' )+
+ *   ;
+ *
+ * astNode: typeDeclListNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE typeDeclSection ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  typeDecl : AstT;
+  tmplist : AstQueueT;
+  lookahead := SymbolT;
+
+BEGIN
+  PARSER_DEBUG_INFO("typeDeclSection");
+  
+  AstQueue.New(tmplist);
+  
+  (* TYPE *)
+  lookahead := Lexer.ConsumeSym(lexer);
+  
+  (* typeDeclaration *)
+  IF matchSet(FIRST(TypeDeclaration)) THEN
+    lookahead := typeDeclaration(typeDecl)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(TypeDeclaration))
+  END (* IF *)
+  
+  (* ';' *)
+  IF matchToken(Token.Semicolon) THEN
+    (* consume semicolon *)
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(TypeDeclaration))
+  END (* IF *)
+  
+  (* ( typeDeclaration ';' )* *)
+  WHILE inFIRST(TypeDeclaration, lookahead.token) DO
+    (* typeDefinition *)
+    lookahead := typeDeclaration(typeDecl);
+    
+    (* ';' *)
+    IF matchToken(Token.Semicolon) THEN
+      (* consume semicolon *)
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(TypeDeclaration))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewListNode(AstNodeType.DeclList, tmplist);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
+END typeDeclSection;
 
 
 (* --------------------------------------------------------------------------
