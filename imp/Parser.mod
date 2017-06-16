@@ -3758,7 +3758,7 @@ END caseStatement;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * case :=
- *   caseLabels ( ',' caseLabels )* : StatementSequence
+ *   caseLabels ( ',' caseLabels )* : statementSequence
  *   ;
  *
  * astNode: (CASE caseLabelListNode stmtSeqNode)
@@ -3766,8 +3766,54 @@ END caseStatement;
  *)
 PROCEDURE case ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  clabels, cllist, stmtSeq : AstT;
+  tmplist : AstQueueT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("case");
+  
+  AstQueue.New(tmplist);
+  
+  (* caseLabels *)
+  lookahead := caseLabels(clabels);
+  AstQueue.Enqueue(tmplist, clabels);
+  
+  (* ( ',' caseLabels )* *)
+  WHILE lookahead.token = Token.Comma DO
+    (* ',' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* caseLabels *)
+    IF matchSet(FIRST(CaseLabels)) THEN
+      lookahead := caseLabels(clabels);
+      AstQueue.Enqueue(tmplist, clabels);
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Comma, FIRST(CaseLabels))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* ':' *)
+  IF matchToken(Token.Colon) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(StatementSequence))
+  END; (*IF *)
+  
+  (* statementSequence *)
+  IF matchSet(FIRST(StatementSequence)) THEN
+    lookahead := statementSequence(stmtSeq)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(StatementSequence))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Case, cllist, stmtSeq);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
 END case;
 
 
@@ -3786,8 +3832,35 @@ END case;
  *)
 PROCEDURE caseLabels ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  expr1, expr2 : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("caseLabels");
+  
+  (* constExpression *)
+  lookahead := expression(expr1);
+  
+  (* ( .. constExpression )? *)
+  IF lookahead.token = Token.DotDot THEN
+    (* '..' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* constExpression *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(expr2);
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(caseLabels))
+    END (* IF *)
+  ELSE
+    expr2 := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.CLabels, expr1, expr2);
+  
+  RETURN lookahead
 END caseLabels;
 
 
