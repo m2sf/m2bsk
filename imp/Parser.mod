@@ -1136,92 +1136,105 @@ END aliasType;
 
 
 (* --------------------------------------------------------------------------
- * private function subrangeType(astNode)
+ * private function rangeOfOrdinalType(astNode)
  * --------------------------------------------------------------------------
- * Parses rule subrangeType, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
+ * Parses rule rangeOfOrdinalType, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
  *
- * subrangeType :=
- *   range OF ordinalType
+ * rangeOfOrdinalType :=
+ *   '[' lowerBound '..' upperBound ']' OF ordinalType
  *   ;
  *
- * range :=
- *   '[' lowerBound '..' upperBound ']'
- *   ;
+ * alias lowerBound = ordinalExpression ;
  *
- * alias lowerBound = constExpression ;
+ * alias upperBound = ordinalExpression ;
  *
- * alias upperBound = constExpression ;
+ * alias ordinalExpression = expression ;
  *
  * alias ordinalType = typeIdent ;
  *
- * astNode: (SUBR lowerBound upperBound baseType)
+ * astNode: (SUBR lowerBound upperBound typeId)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE subrangeType ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE rangeOfOrdinalType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lowerBound, upperBound, baseType : AstT;
+  lowerBound, upperBound, typeId : AstT;
   lookahead := SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("subrangeType");
+  PARSER_DEBUG_INFO("rangeOfOrdinalType");
   
   (* '[' *)
   lookahead := Lexer.consumeSym(lexer);
   
   (* lowerBound *)
   IF matchSet(FIRST(Expression)) THEN
-    lookahead := expression(lowerBound);
-    
-    (* '..' *)
-    IF matchToken(Token.DotDot) THEN
-      lookahead := Lexer.consumeSym();
-      
-      (* upperBound *)
-      IF matchSet(FIRST(Expression) THEN
-        lookahead := expression(upperBound);
-        
-        (* ']' *)
-        IF matchToken(Token.RightBracket) THEN
-          lookahead := Lexer.consumeSym()
-        ELSE (* resync *)
-          lookahead := skipToMatchSet(FOLLOW(Range))
-        END (* IF *)
-        
-      ELSE (* resync *)
-        lookahead := skipToMatchSet(FOLLOW(Range))
-      END (* IF *)
-      
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(Range))
-    END (* IF *)
-    
+    lookahead := expression(lowerBound)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(Range))
+    lookahead := skipToMatchTokenOrSet(Token.DotDot, FIRST(Expression))
+  END; (* IF *)
+  
+  (* '..' *)
+  IF matchToken(Token.DotDot) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(Expression))
+  END; (* IF *)
+  
+  (* upperBound *)
+  IF matchSet(FIRST(Expression)) THEN
+    lookahead := expression(upperBound)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.RightBracket, FIRST(Expression))
+  END; (* IF *)
+  
+  (* ']' *)
+  IF matchToken(Token.RightBracket) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.Of, FIRST(Qualident))
   END; (* IF *)
   
   (* OF *)
   IF matchToken(Token.Of) THEN
-    lookahead := Lexer.consumeSym();
-    
-    (* ordinalType *)
-    IF matchSet(FIRST(Qualident)) THEN
-      lookahead := qualident(baseType)
-      
-    ELSE (* resync *)
-      skipToMatchSet(FOLLOW(SubrangeType))
-    END (* IF *)
-    
+    lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(SubrangeType))
+    lookahead := skipToMatchSet(FIRST(Qualident))
   END; (* IF *)
     
+  (* ordinalType *)
+  IF matchSet(FIRST(Qualident)) THEN
+    lookahead := qualident(typeId)
+  ELSE (* resync *)
+    skipToMatchSet(FOLLOW(rangeOfOrdinalType))
+  END; (* IF *)
+  
   (* build AST node and pass it back in astNode *)
-  astNode :=
-    AST.NewNode(AstNodeType.SubrType, lowerBound, upperBound, baseType);
+  astNode := AST.NewNode(AstNodeType.Subr, lowerBound, upperBound, typeId);
   
   RETURN lookahead
+END rangeOfOrdinalType;
+
+
+
+(* --------------------------------------------------------------------------
+ * private function subrangeType(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule subrangeType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * alias subrangeType = rangeOfOrdinalType;
+ *
+ * astNode: (SUBR lowerBound upperBound baseType)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE subrangeType ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+  PARSER_DEBUG_INFO("subrangeType");
+  
+  RETURN rangeOfOrdinalType(astNode)
 END subrangeType;
 
 
@@ -4037,18 +4050,8 @@ END forLoopVariants;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * iterableExpr :=
- *   ordinalRange OF ordinalType | designator
+ *   rangeOfOrdinalType | designator
  *   ;
- *
- * ordinalRange :=
- *   '[' firstValue '..' lastValue ']'
- *   ;
- *
- * alias firstValue = expression ;
- *
- * alias lastValue = expression ;
- *
- * alias ordinalType = typeIdent ;
  *
  * astNode: desigNode | rangeNode
  * --------------------------------------------------------------------------
@@ -4056,7 +4059,7 @@ END forLoopVariants;
 PROCEDURE iterableExpr ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  exprRange, typeId : AstT;
+  range, typeId : AstT;
   lookahead : SymbolT;
   
 BEGIN
@@ -4064,43 +4067,13 @@ BEGIN
   
   (* ordinalRange OF ordinalType | *)
   IF lookahead.token = Token.LeftBracket THEN
+  
+    lookahead := rangeOfOrdinalType(range)
     
-    (* '[' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* expressionRange *)
-    IF matchSet(FIRST(ExpressionRange)) THEN
-      lookahead := expressionRange(exprRange);
-    ELSE (* resync *)
-      lookahead :=
-        skipToMatchTokenOrSet(Token.RightBracket, FIRST(Qualident))
-    END; (* IF *)
-    
-    (* ']' *)
-    IF matchToken(Token.RightBracket) THEN
-      lookahead := Lexer.consumeSym(lexer)
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.Of, FIRST(Qualident))
-    END; (* IF *)
-    
-    (* OF *)
-    IF matchToken(Token.Of) THEN
-      lookahead := Lexer.consumeSym(lexer)
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FIRST(Qualident))
-    END; (* IF *)
-    
-    (* typeIdent *)
-    IF matchSet(FIRST(Qualident)) THEN
-      lookahead := qualident(typeId)
-    ELSE (* rescync *)
-      lookahead := skipToMatchSet(FOLLOW(iterableExpr))
-    END (* IF *)
-    
-    astNode := AST.NewNode(AstNodeType.Subr, exprRange, typeId)
+    astNode := AST.NewNode(AstNodeType.Subr, range, typeId)
     
   ELSE (* designator *)
-    lookahead := designtator(astNode)
+    lookahead := designator(astNode)
   END; (* IF *)
   
   RETURN lookahead
