@@ -1426,8 +1426,7 @@ END arrayType;
 PROCEDURE recordType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  baseType, listNode, fieldListSeq : AstT;
-  tmpList : AstQueue;
+  baseType, fieldListSeq : AstT;
   lookahead := SymbolT;
   
 BEGIN
@@ -1461,29 +1460,11 @@ BEGIN
     baseType := AST.emptyNode()
   END; (* IF *)
   
-  (* fieldList *)
-  IF matchSet(FIRST(FieldList)) THEN
-    lookahead := fieldList(listNode);
-    AstQueue.Enqueue(tmplist, listNode)
-    
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(FieldList))
-  END; (* IF *)
-  
-  (* ( ';' fieldList )* *)
-  WHILE lookahead.token = Token.Semicolon DO
-    (* ';' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* fieldList *)
-    IF matchSet(FIRST(FieldList)) THEN
-      lookahead := fieldList(listNode);
-      AstQueue.Enqueue(tmplist, listNode)
-      
-    ELSE
-      lookahead := skipToMatchSet(FOLLOW(FieldList))
-    END (* IF *)
-  END (* WHILE *)
+  (* fieldList ( ';' fieldList )* *)
+  lookahead :=
+    parseListWSeparator(fieldList, Token.Semicolon,
+      FIRST(FieldList), FOLLOW(FieldList),
+      AstNodeType.FieldListSeq, fieldListSeq);
   
   (* END *)
   IF matchToken(Token.End) THEN
@@ -1493,9 +1474,7 @@ BEGIN
   END; (* IF *)
     
   (* build AST node and pass it back in astNode *)
-  fieldListSeq := AST.NewListNode(AstNodeType.FieldListSeq, tmplist);
   astNode := AST.NewNode(AstNodeType.RecordType, baseType, fieldListSeq);
-  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END recordType;
@@ -1568,16 +1547,13 @@ PROCEDURE procedureType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   formalTypeList, retType : AstT;
-  tmplist : AstQueueT;
   lookahead := SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("procedureType");
-  
-  AstQueue.New(tmplist);
-  
+    
   (* PROCEDURE *)
-  lookahead := Lexer.consumeSym(lexer);
+  lookahead := Lexer.consumeSym(lexer);  
   
   (* ( '(' formalType ( ',' formalType )* ')' )? *)
   IF lookahead.token = Token.LeftParen THEN
@@ -1585,36 +1561,21 @@ BEGIN
     (* '(' *)
     lookahead := Lexer.consumeSym(lexer);
     
-    IF matchSet(FIRST(FormalType)) THEN
-      (* formalType *)
-      lookahead := formalType(ftype);
-      AstQueue.Enqueue(tmplist, ftype)
-      
-      (* ( ',' formalType )* *)
-      WHILE lookahead.token = Token.Comma DO
-        (* ',' *)
-        lookahead := Lexer.consumeSym(lexer);
-        
-        (* formalType *)
-        IF matchSet(FIRST(FormalType)) THEN
-          lookahead := formalType(ftype);
-          AstQueue.Enqueue(tmplist, ftype)
-        ELSE (* resync *)
-          lookahead := skipToMatchSet(FOLLOW(FormalType))
-        END (* IF *)
-      END; (* WHILE *)
-      
-      (* ')' *)
-      IF matchToken(Token.RightParen) THEN
-        lookahead := Lexer.consumeSym(lexer)
-      ELSE (* resync *)
-        lookahead := skipToMatchSet(<ColonOrQualidentOrSemicolon>)
-      END (* IF *)
-      
+    (* formalType ( ',' formalType )* *)
+    lookahead :=
+      parseListWSeparator(formalType, Token.Comma,
+        FIRST(FormalType), FOLLOW(FormalType),
+        AstNodeType.FormalTypeList, formalTypeList);
+          
+    (* ')' *)
+    IF matchToken(Token.RightParen) THEN
+      lookahead := Lexer.consumeSym(lexer)
     ELSE (* resync *)
-      lookahead := skipToMatchSet(<ColonOrQualidentOrSemicolon>)
+      tokenList[0] := Token.Colon;
+      tokenList[1] := Token.Semicolon;
+      lookahead :=
+        skipToMatchListOrSet(tokenList, FIRST(Qualident))
     END (* IF *)
-    
   END; (* IF *)
   
   (* ( ':' returnedType )? *)
@@ -1632,11 +1593,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  formalTypeList :=
-    AST.NewListNode(AstNodeType.FormalTypeList, tmplist);
-  astNode :=
-    AST.NewNode(AstNodeType.ProcedureType, formalTypeList, retType);
-  AstQueue.Release(tmplist);
+  astNode := AST.NewNode(AstNodeType.ProcType, formalTypeList, retType);
   
   RETURN lookahead
 END procedureType;
@@ -2013,15 +1970,12 @@ END simpleVariadicFormalType;
 PROCEDURE procedureHeader ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  procId, fparams, fpList, retType : AstT;
-  tmplist : AstQueueT;
+  procId, fpList, retType : AstT;
   lookahead := SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("procedureHeader");
-  
-  AstQueue.New(tmplist);
-  
+    
   (* PROCEDURE *)
   lookahead := Lexer.consumeSym(lexer);
   
@@ -2037,27 +1991,11 @@ BEGIN
         (* '(' *)
         lookahead := Lexer.consumeSym(lexer);
         
-        (* formalParams *)
-        IF matchSet(FIRST(formalParams)) THEN
-          lookahead := formalParams(fparams);
-          AstQueue.Enqueue(tmplist, fparams)
-        ELSE (* resync *)
-          lookahead := skipToMatchSet(FOLLOW(FormalParams))
-        END; (* IF *)
-        
-        (* ( ';' formalParams )* *)
-        WHILE lookahead.token = Token.Semicolon DO
-          (* ';' *)
-          lookahead := Lexer.consumeSym(lexer);
-          
-          (* formalParams *)
-          IF matchSet(FIRST(formalParams)) THEN
-            lookahead := formalParams(fparams);
-            AstQueue.Enqueue(tmplist, fparams)
-          ELSE (* resync *)
-            lookahead := skipToMatchSet(FOLLOW(FormalParams))
-          END (* IF *)
-        END; (* WHILE *)
+        (* formalParams ( ';' formalParams )* *)
+        lookahead :=
+          parseListWSeparator(formalParams, Token.Semicolon,
+            FIRST(FormalParams), FOLLOW(FormalParams),
+            AstNodeType.FPList, fpList);
         
         (* ')' *)
         IF matchToken(Token.RightParen) THEN
@@ -2090,9 +2028,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  fplist := AST.NewListNode(AstNodeType.FPList, tmplist);
   astNode := AST.NewNode(AstNodeType.Proc, procId, fplist, retType);
-  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END procedureHeader;
@@ -2810,46 +2746,30 @@ END typeDeclaration;
 PROCEDURE indeterminateType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  fieldList, fieldListSeq, inField : AstT;
-  tmplist : AstQueueT;
+  fieldListSeq, inField : AstT;
   lookahead := SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("typeDeclaration");
-  
-  AstQueue.New(tmplist);
-  
+    
   (* IN *)
   lookahead := Lexer.consumeSym(lexer);
       
   (* RECORD *)
   IF matchToken(Token.Record) THEN
-    lookahead := Lexer.consumeSym(lexer);
+    lookahead := Lexer.consumeSym(lexer)
     
-    (* ( fieldDeclaration ';' )+ *)
-    REPEAT
-      (* fieldDeclaration *)
-      IF matchSet(FIRST(VarOrFieldDeclaration)) THEN
-        lookahead := varOrFieldDeclaration(fieldList);
-        AstQueue.Enqueue(tmplist, fieldList);
-        
-        (* ';' *)
-        IF matchToken(Token.Semicolon) THEN
-          lookahead := Lexer.consumeSym(lexer)
-        ELSE (* resync *)
-          lookahead := skiptToMatchSet(FIRST(VarOrFieldDeclaration))
-        END (* IF *)
-        
-      ELSE (* resync *)
-        lookahead := skiptToMatchSet(FIRST(VarOrFieldDeclaration))
-      END (* IF *)
-    UNTIL NOT inFIRST(VarOrFieldDeclaration, lookahead.token);
+    (* ( varOrFieldDeclaration ';' )+ *)
+    lookahead :=
+      parseListWTerminator(varOrFieldDeclaration, Token.Semicolon,
+        FIRST(VarOrFieldDeclaration), FOLLOW(VarOrFieldDeclaration),
+        AstNodeType.FieldListSeq, fieldListSeq)
     
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FIRST(IndeterminateField))
+    lookahead := skipToMatchTokenOrSet(Token.End, FIRST(indeterminateField))
   END; (* IF *)
-  
-  (* indeterminateType *)
+    
+  (* indeterminateField *)
   IF matchSet(FIRST(indeterminateField)) THEN
     lookahead := indeterminateField(inField)
   ELSE (* resync *)
@@ -2863,9 +2783,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  fieldListSeq := AST.NewListNode(AstNodeType.FieldListSeq, tmplist);
   astNode := AST.NewNode(AstNodeType.InRec, fieldListSeq, inField);
-  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END indeterminateType;
@@ -3167,38 +3085,16 @@ END procDeclaration;
 PROCEDURE statementSequence ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  stmt : AstT;
-  tmplist : AstQueueT;
   lookahead := SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("statementSequence");
   
-  AstQueue.New(tmplist);
-  
-  (* statement *)
-  lookahead := statement(stmt);
-  AstQueue.Enqueue(tmplist, stmt);
-  
-  (* ( ';' statement )* *)
-  WHILE lookahead.token = Token.Semicolon DO
-    (* ';' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* statement *)
-    IF matchSet(FIRST(Statement)) THEN
-      lookahead := statement(stmt);
-      AstQueue.Enqueue(tmplist, stmt)
-      
-    ELSE (* resync *)
-      lookahead :=
-        skipToMatchTokenOrSet(Token.Semicolon), FOLLOW(Statement))
-    END (* IF *)
-  END; (* WHILE *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.StmtSeq, tmplist);
-  AstQueue.Release(tmplist);
+  (* statement ( ';' statement )* *)
+  lookahead :=
+    parseListWSeparator(statement, Token.Semicolon,
+      FIRST(Statement), FOLLOW(Statement),
+      AstTypeNode.StmtSeq, astNode);
   
   RETURN lookahead
 END statementSequence;
@@ -3757,34 +3653,18 @@ END caseStatement;
 PROCEDURE case ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  clabels, cllist, stmtSeq : AstT;
-  tmplist : AstQueueT;
+  cllist, stmtSeq : AstT;
   lookahead : SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("case");
+  PARSER_DEBUG_INFO("case");  
   
-  AstQueue.New(tmplist);
-  
-  (* caseLabels *)
-  lookahead := caseLabels(clabels);
-  AstQueue.Enqueue(tmplist, clabels);
-  
-  (* ( ',' caseLabels )* *)
-  WHILE lookahead.token = Token.Comma DO
-    (* ',' *)
-    lookahead := Lexer.consumeSym(lexer);
+  (* caseLabels ( ',' caseLabels )* *)
+  lookahead :=
+    parseListWSeparator(caseLabels, Token.Comma,
+      FIRST(CaseLabels), FOLLOW(CaseLabels),
+      AstTypeNode.ClabelList, cllist);
     
-    (* caseLabels *)
-    IF matchSet(FIRST(CaseLabels)) THEN
-      lookahead := caseLabels(clabels);
-      AstQueue.Enqueue(tmplist, clabels);
-    ELSE (* resync *)
-      lookahead :=
-        skipToMatchTokenOrSet(Token.Comma, FIRST(CaseLabels))
-    END (* IF *)
-  END; (* WHILE *)
-  
   (* ':' *)
   IF matchToken(Token.Colon) THEN
     lookahead := Lexer.consumeSym(lexer)
@@ -4159,37 +4039,16 @@ PROCEDURE expressionList ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   expr : AstT;
-  tmplist : AstQueueT;
   lookahead := SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("expressionList");
   
-  AstQueue.New(tmplist);
-  
-  (* expression *)
-  lookahead := expression(expr);
-  AstQueue.Enqueue(tmplist, expr);
-  
-  (* ( ',' expression )* *)
-  WHILE lookahead.token = Token.Comma DO
-    (* ',' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* expression *)
-    IF matchSet(FIRST(Expression)) THEN
-      lookahead := expression(expr);
-      AstQueue.Enqueue(tmplist, expr)
-      
-    ELSE (* resync *)
-      lookahead :=
-        skipToMatchTokenOrSet(Token.Comma), FOLLOW(Expression))
-    END (* IF *)
-  END; (* WHILE *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.ExprList, tmplist);
-  AstQueue.Release(tmplist);
+  (* expression ( ',' expression )* *)
+  lookahead :=
+    parseListWSeparator(expression, Token.Comma,
+      FIRST(Expression), FOLLOW(Expression),
+      AstTypeNode.ExprList, astNode);
   
   RETURN lookahead
 END expressionList;
@@ -4685,9 +4544,9 @@ BEGIN
   lookahead := valueComponent(value);
   AstQueue.Enqueue(tmplist, value);
   
-  (* ( ';' statement )* *)
-  WHILE lookahead.token = Token.Semicolon DO
-    (* ';' *)
+  (* ( ';' valueComponent )* *)
+  WHILE lookahead.token = Token.Comma DO
+    (* ',' *)
     lookahead := Lexer.consumeSym(lexer);
     
     (* valueComponent *)
