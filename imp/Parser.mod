@@ -3552,8 +3552,101 @@ END returnStatement;
  *)
 PROCEDURE ifStatement ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  ifExpr, ifStmtSeq, expr, stmtSeq : AstT;
+  tmplist : AstQueueT;
+  lookahead : SymbolT;
+  
 BEGIN
-
+  PARSER_DEBUG_INFO("ifStatement");
+  
+  AstQueue.New(tmplist);
+  
+  (* IF *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* boolExpression *)
+  IF matchSet(FIRST(Expression)) THEN
+    lookahead := expression(expr)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Then, FIRST(StatementSequence))
+  END; (* IF *)
+  
+  (* THEN *)
+  IF matchToken(Token.Then) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FIRST(StatementSequence))
+  END; (*IF *)
+  
+  (* statementSequence *)
+  IF matchSet(FIRST(StatementSequence)) THEN
+    lookahead := statementSequence(stmtSeq)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Elsif, FIRST(Expression))
+  END; (* IF *)
+  
+  (* ( ELSIF boolExpression THEN statementSequence )* *)
+  WHILE lookahead.token = Token.Elsif DO
+    
+    (* ELSIF *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* boolExpression *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(expr)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Then, FIRST(StatementSequence))
+    END; (* IF *)
+    
+    (* THEN *)
+    IF matchToken(Token.Then) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FIRST(StatementSequence))
+    END; (*IF *)
+    
+    (* statementSequence *)
+    IF matchSet(FIRST(StatementSequence)) THEN
+      lookahead := statementSequence(stmtSeq)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.Elsif, FIRST(Expression))
+    END; (* IF *)
+    
+    elif := AST.NewNode(AstNodeType.Elif, expr, stmtSeq)
+    AstQueue.Enqueue(tmplist, elif);
+  END; (* WHILE *)
+  
+  elifSeq := AST.NewListNode(AstNodeType.ElifSeq, tmplist);
+  
+  (* ( ELSE statementSequence )? *)
+  IF lookahead.token = Token.Else THEN
+    
+    (* ELSE *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* statementSequence *)
+    IF matchSet(FIRST(StatementSequence)) THEN
+      lookahead := statementSequence(stmtSeq)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.End, FOLLOW(IfStatement))
+    END; (* IF *)
+    
+  ELSE (* no ELSE branch *)
+    stmtSeq := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode :=
+    AST.NewNode(AstNodeType.IfStmt, ifExpr, ifStmtSeq, elifSeq, stmtSeq);
+  AstQueue.Release(tmplist);
+  
+  RETURN lookahead
 END ifStatement;
 
 
