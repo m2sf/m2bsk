@@ -168,8 +168,8 @@ END matchTokenOrSet;
 PROCEDURE skipToMatchToken ( resyncToken : TokenT ) : SymbolT;
 
 VAR
- lookahead : SymbolT;
- 
+  lookahead : SymbolT;
+
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
 
@@ -183,33 +183,27 @@ END skipToMatchToken;
 
 
 (* --------------------------------------------------------------------------
- * private function skipToMatchList(tokenList)
+ * private function skipToMatchTokenOrToken(token1, token2)
  * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches a token in
- * the given token list.  Returns the new lookahead symbol.
+ * Consumes symbols until the lookahead symbol's token matches one of the
+ * a given tokens.  Returns the new lookahead symbol.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE skipToMatchList ( tokenList : ARRAY OF TokenT ) : SymbolT;
+PROCEDURE skipToMatchTokenOrToken ( token1, token2 : TokenT ) : SymbolT;
 
 VAR
- lookahead : SymbolT;
- tmpSet : TokenSetT;
- 
+  lookahead : SymbolT;
+
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* create temporary set with tokens in tokenList *)
-  TokenSet.NewFromArray(tmpSet, tokenList);
-  
-  (* skip symbols until lookahead token matches a token in the set *)
-  WHILE NOT TokenSet.isElement(tmpSet, lookahead.token) DO
+  (* skip symbols until lookahead token matches token1 or token2 *)
+  WHILE (lookahead.token # token1) AND (lookahead.token # token2) DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
-  
-  TokenSet.Release(resyncSet);
-  
+    
   RETURN lookahead
-END skipToMatchList;
+END skipToMatchTokenOrToken;
 
 
 (* --------------------------------------------------------------------------
@@ -222,8 +216,8 @@ END skipToMatchList;
 PROCEDURE skipToMatchSet ( resyncSet : TokenSetT ) : SymbolT;
 
 VAR
- lookahead : SymbolT;
- 
+  lookahead : SymbolT;
+  
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
@@ -248,14 +242,14 @@ PROCEDURE skipToMatchTokenOrSet
   ( resyncToken : TokenT; resyncSet : TokenSetT ) : SymbolT;
 
 VAR
- lookahead : SymbolT;
- 
+  lookahead : SymbolT;
+  
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
   (* skip symbols until lookahead matches resyncToken or resyncSet *)
   WHILE (lookahead.token # resyncToken) AND
-    (NOT TokenSet.isElement(resyncSet, lookahead.token)) DO
+    NOT TokenSet.isElement(resyncSet, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
   
@@ -264,36 +258,30 @@ END skipToMatchTokenOrSet;
 
 
 (* --------------------------------------------------------------------------
- * private function skipToMatchListOrSet(resyncTokenList, resyncSet)
+ * private function skipToMatchTokenOrTokenOrSet(token1, token2, resyncSet)
  * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches a token in
- * the given token list or in the given token set.  Returns the new
+ * Consumes symbols until the lookahead symbol's token matches one of the
+ * given tokens or a token in the given token set.  Returns the new
  * lookahead symbol.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE skipToMatchListOrSet
-  ( tokenList : ARRAY OF TokenT; resyncSet : TokenSetT ) : SymbolT;
+PROCEDURE skipToMatchTokenOrTokenOrSet
+  ( token1, token2 : TokenT; resyncSet : TokenSetT ) : SymbolT;
 
 VAR
- lookahead : SymbolT;
- tmpSet : TokenSetT;
- 
+  lookahead : SymbolT;
+  
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* create temporary set with tokens in tokenList *)
-  TokenSet.NewFromArray(tmpSet, tokenList);
-  
-  (* skip symbols until lookahead token matches a token in the set *)
-  WHILE NOT TokenSet.isElement(tmpSet, lookahead.token) AND
-   NOT TokenSet.isElement(resyncSet, lookahead.token) DO
+  (* skip symbols until lookahead token matches token1, token2 or resyncSet *)
+  WHILE (lookahead.token # token1) AND (lookahead.token # token2) AND
+    NOT TokenSet.isElement(resyncSet, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
   
-  TokenSet.Release(tmpSet);
-  
   RETURN lookahead
-END skipToMatchListOrSet;
+END skipToMatchTokenOrTokenOrSet;
 
 
 
