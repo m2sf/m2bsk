@@ -104,7 +104,7 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* check if lookahead matches any token in expected_set *)
+  (* check if lookahead matches any token in expectedSet *)
   IF TokenSet.isElement(expectedSet, lookahead.token) THEN
     RETURN TRUE
   ELSE (* no match *)
