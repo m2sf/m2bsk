@@ -159,6 +159,41 @@ END matchTokenOrSet;
 
 
 (* --------------------------------------------------------------------------
+ * private function matchSetOrSet(expectedSet1, expectedSet2)
+ * --------------------------------------------------------------------------
+ * Matches the lookahead symbol to set expectedSet1 or set expectedSet2 and
+ * returns TRUE if there is a match.  If there is no match, a syntax error
+ * is reported, the error count is incremented and FALSE is returned.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE matchSetOrSet ( expectedSet1, expectedSet2 : TokenSetT ) : BOOLEAN;
+
+VAR
+  lookahead : SymbolT;
+
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* check if lookahead matches any token in expected_set *)
+  IF TokenSet.isElement(expectedSet1, lookahead.token) OR 
+    TokenSet.isElement(expectedSet2, lookahead.token) THEN
+    RETURN TRUE
+  ELSE (* no match *)
+    (* report error *)
+    EmitSyntaxErrorWSetAndSet(expectedSet1, expectedSet2, lookahead);
+    
+    (* print source line *)
+    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
+        
+    (* update error count *)
+    stats.syntaxErrors := stats.syntaxErrors + 1;
+    
+    RETURN FALSE
+  END (* IF *)
+END matchSetOrSet;
+
+
+(* --------------------------------------------------------------------------
  * private function skipToMatchToken(resyncToken)
  * --------------------------------------------------------------------------
  * Consumes symbols until the lookahead symbol's token matches the given
@@ -486,18 +521,15 @@ VAR
   lookahead : SymbolT;
 
 BEGIN
-  
   PARSER_DEBUG_INFO("compilationUnit");
   
   lookahead := Lexer.lookaheadSym(lexer);
   
   CASE lookahead.token OF
-    Token.Definition :
-      lookahead := definitionModule(astNode)
+    Token.Definition : lookahead := definitionModule(astNode)
       
   | Token.Implementation,
-    Token.Module :
-      lookahead := implOrPrgmModule(astNode)
+    Token.Module : lookahead := implOrPrgmModule(astNode)
   END; (* CASE *)
   
   RETURN lookahead
