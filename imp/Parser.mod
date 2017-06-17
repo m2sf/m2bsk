@@ -363,7 +363,7 @@ END skipToMatchTokenOrTokenOrSet;
  *   <production> ( <separator> <production> )*
  *   ;
  *
- * where production and separator are passed in as parameters.
+ * where <production> and <separator> are passed in as parameters.
  *
  * astNode: (<nodeType> <production-1> <production-2> ... <production-N>)
  *
@@ -434,7 +434,7 @@ END parseListWSeparator;
  *   ( <production> <terminator> )+
  *   ;
  *
- * where production and terminator are passed in as parameters.
+ * where <production> and <terminator> are passed in as parameters.
  *
  * astNode: (<nodeType> <production-1> <production-2> ... <production-N>)
  *
@@ -452,7 +452,6 @@ END parseListWSeparator;
  *      AstNodeType.DefList, astNode);
  * --------------------------------------------------------------------------
  *)
-(* production ( separator production )* *)
 PROCEDURE parseListWTerminator
   ( production  : ParseProc;
     terminator  : TokenT;
@@ -577,6 +576,7 @@ BEGIN
   IF matchToken(Token.StdIdent) THEN
     ident1 = lookahead.lexeme;
     lookahead := Lexer.consumeSym(lexer)
+    
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet(Token.Semicolon, FIRST(Import))
   END; (* IF *)
@@ -624,6 +624,7 @@ BEGIN
     IF ident1 # ident2 THEN
       (* TO DO: report error -- module identifiers don't match *) 
     END (* IF *)
+    
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet(Token.Dot, FOLLOW(DefinitionModule))
   END; (* IF *)
@@ -910,7 +911,6 @@ BEGIN
       
       (* ';' *)
       IF matchToken(Token.Semicolon) THEN
-        (* consume semicolon *)
         lookahead := Lexer.consumeSym(lexer)
       ELSE (* resync *)
         lookahead := skipToMatchSet(FOLLOW(Definition))
@@ -923,7 +923,6 @@ BEGIN
       
       (* ';' *)
       IF matchToken(Token.Semicolon) THEN
-        (* consume semicolon *)
         lookahead := Lexer.consumeSym(lexer)
       ELSE (* resync *)
         lookahead := skipToMatchSet(FOLLOW(Definition))
@@ -963,7 +962,6 @@ BEGIN
   
   (* '=' *)
   IF matchToken(Token.Equal) THEN
-    (* consume '=' *)
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead :=
@@ -972,7 +970,6 @@ BEGIN
   
   (* constExpression *)
   IF matchSet(FIRST(Expression)) THEN
-    (* alias constExpression = expression *)
     lookahead := expression(expr)
   ELSE (* resync *)
     lookahead := skipToMatchSet(FOLLOW(ConstDefinition))
@@ -1016,7 +1013,6 @@ BEGIN
   
   (* '=' *)
   IF matchToken(Token.Equal) THEN
-    (* consume '=' *)
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet(Token.Opaque, FIRST(type))
@@ -1024,7 +1020,6 @@ BEGIN
   
   (* OPAQUE | type *)
   IF matchTokenOrSet(Token.Opaque ,FIRST(Type)) THEN
-    
     (* OPAQUE | *)
     IF lookahead.token = Token.Opaque THEN
       lookahead := Lexer.consumeSym(lexer)
@@ -1467,7 +1462,6 @@ BEGIN
   
   (* ( '(' recTypeToExtend ')' )? *)
   IF lookahead.token = Token.LeftParen THEN
-  
     (* '(' *)
     lookahead := Lexer.consumeSym(lexer);
     
@@ -1755,7 +1749,6 @@ BEGIN
   
   (* BARE ARRAY OF OCTET | addressTypeIdent *)
   IF matchTokenOrSet(Token.Bare, FIRST(AddressType)) THEN
-  
     (* BARE ARRAY OF OCTET | *)
     IF lookahead.token = Token.Bare THEN
       (* BARE *)
@@ -1827,7 +1820,6 @@ BEGIN
   
   (* ( UNSAFE '.' )?  *)
   IF lookahead.token = Token.Address THEN
-  
     (* UNSAFE *)
     LexQueue.Enqueue(tmplist, lookahead.lexeme);
     lookahead := Lexer.consumeSym(lexer);
@@ -1896,7 +1888,6 @@ BEGIN
   
   (* nonAttrFormalType | simpleVariadicFormalType *)
   IF matchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType)) THEN
-    
     (* simpleVariadicFormalType | *)
     IF lookahead.token = Token.ArgList THEN
       lookahead := simpleVariadicFormalType(ftype)
@@ -1993,7 +1984,6 @@ BEGIN
   
   (* procedureSignature *)
   IF matchSet(FIRST(ProcedureSignature)) THEN
-    
     (* ident *)
     IF matchSet(FIRST(Ident)) THEN
       lookahead := ident(procId)
@@ -2080,7 +2070,6 @@ BEGIN
   (* nonAttrFormalParams | *)
   IF inFIRST(IdentList, lookahead.token) THEN
     lookahead := nonAttrFormalParams(idlist);
-    
     (* ':' *)
     IF matchToken(Token.Colon) THEN
       lookahead := Lexer.consumeSym(lexer)
@@ -2091,7 +2080,6 @@ BEGIN
     
     (* nonAttrFormalType | simpleVariadicFormalType *)
     IF matchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType)) THEN
-      
       (* simpleVariadicFormalType | *)
       IF lookahead.token = Token.ArgList THEN
         lookahead := simpleVariadicFormalType(ftype)
@@ -2152,7 +2140,6 @@ BEGIN
   (* identList *)
   IF matchSet(FIRST(IdentList) THEN
     lookahead := identList(idlist);
-    
     (* ':' *)
     IF matchToken(Token.Colon) THEN
       lookahead := Lexer.consumeSym(lexer)
@@ -2168,7 +2155,6 @@ BEGIN
   
   (* nonAttrFormalType | simpleVariadicFormalType *)
   IF matchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType)) THEN
-    
     (* simpleVariadicFormalType | *)
     IF lookahead.token = Token.ArgList THEN
       lookahead := simpleVariadicFormalType(ftype)
@@ -2236,6 +2222,7 @@ BEGIN
   IF matchToken(Token.StdIdent) THEN
     ident1 = lookahead.lexeme;
     lookahead := Lexer.consumeSym(lexer)
+    
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet()
   END; (* IF *)
@@ -2408,8 +2395,8 @@ BEGIN
           FIRST(AliasDeclaration), FOLLOW(AliasDeclaration),
           AstNodeType.DeclList, astNode)
       
-   (* CONST *)
-    Token.Const :
+  (* CONST *)
+  | Token.Const :
       lookahead := Lexer.consumeSym(lexer);
       
       (* ( constDefinition ';' )+ *)
@@ -2418,7 +2405,7 @@ BEGIN
           FIRST(ConstDefinition), FOLLOW(ConstDefinition),
           AstNodeType.DeclList, astNode)
             
-   (* TYPE *)
+  (* TYPE *)
   | Token.Type :
       lookahead := Lexer.consumeSym(lexer);
       
@@ -2427,8 +2414,8 @@ BEGIN
         parseListWTerminator(typeDeclaration, Token.Semicolon,
           FIRST(TypeDeclaration), FOLLOW(TypeDeclaration),
           AstNodeType.DeclList, astNode)
-  
-   (* VAR ( varOrFieldDeclaration ';' )+ | *)
+   
+  (* VAR ( varOrFieldDeclaration ';' )+ | *)
   | Token.Var :
       lookahead := Lexer.consumeSym(lexer);
       
@@ -2438,19 +2425,18 @@ BEGIN
           FIRST(VarOrFieldDeclaration), FOLLOW(VarOrFieldDeclaration),
           AstNodeType.DeclList, astNode)
   
-   (* procedureHeader ';' block ident ';' | *)
+  (* procedureHeader ';' block ident ';' | *)
   | Token.Procedure :
       (* procedureHeader *)
       lookahead := procDeclaration(astNode)
             
-   (* toDoList ';' *)
+  (* toDoList ';' *)
   | Token.To :  
       (* toDoList *)
       lookahead := toDoList(astNode);
       
       (* ';' *)
       IF matchToken(Token.Semicolon) THEN
-        (* consume semicolon *)
         lookahead := Lexer.consumeSym(lexer)
       ELSE (* resync *)
         lookahead := skipToMatchSet(FOLLOW(Declaration))
@@ -2539,7 +2525,6 @@ BEGIN
   
   (* '=' qualifiedName | ( ',' aliasName )+ '=' qualifiedWildcard *)
   IF matchSet(FIRST(NamedAliasDeclTail)) THEN
-    
     (* '=' qualifiedName | *)
     IF lookahead.token = Token.Equal THEN
       (* '=' *)
@@ -2714,17 +2699,14 @@ BEGIN
   
   (* '=' *)
   IF matchToken(Token.Equal) THEN
-    (* consume '=' *)
     lookahead := Lexer.consumeSym(lexer)
-  ELSE
-    (* resync *)
+  ELSE (* resync *)
     lookahead :=
       skipToMatchTokenOrSet(Token.In, FIRST(Type))
   END; (* IF *)
   
   (* indeterminateType | type *)
   IF matchTokenOrSet(Token.In, FIRST(type)) THEN
-    
     (* indeterminateType | *)
     IF lookahead.token = Token.In THEN
       lookahead := indeterminateType(typeDecl)
@@ -2790,6 +2772,7 @@ BEGIN
     lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(IndeterminateType))
   END; (* IF *)
   
+  (* END *)
   IF matchToken(Token.End) THEN
     lookahead := Lexer.consumeSym(lexer)
   ELSE
@@ -2841,7 +2824,7 @@ BEGIN
   (* ':' *)
   IF matchToken(Token.Colon) THEN
     lookahead := Lexer.consumeSym(lexer)
-  ELSE
+  ELSE (* resync *)
     lookahead :=
       skipToMatchTokenOrTokenOrSet(Token.Bare, Token.Array, FIRST(Ident))
   END; (* IF *)
@@ -2849,14 +2832,14 @@ BEGIN
   (* BARE *)
   IF matchToken(Token.Bare) THEN
     lookahead := Lexer.consumeSym(lexer)
-  ELSE
+  ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet(Token.Array, FIRST(Ident))
   END; (* IF *)
   
   (* ARRAY *)
   IF matchToken(Token.Bare) THEN
     lookahead := Lexer.consumeSym(lexer)
-  ELSE
+  ELSE (* resync *)
     lookahead :=
       skipToMatchTokenOrSet(Token.Of, FIRST(Ident))
   END; (* IF *)
@@ -2872,7 +2855,7 @@ BEGIN
   (* OF *)
   IF matchToken(Token.Of) THEN
     lookahead := Lexer.consumeSym(lexer)
-  ELSE
+  ELSE (* resync *)
     lookahead :=
       skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(IndeterminateField))
   END; (* IF *)
@@ -2926,7 +2909,6 @@ BEGIN
   
   (* typeIdent | anonType *)
   IF matchSetOrSet(FIRST(Qualident), FIRST(AnonType)) THEN
-    
     (* typeIdent | *)
     IF inFIRST(Qualident, lookahead.token) THEN
       lookahead := qualident(typeNode)
@@ -2974,7 +2956,6 @@ BEGIN
   (* ARRAY valueCount OF typeIdent | *)
   IF lookahead.token = Token.Array THEN
     lookahead := Lexer.consumeSym(lexer);
-    
     (* valueCount *)
     IF matchSet(FIRST(Expression) THEN
       lookahead := expression(valueCount)
@@ -3002,6 +2983,7 @@ BEGIN
   (* subrangeType | *)
   ELSIF inFIRST(SubrangeType) THEN
     lookahead := subrangeType(astNode)
+    
   (* procedureType *)
   ELSE
     lookahead := procedureType(astNode)
@@ -3054,7 +3036,7 @@ BEGIN
     (* retry *)
     IF inFIRST(Block) THEN
       lookahead := block(blockNode)
-    END
+    END (* IF *)
   END (* IF *)
   
   (* ident *)
@@ -3389,6 +3371,7 @@ BEGIN
       ELSE (* resync *)
         lookahead := skipToMatchSet(FOLLOW(MemMgtOperation))
       END (* IF *)
+      
     ELSE (* no size *)
       initSize := AST.emptyNode()
     END; (* IF *)
@@ -3446,7 +3429,6 @@ BEGIN
   
   (* ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )? *)
   CASE lookahead.token OF
-  
   (* IncOrDecSuffix | *)
     Token.PlusPlus :
       (* '++' *)
@@ -3479,8 +3461,6 @@ BEGIN
   
   (* '(' expressionList ')' *)
   | Token.LeftParen :
-      lookahead := Lexer.consumeSym(lexer);
-      
       (* '(' *)
       lookahead := Lexer.consumeSym(lexer);
       
@@ -3642,7 +3622,6 @@ BEGIN
   
   (* ( ELSE statementSequence )? *)
   IF lookahead.token = Token.Else THEN
-    
     (* ELSE *)
     lookahead := Lexer.consumeSym(lexer);
     
@@ -3737,7 +3716,6 @@ BEGIN
   
   (* ( ELSE statementSequence )? *)
   IF lookahead.token = Token.Else THEN
-    
     (* ELSE *)
     lookahead := Lexer.consumeSym(lexer);
     
@@ -3854,7 +3832,8 @@ BEGIN
     ELSE (* resync *)
       lookahead := skipToMatchSet(FOLLOW(caseLabels))
     END (* IF *)
-  ELSE
+    
+  ELSE (* sole case label *)
     expr2 := AST.emptyNode()
   END; (* IF *)
   
@@ -4149,6 +4128,7 @@ BEGIN
     ELSE (* resync *)
       lookahead := skipToMatchSet(FOLLOW(forLoopVariants))
     END (* IF *)
+    
   ELSE (* no value given *)
     value := AST.emptyNode()
   END; (* IF *)
@@ -4332,7 +4312,6 @@ BEGIN
   
   (* ']' designatorTail? | '..' expression? ']' *)
   IF matchSet(FIRST(SubscriptOrSliceTail)) THEN
-    
     (* ']' designatorTail? | *)
     IF lookahead.token = Token.LeftBracket THEN
       (* ']' *)
@@ -4848,6 +4827,7 @@ BEGIN
     
     (* construct function call node *)
     astNode := AST.NewNode(AstNodeType.FCall, desig, exprList)
+    
   ELSE (* sole designator *)
     astNode := desig
   END; (* IF *)
