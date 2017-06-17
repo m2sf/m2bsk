@@ -3192,24 +3192,141 @@ END statement;
  *
  * alias issueId = wholeNumber ;
  *
+ * alias weight = constExpression ;
+ *
+ * astNode: (TODO issueId weight taskList)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE toDoList ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  issueId, weight, taskList : AstT;
+  lookahead := SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("toDoList");
+  
+  (* TO *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* DO *)
+  IF matchToken(Token.Do) THEN
+    lookahead := Lexer.consumeSym(lexer);
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchSetOrSet(FIRST(TrackingRef), FIRST(TaskToDo))
+  END; (* IF *)
+  
+  (* trackingRef? *)
+  IF inFIRST(TrackingRef, lookahead.token) THEN
+    (* '(' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* issueId *)
+    IF matchSet(FIRST()) THEN
+      lookahead := (* TO DO *)
+    ELSE (* resync *)
+      lookahead := (* TO DO *)
+    END; (* IF *)
+    
+    (* ',' *)
+    IF matchToken(Token.Comma) THEN
+      lookahead := Lexer.consumeSym(lexer);
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.RightParen, FIRST(Expression))
+    END; (* IF *)
+    
+    (* weight *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(weight)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.RightParen, FOLLOW(TrackingRef))
+    END; (* IF *)
+    
+    (* ')' *)
+    IF matchToken(Token.RightParen) THEN
+      lookahead := Lexer.consumeSym(lexer);
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(TrackingRef))
+    END (* IF *)
+    
+  ELSE (* no tracking reference *)
+    issueId := AST.emptyNode();
+    weight := AST.emptyNode()
+  END;
+  
+  (* taskToDo ( ';' taskToDo )* *)
+  lookahead :=
+    parseListWithSeparator(taskToDo, Token.Semicolon,
+    FIRST(TaskToDo), FOLLOW(TaskToDo, AstNodeType.TaskToDo, taskList);
+    
+  (* END *)
+  IF matchToken(Token.End) THEN
+    lookahead := Lexer.consumeSym(lexer);
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(ToDoList))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.ToDo, issueId, weight, taskList);
+  
+  RETURN lookahead
+END toDoList;
+
+
+(* --------------------------------------------------------------------------
+ * private function taskToDo(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule taskToDo, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
  * taskToDo :=
  *   description ( ',' estimatedHours )?
  *   ;
  *
  * alias description = StringLiteral ;
  *
- * alias weight = constExpression ;
- *
  * alias estimatedHours = constExpression ;
  *
- * astNode: (TODO intValNode exprNode quotedValNode exprNode)
+ * astNode: (TASKLIST task-1 task-2 ... task-N)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE toDoList ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE taskToDo ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  lexeme : LexemeT;
+  description, estimatedHours : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
-END toDoList;
+  PARSER_DEBUG_INFO("toDoList");
+  
+  (* description *)
+  lexeme = lookahead.lexeme;
+  description := AST.NewTerminalNode(AstNodeType.QuotedVal, lexeme);
+  
+  (* ( ',' estimatedHours )? *)
+  IF lookahead.token = Token.Comma THEN
+    (* ',' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* estimatedHours *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(estimatedHours)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(TaskToDo));
+    END (* IF *)
+    
+  ELSE (* no estimate given *)
+    estimatedHours := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.TaskToDo, descriotion, estimatedHours);
+    
+  RETURN lookahead
+END taskToDo;
 
 
 (* --------------------------------------------------------------------------
