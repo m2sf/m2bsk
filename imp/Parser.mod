@@ -86,424 +86,9 @@ END compilationUnit;
 
 (* Private Operations *)
 
-(* --------------------------------------------------------------------------
- * private function matchToken(expectedToken)
- * --------------------------------------------------------------------------
- * Matches the lookahead symbol to expectedToken and returns TRUE if they
- * match.  If they don't match, a syntax error is reported, the error count
- * is incremented and FALSE is returned.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE matchToken ( expectedToken : TokenT ) : BOOLEAN;
-
-VAR
-  lookahead : SymbolT;
-
-BEGIN
-  lookahead := Lexer.nextSym(lexer);
-  
-  IF expectedToken = lookahead.token THEN
-    RETURN  TRUE
-    
-  ELSE (* no match *)
-    (* report error *)
-    EmitSyntaxErrorWToken(expectedToken, lookahead);
-        
-    (* print source line *)
-    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
-    
-    (* update error count *)
-    stats.syntaxErrors := stats.syntaxErrors + 1;
-    
-    RETURN FALSE
-  END (* IF *)
-END matchToken;
-
-
-(* --------------------------------------------------------------------------
- * private function matchSet(expectedSet)
- * --------------------------------------------------------------------------
- * Matches the lookahead symbol to set expectedSet and returns TRUE if it
- * matches any token in the set.  If there is no match, a syntax error is
- * reported, the error count is incremented and FALSE is returned.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE matchSet ( expectedSet : TokenSetT ) : BOOLEAN;
-
-VAR
-  lookahead : SymbolT;
-
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* check if lookahead matches any token in expectedSet *)
-  IF TokenSet.isElement(expectedSet, lookahead.token) THEN
-    RETURN TRUE
-    
-  ELSE (* no match *)
-    (* report error *)
-    EmitSyntaxErrorWSet(expectedSet, lookahead);
-    
-    (* print source line *)
-    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
-        
-    (* update error count *)
-    stats.syntaxErrors := stats.syntaxErrors + 1;
-    
-    RETURN FALSE
-  END (* IF *)
-END matchSet;
-
-
-(* --------------------------------------------------------------------------
- * private function matchTokenOrSet(expectedToken, expectedSet)
- * --------------------------------------------------------------------------
- * Matches the lookahead symbol to token expectedToken or set expectedSet and
- * returns TRUE if there is a match.  If there is no match, a syntax error is
- * reported, the error count is incremented and FALSE is returned.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE matchTokenOrSet
-  ( expectedToken : TokenT; expectedSet : TokenSetT ) : BOOLEAN;
-
-VAR
-  lookahead : SymbolT;
-
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* check if lookahead matches token or any token in expectedSet *)
-  IF expectedToken = lookahead.token OR 
-    TokenSet.isElement(expectedSet, lookahead.token) THEN
-    RETURN TRUE
-    
-  ELSE (* no match *)
-    (* report error *)
-    EmitSyntaxErrorWTokenAndSet(expectedToken, expectedSet, lookahead);
-    
-    (* print source line *)
-    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
-        
-    (* update error count *)
-    stats.syntaxErrors := stats.syntaxErrors + 1;
-    
-    RETURN FALSE
-  END (* IF *)
-END matchTokenOrSet;
-
-
-(* --------------------------------------------------------------------------
- * private function matchSetOrSet(expectedSet1, expectedSet2)
- * --------------------------------------------------------------------------
- * Matches the lookahead symbol to set expectedSet1 or set expectedSet2 and
- * returns TRUE if there is a match.  If there is no match, a syntax error
- * is reported, the error count is incremented and FALSE is returned.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE matchSetOrSet ( expectedSet1, expectedSet2 : TokenSetT ) : BOOLEAN;
-
-VAR
-  lookahead : SymbolT;
-
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* check if lookahead matches any token in expectedSet1 or expectedSet2 *)
-  IF TokenSet.isElement(expectedSet1, lookahead.token) OR 
-    TokenSet.isElement(expectedSet2, lookahead.token) THEN
-    RETURN TRUE
-    
-  ELSE (* no match *)
-    (* report error *)
-    EmitSyntaxErrorWSetAndSet(expectedSet1, expectedSet2, lookahead);
-    
-    (* print source line *)
-    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
-        
-    (* update error count *)
-    stats.syntaxErrors := stats.syntaxErrors + 1;
-    
-    RETURN FALSE
-  END (* IF *)
-END matchSetOrSet;
-
-
-(* --------------------------------------------------------------------------
- * private function skipToMatchTokenOrToken(token1, token2)
- * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches token1 or
- * token2.  Returns the new lookahead symbol.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE skipToMatchTokenOrToken ( token1, token2 : TokenT ) : SymbolT;
-
-VAR
-  lookahead : SymbolT;
-
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* skip symbols until lookahead token matches token1 or token2 *)
-  WHILE (lookahead.token # token1) AND (lookahead.token # token2) DO
-    lookahead = Lexer.consumeSym(lexer)
-  END; (* WHILE *)
-    
-  RETURN lookahead
-END skipToMatchTokenOrToken;
-
-
-(* --------------------------------------------------------------------------
- * private function skipToMatchSet(set)
- * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches any token in
- * set.  Returns the new lookahead symbol.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE skipToMatchSet ( set : TokenSetT ) : SymbolT;
-
-VAR
-  lookahead : SymbolT;
-  
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* skip symbols until lookahead matches any token in set *)
-  WHILE NOT TokenSet.isElement(set, lookahead.token) DO
-    lookahead = Lexer.consumeSym(lexer)
-  END; (* WHILE *)
-  
-  RETURN lookahead
-END skipToMatchSet;
-
-
-(* --------------------------------------------------------------------------
- * private function skipToMatchSetOrSet(set1, set2)
- * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches any token in
- * set1 or set2.  Returns the new lookahead symbol.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE skipToMatchSetOrSet ( set1, set2 : TokenSetT ) : SymbolT;
-
-VAR
-  lookahead : SymbolT;
-  
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* skip symbols until lookahead matches any token in set1 or set2 *)
-  WHILE NOT TokenSet.isElement(set1, lookahead.token) AND
-    NOT TokenSet.isElement(set2, lookahead.token) DO
-    lookahead = Lexer.consumeSym(lexer)
-  END; (* WHILE *)
-  
-  RETURN lookahead
-END skipToMatchSetOrSet;
-
-
-(* --------------------------------------------------------------------------
- * private function skipToMatchTokenOrSet(token, set)
- * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches token or any
- * token in set.  Returns the new lookahead symbol.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE skipToMatchTokenOrSet ( token : TokenT; set : TokenSetT ) : SymbolT;
-
-VAR
-  lookahead : SymbolT;
-  
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* skip symbols until lookahead matches token or any token in set *)
-  WHILE (lookahead.token # token) AND
-    NOT TokenSet.isElement(set, lookahead.token) DO
-    lookahead = Lexer.consumeSym(lexer)
-  END; (* WHILE *)
-  
-  RETURN lookahead
-END skipToMatchTokenOrSet;
-
-
-(* --------------------------------------------------------------------------
- * private function skipToMatchTokenOrTokenOrSet(token1, token2, set)
- * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches token1, token2
- * or any token in set.  Returns the new lookahead symbol.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE skipToMatchTokenOrTokenOrSet
-  ( token1, token2 : TokenT; set : TokenSetT ) : SymbolT;
-
-VAR
-  lookahead : SymbolT;
-  
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* skip symbols until lookahead token matches token1, token2 or set *)
-  WHILE (lookahead.token # token1) AND (lookahead.token # token2) AND
-    NOT TokenSet.isElement(set, lookahead.token) DO
-    lookahead = Lexer.consumeSym(lexer)
-  END; (* WHILE *)
-  
-  RETURN lookahead
-END skipToMatchTokenOrTokenOrSet;
-
-
-
 (* ************************************************************************ *
  * Syntax Analysis                                                          *
  * ************************************************************************ *)
-
-(* --------------------------------------------------------------------------
- * Generic Parsing Functions
- * ------------------------------------------------------------------------ *)
-
-(* --------------------------------------------------------------------------
- * private function parseListWSeparator(p, sep, first, follow, nodeType, ast)
- * --------------------------------------------------------------------------
- * Parses a generic list rule, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * genericListWSeparator :=
- *   <production> ( <separator> <production> )*
- *   ;
- *
- * where <production> and <separator> are passed in as parameters.
- *
- * astNode: (<nodeType> <production-1> <production-2> ... <production-N>)
- *
- * Usage:
- *
- * To parse an expression list with the syntax
- *
- *   expression ( ',' expression )*
- *
- * call the generic list rule as follows
- *
- *  lookahead :=
- *    parseListWSeparator(expression, Token.Comma,
- *      FIRST(Expression), FOLLOW(Expression),
- *      AstNodeType.ExprList, astNode);
- * --------------------------------------------------------------------------
- *)
-(* production ( separator production )* *)
-PROCEDURE parseListWSeparator
-  ( production  : ParseProc;
-    separator   : TokenT;
-    firstSet,
-    followSet   : TokenSetT;
-    nodeType    : AstNodeType;
-    VAR astNode : AstT ) : SymbolT;
-
-VAR
-  node : AstT;
-  tmplist : AstQueueT;
-  lookahead : SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("parseListWSeparator");
-  
-  (* production *)
-  lookahead := production(node);
-  AstQueue.Enqueue(tmplist, node);
-  
-  (* ( separator production )* *)
-  WHILE lookahead.token = separator DO
-    (* separator *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* production *)
-    IF matchSet(firstSet) THEN
-      lookahead := production(node);
-      AstQueue.Enqueue(tmplist, node)
-    
-    ELSE (* resync *)
-      lookahead := matchTokenOrSet(separator, followSet)
-    END (* IF *)
-  END; (* WHILE *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewListNode(nodeType, tmplist);
-  
-  RETURN lookahead
-END parseListWSeparator;
-
-
-(* --------------------------------------------------------------------------
- * private function parseListWTerminator(p, t, first, follow, nodeType, ast)
- * --------------------------------------------------------------------------
- * Parses a generic list rule, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * genericlistWTerminator :=
- *   ( <production> <terminator> )+
- *   ;
- *
- * where <production> and <terminator> are passed in as parameters.
- *
- * astNode: (<nodeType> <production-1> <production-2> ... <production-N>)
- *
- * Usage:
- *
- * To parse a definition list with the syntax
- *
- *   ( constDefinition ';' )+
- *
- * call the generic list rule as follows
- *
- *  lookahead :=
- *    parseListWTerminator(constDefinition, Token.Semicolon,
- *      FIRST(ConstDefinition), FOLLOW(ConstDefinition),
- *      AstNodeType.DefList, astNode);
- * --------------------------------------------------------------------------
- *)
-PROCEDURE parseListWTerminator
-  ( production  : ParseProc;
-    terminator  : TokenT;
-    firstSet,
-    followSet   : TokenSetT;
-    nodeType    : AstNodeType;
-    VAR astNode : AstT ) : SymbolT;
-
-VAR
-  node : AstT;
-  tmplist : AstQueueT;
-  lookahead : SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("parseListWTerminator");
-  
-  (* production *)
-  lookahead := production(node);
-  AstQueue.Enqueue(tmplist, node);
-  
-  (* ( production terminator )+ *)
-  REPEAT
-    (* production *)
-    IF matchSet(firstSet) THEN
-      lookahead := production(node);
-      AstQueue.Enqueue(tmplist, node)
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(terminator, firstSet)
-    END;
-      
-    (* terminator *)
-    IF matchToken(terminator) THEN
-      lookahead := Lexer.consumeSym(lexer)
-    ELSE (* resync *)
-      lookahead := matchSet(followSet)
-    END (* IF *)
-  UNTIL NOT inFIRST(firstSet, lookahead.token);
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewListNode(nodeType, tmplist);
-  
-  RETURN lookahead
-END parseListWTerminator;
-
 
 (* --------------------------------------------------------------------------
  * Specific Parsing Functions
@@ -4393,9 +3978,7 @@ END expressionList;
  *       END
  *     END
  *   END
- * --------------------------------------------------------------------------
- *)
-
+ * ------------------------------------------------------------------------ *)
 
 (* --------------------------------------------------------------------------
  * private function expression(astNode)
@@ -4920,6 +4503,423 @@ BEGIN
   
   RETURN lookahead
 END valueComponent;
+
+
+(* --------------------------------------------------------------------------
+ * Generic Parsing Functions
+ * ------------------------------------------------------------------------ *)
+
+(* --------------------------------------------------------------------------
+ * private function parseListWSeparator(p, sep, first, follow, nodeType, ast)
+ * --------------------------------------------------------------------------
+ * Parses a generic list rule, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * genericListWSeparator :=
+ *   <production> ( <separator> <production> )*
+ *   ;
+ *
+ * where <production> and <separator> are passed in as parameters.
+ *
+ * astNode: (<nodeType> <production-1> <production-2> ... <production-N>)
+ *
+ * Usage:
+ *
+ * To parse an expression list with the syntax
+ *
+ *   expression ( ',' expression )*
+ *
+ * call the generic list rule as follows
+ *
+ *  lookahead :=
+ *    parseListWSeparator(expression, Token.Comma,
+ *      FIRST(Expression), FOLLOW(Expression),
+ *      AstNodeType.ExprList, astNode);
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE parseListWSeparator
+  ( production  : ParseProc;
+    separator   : TokenT;
+    firstSet,
+    followSet   : TokenSetT;
+    nodeType    : AstNodeType;
+    VAR astNode : AstT ) : SymbolT;
+
+VAR
+  node : AstT;
+  tmplist : AstQueueT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("parseListWSeparator");
+  
+  (* production *)
+  lookahead := production(node);
+  AstQueue.Enqueue(tmplist, node);
+  
+  (* ( separator production )* *)
+  WHILE lookahead.token = separator DO
+    (* separator *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* production *)
+    IF matchSet(firstSet) THEN
+      lookahead := production(node);
+      AstQueue.Enqueue(tmplist, node)
+    
+    ELSE (* resync *)
+      lookahead := matchTokenOrSet(separator, followSet)
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewListNode(nodeType, tmplist);
+  
+  RETURN lookahead
+END parseListWSeparator;
+
+
+(* --------------------------------------------------------------------------
+ * private function parseListWTerminator(p, t, first, follow, nodeType, ast)
+ * --------------------------------------------------------------------------
+ * Parses a generic list rule, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * genericlistWTerminator :=
+ *   ( <production> <terminator> )+
+ *   ;
+ *
+ * where <production> and <terminator> are passed in as parameters.
+ *
+ * astNode: (<nodeType> <production-1> <production-2> ... <production-N>)
+ *
+ * Usage:
+ *
+ * To parse a definition list with the syntax
+ *
+ *   ( constDefinition ';' )+
+ *
+ * call the generic list rule as follows
+ *
+ *  lookahead :=
+ *    parseListWTerminator(constDefinition, Token.Semicolon,
+ *      FIRST(ConstDefinition), FOLLOW(ConstDefinition),
+ *      AstNodeType.DefList, astNode);
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE parseListWTerminator
+  ( production  : ParseProc;
+    terminator  : TokenT;
+    firstSet,
+    followSet   : TokenSetT;
+    nodeType    : AstNodeType;
+    VAR astNode : AstT ) : SymbolT;
+
+VAR
+  node : AstT;
+  tmplist : AstQueueT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("parseListWTerminator");
+  
+  (* production *)
+  lookahead := production(node);
+  AstQueue.Enqueue(tmplist, node);
+  
+  (* ( production terminator )+ *)
+  REPEAT
+    (* production *)
+    IF matchSet(firstSet) THEN
+      lookahead := production(node);
+      AstQueue.Enqueue(tmplist, node)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(terminator, firstSet)
+    END;
+      
+    (* terminator *)
+    IF matchToken(terminator) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := matchSet(followSet)
+    END (* IF *)
+  UNTIL NOT inFIRST(firstSet, lookahead.token);
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewListNode(nodeType, tmplist);
+  
+  RETURN lookahead
+END parseListWTerminator;
+
+
+(* ************************************************************************ *
+ * Token Matching and Resynchronisation                                     *
+ * ************************************************************************ *)
+
+(* --------------------------------------------------------------------------
+ * private function matchToken(expectedToken)
+ * --------------------------------------------------------------------------
+ * Matches the lookahead symbol to expectedToken and returns TRUE if they
+ * match.  If they don't match, a syntax error is reported, the error count
+ * is incremented and FALSE is returned.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE matchToken ( expectedToken : TokenT ) : BOOLEAN;
+
+VAR
+  lookahead : SymbolT;
+
+BEGIN
+  lookahead := Lexer.nextSym(lexer);
+  
+  IF expectedToken = lookahead.token THEN
+    RETURN  TRUE
+    
+  ELSE (* no match *)
+    (* report error *)
+    EmitSyntaxErrorWToken(expectedToken, lookahead);
+        
+    (* print source line *)
+    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
+    
+    (* update error count *)
+    stats.syntaxErrors := stats.syntaxErrors + 1;
+    
+    RETURN FALSE
+  END (* IF *)
+END matchToken;
+
+
+(* --------------------------------------------------------------------------
+ * private function matchSet(expectedSet)
+ * --------------------------------------------------------------------------
+ * Matches the lookahead symbol to set expectedSet and returns TRUE if it
+ * matches any token in the set.  If there is no match, a syntax error is
+ * reported, the error count is incremented and FALSE is returned.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE matchSet ( expectedSet : TokenSetT ) : BOOLEAN;
+
+VAR
+  lookahead : SymbolT;
+
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* check if lookahead matches any token in expectedSet *)
+  IF TokenSet.isElement(expectedSet, lookahead.token) THEN
+    RETURN TRUE
+    
+  ELSE (* no match *)
+    (* report error *)
+    EmitSyntaxErrorWSet(expectedSet, lookahead);
+    
+    (* print source line *)
+    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
+        
+    (* update error count *)
+    stats.syntaxErrors := stats.syntaxErrors + 1;
+    
+    RETURN FALSE
+  END (* IF *)
+END matchSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function matchTokenOrSet(expectedToken, expectedSet)
+ * --------------------------------------------------------------------------
+ * Matches the lookahead symbol to token expectedToken or set expectedSet and
+ * returns TRUE if there is a match.  If there is no match, a syntax error is
+ * reported, the error count is incremented and FALSE is returned.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE matchTokenOrSet
+  ( expectedToken : TokenT; expectedSet : TokenSetT ) : BOOLEAN;
+
+VAR
+  lookahead : SymbolT;
+
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* check if lookahead matches token or any token in expectedSet *)
+  IF expectedToken = lookahead.token OR 
+    TokenSet.isElement(expectedSet, lookahead.token) THEN
+    RETURN TRUE
+    
+  ELSE (* no match *)
+    (* report error *)
+    EmitSyntaxErrorWTokenAndSet(expectedToken, expectedSet, lookahead);
+    
+    (* print source line *)
+    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
+        
+    (* update error count *)
+    stats.syntaxErrors := stats.syntaxErrors + 1;
+    
+    RETURN FALSE
+  END (* IF *)
+END matchTokenOrSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function matchSetOrSet(expectedSet1, expectedSet2)
+ * --------------------------------------------------------------------------
+ * Matches the lookahead symbol to set expectedSet1 or set expectedSet2 and
+ * returns TRUE if there is a match.  If there is no match, a syntax error
+ * is reported, the error count is incremented and FALSE is returned.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE matchSetOrSet ( expectedSet1, expectedSet2 : TokenSetT ) : BOOLEAN;
+
+VAR
+  lookahead : SymbolT;
+
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* check if lookahead matches any token in expectedSet1 or expectedSet2 *)
+  IF TokenSet.isElement(expectedSet1, lookahead.token) OR 
+    TokenSet.isElement(expectedSet2, lookahead.token) THEN
+    RETURN TRUE
+    
+  ELSE (* no match *)
+    (* report error *)
+    EmitSyntaxErrorWSetAndSet(expectedSet1, expectedSet2, lookahead);
+    
+    (* print source line *)
+    Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
+        
+    (* update error count *)
+    stats.syntaxErrors := stats.syntaxErrors + 1;
+    
+    RETURN FALSE
+  END (* IF *)
+END matchSetOrSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function skipToMatchTokenOrToken(token1, token2)
+ * --------------------------------------------------------------------------
+ * Consumes symbols until the lookahead symbol's token matches token1 or
+ * token2.  Returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToMatchTokenOrToken ( token1, token2 : TokenT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* skip symbols until lookahead token matches token1 or token2 *)
+  WHILE (lookahead.token # token1) AND (lookahead.token # token2) DO
+    lookahead = Lexer.consumeSym(lexer)
+  END; (* WHILE *)
+    
+  RETURN lookahead
+END skipToMatchTokenOrToken;
+
+
+(* --------------------------------------------------------------------------
+ * private function skipToMatchSet(set)
+ * --------------------------------------------------------------------------
+ * Consumes symbols until the lookahead symbol's token matches any token in
+ * set.  Returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToMatchSet ( set : TokenSetT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+  
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* skip symbols until lookahead matches any token in set *)
+  WHILE NOT TokenSet.isElement(set, lookahead.token) DO
+    lookahead = Lexer.consumeSym(lexer)
+  END; (* WHILE *)
+  
+  RETURN lookahead
+END skipToMatchSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function skipToMatchSetOrSet(set1, set2)
+ * --------------------------------------------------------------------------
+ * Consumes symbols until the lookahead symbol's token matches any token in
+ * set1 or set2.  Returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToMatchSetOrSet ( set1, set2 : TokenSetT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+  
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* skip symbols until lookahead matches any token in set1 or set2 *)
+  WHILE NOT TokenSet.isElement(set1, lookahead.token) AND
+    NOT TokenSet.isElement(set2, lookahead.token) DO
+    lookahead = Lexer.consumeSym(lexer)
+  END; (* WHILE *)
+  
+  RETURN lookahead
+END skipToMatchSetOrSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function skipToMatchTokenOrSet(token, set)
+ * --------------------------------------------------------------------------
+ * Consumes symbols until the lookahead symbol's token matches token or any
+ * token in set.  Returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToMatchTokenOrSet ( token : TokenT; set : TokenSetT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+  
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* skip symbols until lookahead matches token or any token in set *)
+  WHILE (lookahead.token # token) AND
+    NOT TokenSet.isElement(set, lookahead.token) DO
+    lookahead = Lexer.consumeSym(lexer)
+  END; (* WHILE *)
+  
+  RETURN lookahead
+END skipToMatchTokenOrSet;
+
+
+(* --------------------------------------------------------------------------
+ * private function skipToMatchTokenOrTokenOrSet(token1, token2, set)
+ * --------------------------------------------------------------------------
+ * Consumes symbols until the lookahead symbol's token matches token1, token2
+ * or any token in set.  Returns the new lookahead symbol.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE skipToMatchTokenOrTokenOrSet
+  ( token1, token2 : TokenT; set : TokenSetT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+  
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* skip symbols until lookahead token matches token1, token2 or set *)
+  WHILE (lookahead.token # token1) AND (lookahead.token # token2) AND
+    NOT TokenSet.isElement(set, lookahead.token) DO
+    lookahead = Lexer.consumeSym(lexer)
+  END; (* WHILE *)
+  
+  RETURN lookahead
+END skipToMatchTokenOrTokenOrSet;
 
 
 END Parser.
