@@ -6,6 +6,7 @@ DEFINITION MODULE Parser;
 
 
 FROM AST IMPORT AstT;
+FROM String IMPORT StringT;
 
 
 (* Return Status *)
@@ -25,14 +26,20 @@ END;
 
 (* Operations *)
 
-PROCEDURE parseDef
-  ( infile : StringT; VAR stats : Statistics; VAR status : Status ) : AstT;
-(* Parses .def source file, returns AST on success, NIL on failure. *)
-
-
-PROCEDURE parseMod
-  ( infile : StringT; VAR stats : Statistics; VAR status : Status ) : AstT;
-(* Parses .mod source file, returns AST on success, NIL on failure. *)
+(* --------------------------------------------------------------------------
+ * public function compilationUnit(source, stats, status)
+ * --------------------------------------------------------------------------
+ * Parses rule compilationUnit depending on the source file type and builds
+ * its AST.  Parses definitionModule for file type Def and implOrPrgmModule
+ * for file type Mod.  Returns the AST on success or NIL on failure.
+ *
+ * compilationUnit :=
+ *   definitionModule | implOrPrgmModule
+ *   ;
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE compilationUnit
+  ( source : StringT; VAR stats : Statistics; VAR status : Status ) : AstT;
 
 
 END Parser.
