@@ -39,8 +39,16 @@ PROCEDURE parseDef
   ( source : StringT; VAR stats : Statistics; VAR status : Status ) : AstT;
 (* Parses .def source file, returns AST on success, NIL on failure. *)
 
+VAR
+  status : Lexer.Status;
+  lookahead : SymbolT;
+  ast : AstT;
+  
 BEGIN
-  (* TO DO *)
+  lexer := Lexer.New(source, status); (* TO DO: verify status *)
+  lookahead := definitionModule(ast); (* TO DO: verify lookahead *)
+  Lexer.Release(lexer);
+  RETURN ast
 END parseDef;
 
 
@@ -48,8 +56,16 @@ PROCEDURE parseMod
   ( source : StringT; VAR stats : Statistics; VAR status : Status ) : AstT;
 (* Parses .mod source file, returns AST on success, NIL on failure. *)
 
+VAR
+  status : Lexer.Status;
+  lookahead : SymbolT;
+  ast : AstT;
+  
 BEGIN
-  (* TO DO *)
+  lexer := Lexer.New(source, status); (* TO DO: verify status *)
+  lookahead := implOrPrgmModule(ast); (* TO DO: verify lookahead *)
+  Lexer.Release(lexer);
+  RETURN ast
 END parseMod;
 
 
@@ -686,6 +702,7 @@ BEGIN
   
   (* ( ',' libIdent )* *)
   WHILE lookahead.token = Token.Comma DO
+    (* ',' *)
     lookahead := Lexer.consumeSym(lexer);
     
     (* libIdent *)
@@ -775,6 +792,7 @@ BEGIN
   
   (* ( '.' ident )* *)
   WHILE lookahead.token = Token.Dot DO
+    (* '.' *)
     lookahead := Lexer.consumeSym(lexer);
     
     (* ident *)
@@ -827,6 +845,7 @@ BEGIN
   
   (* ( ',' ident )* *)
   WHILE lookahead.token = Token.Comma DO
+    (* ',' *)
     lookahead := Lexer.consumeSym(lexer);
     
     (* ident *)
@@ -1291,17 +1310,16 @@ BEGIN
     
     (* enumTypeToExtend *)
     IF matchSet(FIRST(Qualident)) THEN
-      lookahead := qualident(baseType);
-      
-      (* ',' *)
-      IF matchToken() THEN
-        lookahead := Lexer.consumeSym(lexer)
-      ELSE (* resync *)
-        lookahead := skipToMatchSet(FIRST(IdentList))
-      END (* IF *)
-      
+      lookahead := qualident(baseType)
     ELSE (* resync *)
-      lookahead := skipToMatchSetOrSet(FIRST(IdentList), FOLLOW(EnumType))
+      lookahead := skipToMatchTokenOrSet(Token.Comma, FIRST(IdentList))
+    END; (* IF *)
+    
+    (* ',' *)
+    IF matchToken(Token.Comma) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FIRST(IdentList))
     END (* IF *)
   END; (* IF *)
   
@@ -1403,7 +1421,6 @@ BEGIN
   
   (* valueCount *)
   IF matchSet(FIRST(Expression)) THEN
-    (* alias valueCount = constExpression *)
     lookahead := expression(valueCount);
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet(Token.Of, FIRST(TypeIdent))
@@ -2427,7 +2444,6 @@ BEGIN
   
   (* procedureHeader ';' block ident ';' | *)
   | Token.Procedure :
-      (* procedureHeader *)
       lookahead := procDeclaration(astNode)
             
   (* toDoList ';' *)
@@ -2559,7 +2575,7 @@ BEGIN
           
         ELSE (* resync *)
           lookahead := skipToMatchTokenOrTokenOrSet
-            (Token.Comma, Token.Equal, FOLLOW(NamedAliasDecl));
+            (Token.Comma, Token.Equal, FIRST(QualifiedWildcard));
         END (* IF *)
       UNTIL lookahead.token # Token.Comma;
       
@@ -2662,7 +2678,7 @@ BEGIN
   lookahead := qualident(astnode);
   
   (* '.*' *)
-  IF matchToken() THEN
+  IF matchToken(Token.DotStar) THEN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead := skipToMatchSet(FOLLOW(QualifiedWildcard))
@@ -2837,7 +2853,7 @@ BEGIN
   END; (* IF *)
   
   (* ARRAY *)
-  IF matchToken(Token.Bare) THEN
+  IF matchToken(Token.Array) THEN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead :=
@@ -2955,7 +2971,9 @@ BEGIN
   
   (* ARRAY valueCount OF typeIdent | *)
   IF lookahead.token = Token.Array THEN
+    (* ARRAY *)
     lookahead := Lexer.consumeSym(lexer);
+    
     (* valueCount *)
     IF matchSet(FIRST(Expression) THEN
       lookahead := expression(valueCount)
@@ -3049,14 +3067,15 @@ BEGIN
     END (* IF *)
     
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.Semicolon, FOLLOW(Declaration))
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Semicolon, FOLLOW(ProcDeclaration))
   END (* IF *)
   
   (* ';' *)
-  IF matchToken(Token.Semicolon, FOLLOW(Declaration)) THEN
+  IF matchToken(Token.Semicolon, FOLLOW(ProcDeclaration)) THEN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(Declaration))
+    lookahead := skipToMatchSet(FOLLOW(ProcDeclaration))
   END (* IF *)
   
   (* build AST node and pass it back in astNode *)
@@ -3158,7 +3177,8 @@ BEGIN
       lookahead := Lexer.consumeSym(lexer);
       astNode := AST.NewNode(AstNodeType.Exit)
       
-  ELSE (* updateOrProcCall *)
+  (* updateOrProcCall *)
+  ELSE
     lookahead := updateOrProcCall(astNode)    
   END; (* CASE *)
   
@@ -3252,7 +3272,7 @@ BEGIN
   (* taskToDo ( ';' taskToDo )* *)
   lookahead :=
     parseListWithSeparator(taskToDo, Token.Semicolon,
-    FIRST(TaskToDo), FOLLOW(TaskToDo, AstNodeType.TaskToDo, taskList);
+      FIRST(TaskToDo), FOLLOW(TaskToDo, AstNodeType.TaskToDo, taskList);
     
   (* END *)
   IF matchToken(Token.End) THEN
@@ -3587,7 +3607,6 @@ BEGIN
   
   (* ( ELSIF boolExpression THEN statementSequence )* *)
   WHILE lookahead.token = Token.Elsif DO
-    
     (* ELSIF *)
     lookahead := Lexer.consumeSym(lexer);
     
@@ -4200,7 +4219,7 @@ BEGIN
   (* designatorTail? *)
   IF inFIRST(DesignatorTail) THEN
     lookahead := designatorTail(head, tail)
-  ELSE
+  ELSE (* no tail *)
     tail := AST.emptyNode()
   END; (* IF *)
   
@@ -4460,7 +4479,6 @@ BEGIN
     (* simpleExpression *)
     IF matchSet(FIRST(SimpleExpression)) THEN
       lookahead := simpleExpression(rightNode)
-      
     ELSE (* resync *)
       lookahead :=
         skipToMatchTokenOrSet(Token.Comma), FOLLOW(Expression))
@@ -4866,7 +4884,7 @@ BEGIN
   lookahead := valueComponent(value);
   AstQueue.Enqueue(tmplist, value);
   
-  (* ( ';' valueComponent )* *)
+  (* ( ',' valueComponent )* *)
   WHILE lookahead.token = Token.Comma DO
     (* ',' *)
     lookahead := Lexer.consumeSym(lexer);
