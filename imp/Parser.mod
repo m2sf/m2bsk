@@ -41,7 +41,7 @@ VAR
  * --------------------------------------------------------------------------
  * Parses rule compilationUnit depending on the source file type and builds
  * its AST.  Parses definitionModule for file type Def and implOrPrgmModule
- * for file type Mod.  Returns the AST on succes or NIL on failure.
+ * for file type Mod.  Returns the AST on success or NIL on failure.
  *
  * compilationUnit :=
  *   definitionModule | implOrPrgmModule
