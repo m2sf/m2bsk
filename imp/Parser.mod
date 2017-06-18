@@ -1016,7 +1016,7 @@ BEGIN
   IF matchToken(Token.Equal) THEN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.Opaque, FIRST(type))
+    lookahead := skipToMatchTokenOrSet(Token.Opaque, FIRST(Type))
   END; (* IF *)
   
   (* OPAQUE | type *)
@@ -1238,14 +1238,14 @@ BEGIN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead :=
-      skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(rangeOfOrdinalType))
+      skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(RangeOfOrdinalType))
   END; (* IF *)
     
   (* ordinalType *)
   IF matchSet(FIRST(Qualident)) THEN
     lookahead := qualident(typeId)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(rangeOfOrdinalType))
+    lookahead := skipToMatchSet(FOLLOW(RangeOfOrdinalType))
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
@@ -1605,7 +1605,7 @@ BEGIN
     IF matchSet(FIRST(Qualident)) THEN
       lookahead := qualident(retType)
     ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(procedureType))
+      lookahead := skipToMatchSet(FOLLOW(ProcedureType))
     END (* IF *)
   END; (* IF *)
   
@@ -1896,7 +1896,7 @@ BEGIN
     END (* IF *)
     
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(attributedFormalType))
+    lookahead := skipToMatchSet(FOLLOW(AttributedFormalType))
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
@@ -1989,7 +1989,7 @@ BEGIN
       lookahead := ident(procId)
     ELSE (* resync *)
       lookahead := skipToMatchTokenOrTokenOrSet
-        (Token.LeftParen, Token.Colon, FOLLOW(procedureHeader))
+        (Token.LeftParen, Token.Colon, FOLLOW(ProcedureHeader))
     END; (* IF *)
     
     (* ( '(' formalParams ( ';' formalParams )* ')' )? *)
@@ -2008,7 +2008,7 @@ BEGIN
         lookahead := Lexer.consumeSym(lexer)
       ELSE (* resync *)
         lookahead :=
-          skipToMatchTokenOrSet(Token.Colon, FOLLOW(procedureHeader))
+          skipToMatchTokenOrSet(Token.Colon, FOLLOW(ProcedureHeader))
       END (* IF *)
       
     ELSE (* no formal parameter list *)
@@ -2024,7 +2024,7 @@ BEGIN
       IF matchSet(FIRST(Qualident)) THEN
         lookahead := qualident(retType)
       ELSE (* resync *)
-        lookahead := skipToMatchSet(FOLLOW(procedureHeader))
+        lookahead := skipToMatchSet(FOLLOW(ProcedureHeader))
       END (* IF *)
       
     ELSE (* no return type *)
@@ -2032,7 +2032,7 @@ BEGIN
     END (* IF *)
     
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(procedureHeader))
+    lookahead := skipToMatchSet(FOLLOW(ProcedureHeader))
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
@@ -2075,7 +2075,7 @@ BEGIN
       lookahead := Lexer.consumeSym(lexer)
     ELSE
       lookahead :=
-        skipToMatchTokenOrSet(Token.ArgList, FIRST(nonAttrFormalType))
+        skipToMatchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType))
     END; (* IF *)
     
     (* nonAttrFormalType | simpleVariadicFormalType *)
@@ -2534,7 +2534,7 @@ BEGIN
       IF matchSet(FIRST(Qualident)) THEN
         lookahead := qualident(translation)
       ELSE (* resync *)
-        lookahead := skipToMatchSet(FOLLOW(namedAliasDecl))
+        lookahead := skipToMatchSet(FOLLOW(NamedAliasDecl))
       END; (* IF *)
       
       astNode := AST.NewNode(AstNodeType.AliasDecl, aliasId, translation)
@@ -2559,7 +2559,7 @@ BEGIN
           
         ELSE (* resync *)
           lookahead := skipToMatchTokenOrTokenOrSet
-            (Token.Comma, Token.Equal, FOLLOW(namedAliasDecl));
+            (Token.Comma, Token.Equal, FOLLOW(NamedAliasDecl));
         END (* IF *)
       UNTIL lookahead.token # Token.Comma;
       
@@ -2575,7 +2575,7 @@ BEGIN
       IF matchSet(FIRST(QualifiedWildcard)) THEN
         lookahead := qualifiedWildcard(translation)
       ELSE (* resync *)
-        lookahead := skipToMatchSet(FOLLOW(namedAliasDecl))
+        lookahead := skipToMatchSet(FOLLOW(NamedAliasDecl))
       END; (* IF *)
       
       (* TO DO : resolve aliases in tmplist using wildcard *)
@@ -2584,7 +2584,7 @@ BEGIN
     END (* IF *)
     
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(namedAliasDecl))
+    lookahead := skipToMatchSet(FOLLOW(NamedAliasDecl))
   END; (* IF *)
   
   RETURN lookahead
@@ -2706,7 +2706,7 @@ BEGIN
   END; (* IF *)
   
   (* indeterminateType | type *)
-  IF matchTokenOrSet(Token.In, FIRST(type)) THEN
+  IF matchTokenOrSet(Token.In, FIRST(Type)) THEN
     (* indeterminateType | *)
     IF lookahead.token = Token.In THEN
       lookahead := indeterminateType(typeDecl)
@@ -2715,7 +2715,7 @@ BEGIN
     END (* IF *)
     
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(typeDeclaration))
+    lookahead := skipToMatchSet(FOLLOW(TypeDeclaration))
   END; (* IF *)
     
   (* build AST node and pass it back in astNode *)
@@ -2762,11 +2762,11 @@ BEGIN
   (* ( varOrFieldDeclaration ';' )+ *)
   lookahead :=
     parseListWTerminator(varOrFieldDeclaration, Token.Semicolon,
-      FIRST(VarOrFieldDeclaration), FIRST(indeterminateField),
+      FIRST(VarOrFieldDeclaration), FIRST(IndeterminateField),
       AstNodeType.FieldListSeq, fieldListSeq)
       
   (* indeterminateField *)
-  IF matchSet(FIRST(indeterminateField)) THEN
+  IF matchSet(FIRST(IndeterminateField)) THEN
     lookahead := indeterminateField(inField)
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(IndeterminateType))
@@ -3830,7 +3830,7 @@ BEGIN
     IF matchSet(FIRST(Expression)) THEN
       lookahead := expression(expr2)
     ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(caseLabels))
+      lookahead := skipToMatchSet(FOLLOW(CaseLabels))
     END (* IF *)
     
   ELSE (* sole case label *)
@@ -4126,7 +4126,7 @@ BEGIN
     IF matchSet(FIRST(Ident)) THEN
       lookahead := ident(value)
     ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(forLoopVariants))
+      lookahead := skipToMatchSet(FOLLOW(ForLoopVariants))
     END (* IF *)
     
   ELSE (* no value given *)
@@ -4319,7 +4319,7 @@ BEGIN
       subscript := AST.NewNode(AstNodeType.Index, expr1);
       
       (* designatorTail? *)
-      IF inFIRST(designatorTail, lookahead.token) THEN
+      IF inFIRST(DesignatorTail, lookahead.token) THEN
         lookahead := designatorTail(subscript, astNode)
       ELSE
          astNode := subscript
@@ -4331,7 +4331,7 @@ BEGIN
       lookahead := Lexer.consumeSym(lexer);
       
       (* expression? *)
-      IF inFIRST(expression, lookahead.token) THEN
+      IF inFIRST(Expression, lookahead.token) THEN
         lookahead := expression(expr2)
       ELSE (* open ended slice *)
         expr2 := AST.emptyNode()
@@ -4411,7 +4411,7 @@ END expressionList;
  *       nodeType := NodeTypeForOper(lookahead.token);
  *       lookahead := Lexer.consumeSym(lexer);
  *       
- *       IF matchSet(FIRST(term)) THEN
+ *       IF matchSet(FIRST(Term)) THEN
  *         lookahead := term(rightNode);
  *         leftNode := AST.NewBinaryNode(nodeType, leftNode, rightNode)
  *       END
@@ -4535,7 +4535,7 @@ BEGIN
       lookahead := Lexer.consumeSym(lexer);
       
       (* term *)
-      IF matchSet(FIRST(term)) THEN
+      IF matchSet(FIRST(Term)) THEN
         lookahead := term(rightNode)
       ELSE (* resync *)
         lookahead :=
@@ -4645,7 +4645,7 @@ BEGIN
   IF matchSet(FIRST(Factor)) THEN
     lookahead := factor(factorNode)
   ELSE
-    lookahead := skipToMatchSet(FOLLOW(simpleTerm))
+    lookahead := skipToMatchSet(FOLLOW(SimpleTerm))
   END;
   
   (* build AST node and pass it back in astNode *)
@@ -4762,14 +4762,14 @@ BEGIN
         lookahead := expression(astNode)
       ELSE (* resync *)
         lookahead :=
-          skipToMatchTokenOrSet(Token.RightParen, FOLLOW(simpleFactor))
+          skipToMatchTokenOrSet(Token.RightParen, FOLLOW(SimpleFactor))
       END; (* IF *)
       
       (* ')' *)
       IF matchToken(Token.RightParen) THEN
         lookahead := Lexer.consumeSym(lexer)
       ELSE
-        lookahead := skipToMatchSet(FOLLOW(simpleFactor))
+        lookahead := skipToMatchSet(FOLLOW(SimpleFactor))
       END (* IF *)
       
   ELSE (* designatorOrFuncCall *)
