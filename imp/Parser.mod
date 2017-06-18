@@ -73,6 +73,7 @@ BEGIN
   
   IF expectedToken = lookahead.token THEN
     RETURN  TRUE
+    
   ELSE (* no match *)
     (* report error *)
     EmitSyntaxErrorWToken(expectedToken, lookahead);
@@ -92,8 +93,8 @@ END matchToken;
  * private function matchSet(expectedSet)
  * --------------------------------------------------------------------------
  * Matches the lookahead symbol to set expectedSet and returns TRUE if it
- * matches any of the tokens in the set.  If there is no match, a syntax
- * error is reported, the error count is incremented and FALSE is returned.
+ * matches any token in the set.  If there is no match, a syntax error is
+ * reported, the error count is incremented and FALSE is returned.
  * --------------------------------------------------------------------------
  *)
 PROCEDURE matchSet ( expectedSet : TokenSetT ) : BOOLEAN;
@@ -107,6 +108,7 @@ BEGIN
   (* check if lookahead matches any token in expectedSet *)
   IF TokenSet.isElement(expectedSet, lookahead.token) THEN
     RETURN TRUE
+    
   ELSE (* no match *)
     (* report error *)
     EmitSyntaxErrorWSet(expectedSet, lookahead);
@@ -143,6 +145,7 @@ BEGIN
   IF expectedToken = lookahead.token OR 
     TokenSet.isElement(expectedSet, lookahead.token) THEN
     RETURN TRUE
+    
   ELSE (* no match *)
     (* report error *)
     EmitSyntaxErrorWTokenAndSet(expectedToken, expectedSet, lookahead);
@@ -178,6 +181,7 @@ BEGIN
   IF TokenSet.isElement(expectedSet1, lookahead.token) OR 
     TokenSet.isElement(expectedSet2, lookahead.token) THEN
     RETURN TRUE
+    
   ELSE (* no match *)
     (* report error *)
     EmitSyntaxErrorWSetAndSet(expectedSet1, expectedSet2, lookahead);
@@ -194,13 +198,13 @@ END matchSetOrSet;
 
 
 (* --------------------------------------------------------------------------
- * private function skipToMatchToken(resyncToken)
+ * private function skipToMatchToken(token)
  * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches the given
- * token.  Returns the new lookahead symbol.
+ * Consumes symbols until the lookahead symbol's token matches token.
+ * Returns the new lookahead symbol.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE skipToMatchToken ( resyncToken : TokenT ) : SymbolT;
+PROCEDURE skipToMatchToken ( token : TokenT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
@@ -208,8 +212,8 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
 
-  (* skip symbols until lookahead token matches resync token *)
-  WHILE lookahead.token # resyncToken DO
+  (* skip symbols until lookahead token matches token *)
+  WHILE lookahead.token # token DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
   
@@ -220,8 +224,8 @@ END skipToMatchToken;
 (* --------------------------------------------------------------------------
  * private function skipToMatchTokenOrToken(token1, token2)
  * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches one of the
- * a given tokens.  Returns the new lookahead symbol.
+ * Consumes symbols until the lookahead symbol's token matches token1 or
+ * token2.  Returns the new lookahead symbol.
  * --------------------------------------------------------------------------
  *)
 PROCEDURE skipToMatchTokenOrToken ( token1, token2 : TokenT ) : SymbolT;
@@ -242,13 +246,13 @@ END skipToMatchTokenOrToken;
 
 
 (* --------------------------------------------------------------------------
- * private function skipToMatchSet(resyncSet)
+ * private function skipToMatchSet(set)
  * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches one of the
- * tokens in the given token set.  Returns the new lookahead symbol.
+ * Consumes symbols until the lookahead symbol's token matches any token in
+ * set.  Returns the new lookahead symbol.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE skipToMatchSet ( resyncSet : TokenSetT ) : SymbolT;
+PROCEDURE skipToMatchSet ( set : TokenSetT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
@@ -256,8 +260,8 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* skip symbols until lookahead matches a token in resyncSet *)
-  WHILE NOT TokenSet.isElement(resyncSet, lookahead.token) DO
+  (* skip symbols until lookahead matches a token in set *)
+  WHILE NOT TokenSet.isElement(set, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
   
@@ -266,13 +270,13 @@ END skipToMatchSet;
 
 
 (* --------------------------------------------------------------------------
- * private function skipToMatchSetOrSet(tokenSet1, tokenSet2)
+ * private function skipToMatchSetOrSet(set1, set2)
  * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches one of the
- * tokens in any of the given token sets.  Returns the new lookahead symbol.
+ * Consumes symbols until the lookahead symbol's token matches any token in
+ * set1 or set2.  Returns the new lookahead symbol.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE skipToMatchSetOrSet ( tokenSet1, tokenSet2 : TokenSetT ) : SymbolT;
+PROCEDURE skipToMatchSetOrSet ( set1, set2 : TokenSetT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
@@ -281,8 +285,8 @@ BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
   (* skip symbols until lookahead matches a token in either token set *)
-  WHILE NOT TokenSet.isElement(tokenSet1, lookahead.token) AND
-    NOT TokenSet.isElement(tokenSet2, lookahead.token) DO
+  WHILE NOT TokenSet.isElement(set1, lookahead.token) AND
+    NOT TokenSet.isElement(set2, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
   
@@ -291,15 +295,13 @@ END skipToMatchSetOrSet;
 
 
 (* --------------------------------------------------------------------------
- * private function skipToMatchTokenOrSet(resyncToken, resyncSet)
+ * private function skipToMatchTokenOrSet(token, set)
  * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches the given
- * token or one of the tokens in the given token set.  Returns the new
- * lookahead symbol.
+ * Consumes symbols until the lookahead symbol's token matches token or any
+ * token in set.  Returns the new lookahead symbol.
  * --------------------------------------------------------------------------
  *)
-PROCEDURE skipToMatchTokenOrSet
-  ( resyncToken : TokenT; resyncSet : TokenSetT ) : SymbolT;
+PROCEDURE skipToMatchTokenOrSet ( token : TokenT; set : TokenSetT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
@@ -307,9 +309,9 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* skip symbols until lookahead matches resyncToken or resyncSet *)
-  WHILE (lookahead.token # resyncToken) AND
-    NOT TokenSet.isElement(resyncSet, lookahead.token) DO
+  (* skip symbols until lookahead matches token or set *)
+  WHILE (lookahead.token # token) AND
+    NOT TokenSet.isElement(set, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
   
@@ -318,15 +320,14 @@ END skipToMatchTokenOrSet;
 
 
 (* --------------------------------------------------------------------------
- * private function skipToMatchTokenOrTokenOrSet(token1, token2, resyncSet)
+ * private function skipToMatchTokenOrTokenOrSet(token1, token2, set)
  * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches one of the
- * given tokens or a token in the given token set.  Returns the new
- * lookahead symbol.
+ * Consumes symbols until the lookahead symbol's token matches token1, token2
+ * or any token in set.  Returns the new lookahead symbol.
  * --------------------------------------------------------------------------
  *)
 PROCEDURE skipToMatchTokenOrTokenOrSet
-  ( token1, token2 : TokenT; tokenSet : TokenSetT ) : SymbolT;
+  ( token1, token2 : TokenT; set : TokenSetT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
@@ -334,9 +335,9 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* skip symbols until lookahead token matches token1, token2 or tokenSet *)
+  (* skip symbols until lookahead token matches token1, token2 or set *)
   WHILE (lookahead.token # token1) AND (lookahead.token # token2) AND
-    NOT TokenSet.isElement(tokenSet, lookahead.token) DO
+    NOT TokenSet.isElement(set, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
   
@@ -494,7 +495,7 @@ BEGIN
   astNode := AST.NewListNode(nodeType, tmplist);
   
   RETURN lookahead
-END parseList;
+END parseListWTerminator;
 
 
 (* --------------------------------------------------------------------------
@@ -1152,6 +1153,26 @@ END aliasType;
 
 
 (* --------------------------------------------------------------------------
+ * private function subrangeType(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule subrangeType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * alias subrangeType = rangeOfOrdinalType;
+ *
+ * astNode: (SUBR lowerBound upperBound baseType)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE subrangeType ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+  PARSER_DEBUG_INFO("subrangeType");
+  
+  RETURN rangeOfOrdinalType(astNode)
+END subrangeType;
+
+
+(* --------------------------------------------------------------------------
  * private function rangeOfOrdinalType(astNode)
  * --------------------------------------------------------------------------
  * Parses rule rangeOfOrdinalType, constructs its AST node, passes the node
@@ -1232,27 +1253,6 @@ BEGIN
   
   RETURN lookahead
 END rangeOfOrdinalType;
-
-
-
-(* --------------------------------------------------------------------------
- * private function subrangeType(astNode)
- * --------------------------------------------------------------------------
- * Parses rule subrangeType, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * alias subrangeType = rangeOfOrdinalType;
- *
- * astNode: (SUBR lowerBound upperBound baseType)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE subrangeType ( VAR astNode : AstT ) : SymbolT;
-
-BEGIN
-  PARSER_DEBUG_INFO("subrangeType");
-  
-  RETURN rangeOfOrdinalType(astNode)
-END subrangeType;
 
 
 (* --------------------------------------------------------------------------
@@ -2350,7 +2350,7 @@ BEGIN
   astNode := AST.NewNode(AstNodeType.Block, decllist, stmtSeq);
   AstQueue.Release(tmplist);
   
-  return lookahead
+  RETURN lookahead
 END block;
 
 
@@ -2516,7 +2516,7 @@ VAR
   lookahead := SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("aliasDeclSection");
+  PARSER_DEBUG_INFO("namedAliasDecl");
   
   AstQueue.New(tmplist);
   
@@ -2747,7 +2747,7 @@ VAR
   lookahead := SymbolT;
 
 BEGIN
-  PARSER_DEBUG_INFO("typeDeclaration");
+  PARSER_DEBUG_INFO("indeterminateType");
     
   (* IN *)
   lookahead := Lexer.consumeSym(lexer);
@@ -2756,7 +2756,7 @@ BEGIN
   IF matchToken(Token.Record) THEN
     lookahead := Lexer.consumeSym(lexer);
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FIRST(varOrFieldDeclaration))
+    lookahead := skipToMatchSet(FIRST(VarOrFieldDeclaration))
   END; (* IF *)
   
   (* ( varOrFieldDeclaration ';' )+ *)
@@ -2808,7 +2808,7 @@ VAR
   lookahead := SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("typeDeclaration");
+  PARSER_DEBUG_INFO("indeterminateField");
   
   (* '+' *)
   lookahead := Lexer.consumeSym(lexer);
@@ -2818,7 +2818,7 @@ BEGIN
     lookahead := ident(fieldId)
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrTokenOrSet
-      (Token.Colon, Token.Bare, FOLLOW(indeterminateField))
+      (Token.Colon, Token.Bare, FOLLOW(IndeterminateField))
   END; (* IF *)
 
   (* ':' *)
@@ -2865,7 +2865,7 @@ BEGIN
     lookahead := qualident(typeId)
   ELSE (* resync *)
     lookahead :=
-      skipToMatchTokenOrSet(Token.Of, FOLLOW(indeterminateField))
+      skipToMatchTokenOrSet(Token.Of, FOLLOW(IndeterminateField))
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
@@ -4298,7 +4298,7 @@ VAR
   lookahead : SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("designator");
+  PARSER_DEBUG_INFO("subscriptOrSlice");
   
   (* '[' *)
   lookahead := Lexer.consumeSym(lexer);
@@ -4508,7 +4508,7 @@ VAR
   lookahead := SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("term");
+  PARSER_DEBUG_INFO("simpleExpression");
     
   (* '-' simpleFactor | *)
   IF lookahead.token = Token.Minus THEN
@@ -4731,7 +4731,7 @@ VAR
   lookahead := SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("factor");
+  PARSER_DEBUG_INFO("simpleFactor");
   
   lookahead := Lexer.lookaheadSym(lexer);
   
