@@ -6,7 +6,7 @@ IMPLEMENTATION MODULE Parser;
 
 IMPORT
   AST, AstNodeType, AstQueue, NonTerminals,
-  Lexer, LexQueue, Symbol, Token, TokenSet, String;
+  Lexer, LexQueue, Symbol, Token, TokenSet, Filename, String;
 
 FROM AST IMPORT AstT; (* alias for AST.AST *)
 FROM AstNodeType IMPORT AstNodeTypeT; (* alias for AstNodeType.AstNodeType *)
@@ -57,7 +57,6 @@ VAR
   ast : AstT;
 
 BEGIN
-  
   fileType := Filename.fileType(source);
   
   stats.lexicalWarnings := 0; stats.lexicalErrors := 0;
@@ -77,7 +76,6 @@ BEGIN
     END; (* CASE *)
     
     (* TO DO: verify lookahead *)
-    
     (* TO DO: get lexical stats from lexer *)
     
     Lexer.Release(lexer)
@@ -4930,6 +4928,8 @@ BEGIN
   
   RETURN lookahead
 END skipToMatchTokenOrTokenOrSet;
+
+(* TO DO: ParserDebugInfo() *)
 
 
 END Parser.
