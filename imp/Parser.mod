@@ -30,6 +30,7 @@ TYPE ParseProc = PROCEDURE ( VAR AstT ) : SymbolT;
 
 VAR
   lexer : LexerT;
+  fileType : Filename.FileType;
   statistics : Statistics;
 
 
@@ -59,9 +60,11 @@ BEGIN
   fileType := Filename.fileType(source);
   
   IF FileName.isFileTypeDefOrMod(fileType) THEN
-    lexer := Lexer.New(source, lexerStatus); (* TO DO: verify status *)
+    lexer := Lexer.New(source, lexerStatus);
+    
+    (* TO DO: verify lexer status *)
   
-    CASE Filename.suffixType(source) OF
+    CASE fileType OF
     (* .def, *.DEF *)
       Filename.FileType.Def : lookahead := definitionModule(ast);
     
