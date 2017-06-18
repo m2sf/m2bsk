@@ -39,8 +39,9 @@ VAR
 (* --------------------------------------------------------------------------
  * public function compilationUnit(source, stats, status)
  * --------------------------------------------------------------------------
- * Parses rule compilationUnit depending on the source file type.  Constructs
- * an AST and returns it.  Returns NIL on failure.
+ * Parses rule compilationUnit depending on the source file type and builds
+ * its AST.  Parses definitionModule for file type Def and implOrPrgmModule
+ * for file type Mod.  Returns the AST on succes or NIL on failure.
  *
  * compilationUnit :=
  *   definitionModule | implOrPrgmModule
@@ -59,6 +60,9 @@ BEGIN
   
   fileType := Filename.fileType(source);
   
+  stats.lexicalWarnings := 0; stats.lexicalErrors := 0;
+  stats.syntaxWarnings := 0; stats.syntaxErrors := 0;
+  
   IF FileName.isFileTypeDefOrMod(fileType) THEN
     lexer := Lexer.New(source, lexerStatus);
     
@@ -74,6 +78,8 @@ BEGIN
     
     (* TO DO: verify lookahead *)
     
+    (* TO DO: get lexical stats from lexer *)
+    
     Lexer.Release(lexer)
     
   ELSE (* invalid file type *)
@@ -81,6 +87,7 @@ BEGIN
     ast := NIL
   END;
   
+  (* pass statistics back in stats *)
   stats := statistics;
   
   RETURN ast
