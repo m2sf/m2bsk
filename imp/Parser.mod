@@ -1,4 +1,4 @@
-(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+(*!m2pim*) (* Copyright (c) 2015-2017 B.Kowarsch. All rights reserved. *)
 
 IMPLEMENTATION MODULE Parser;
 
@@ -30,43 +30,58 @@ TYPE ParseProc = PROCEDURE ( VAR AstT ) : SymbolT;
 
 VAR
   lexer : LexerT;
-  stats : Statistics;
+  statistics : Statistics;
 
 
 (* Operations *)
 
-PROCEDURE parseDef
+(* --------------------------------------------------------------------------
+ * public function compilationUnit(source, stats, status)
+ * --------------------------------------------------------------------------
+ * Parses rule compilationUnit depending on the source file type.  Constructs
+ * an AST and returns it.  Returns NIL on failure.
+ *
+ * compilationUnit :=
+ *   definitionModule | implOrPrgmModule
+ *   ;
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE compilationUnit
   ( source : StringT; VAR stats : Statistics; VAR status : Status ) : AstT;
-(* Parses .def source file, returns AST on success, NIL on failure. *)
 
 VAR
-  status : Lexer.Status;
+  lexerStatus : Lexer.Status;
   lookahead : SymbolT;
   ast : AstT;
-  
+
 BEGIN
-  lexer := Lexer.New(source, status); (* TO DO: verify status *)
-  lookahead := definitionModule(ast); (* TO DO: verify lookahead *)
-  Lexer.Release(lexer);
-  RETURN ast
-END parseDef;
-
-
-PROCEDURE parseMod
-  ( source : StringT; VAR stats : Statistics; VAR status : Status ) : AstT;
-(* Parses .mod source file, returns AST on success, NIL on failure. *)
-
-VAR
-  status : Lexer.Status;
-  lookahead : SymbolT;
-  ast : AstT;
   
-BEGIN
-  lexer := Lexer.New(source, status); (* TO DO: verify status *)
-  lookahead := implOrPrgmModule(ast); (* TO DO: verify lookahead *)
-  Lexer.Release(lexer);
+  fileType := Filename.fileType(source);
+  
+  IF FileName.isFileTypeDefOrMod(fileType) THEN
+    lexer := Lexer.New(source, lexerStatus); (* TO DO: verify status *)
+  
+    CASE Filename.suffixType(source) OF
+    (* .def *)
+      Filename.FileType.Def : lookahead := definitionModule(ast);
+    
+    (* .mod *)
+    | Filename.FileType.Mod : lookahead := implOrPrgmModule(ast);
+    END; (* CASE *)
+    
+    (* TO DO: verify lookahead *)
+    
+    Lexer.Release(lexer)
+    
+  ELSE (* invalid file type *)
+    status := Status.InvalidFileType;
+    ast := NIL
+  END;
+  
+  stats := statistics;
+  
   RETURN ast
-END parseMod;
+END compilationUnit;
 
 
 (* Private Operations *)
@@ -157,7 +172,7 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* check if lookahead matches any token in expected_set *)
+  (* check if lookahead matches token or any token in expectedSet *)
   IF expectedToken = lookahead.token OR 
     TokenSet.isElement(expectedSet, lookahead.token) THEN
     RETURN TRUE
@@ -193,7 +208,7 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* check if lookahead matches any token in expected_set *)
+  (* check if lookahead matches any token in expectedSet1 or expectedSet2 *)
   IF TokenSet.isElement(expectedSet1, lookahead.token) OR 
     TokenSet.isElement(expectedSet2, lookahead.token) THEN
     RETURN TRUE
@@ -211,30 +226,6 @@ BEGIN
     RETURN FALSE
   END (* IF *)
 END matchSetOrSet;
-
-
-(* --------------------------------------------------------------------------
- * private function skipToMatchToken(token)
- * --------------------------------------------------------------------------
- * Consumes symbols until the lookahead symbol's token matches token.
- * Returns the new lookahead symbol.
- * --------------------------------------------------------------------------
- *)
-PROCEDURE skipToMatchToken ( token : TokenT ) : SymbolT;
-
-VAR
-  lookahead : SymbolT;
-
-BEGIN
-  lookahead := Lexer.lookaheadSym(lexer);
-
-  (* skip symbols until lookahead token matches token *)
-  WHILE lookahead.token # token DO
-    lookahead = Lexer.consumeSym(lexer)
-  END; (* WHILE *)
-  
-  RETURN lookahead
-END skipToMatchToken;
 
 
 (* --------------------------------------------------------------------------
@@ -276,7 +267,7 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* skip symbols until lookahead matches a token in set *)
+  (* skip symbols until lookahead matches any token in set *)
   WHILE NOT TokenSet.isElement(set, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
   END; (* WHILE *)
@@ -300,7 +291,7 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* skip symbols until lookahead matches a token in either token set *)
+  (* skip symbols until lookahead matches any token in set1 or set2 *)
   WHILE NOT TokenSet.isElement(set1, lookahead.token) AND
     NOT TokenSet.isElement(set2, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
@@ -325,7 +316,7 @@ VAR
 BEGIN
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* skip symbols until lookahead matches token or set *)
+  (* skip symbols until lookahead matches token or any token in set *)
   WHILE (lookahead.token # token) AND
     NOT TokenSet.isElement(set, lookahead.token) DO
     lookahead = Lexer.consumeSym(lexer)
@@ -517,40 +508,6 @@ END parseListWTerminator;
 (* --------------------------------------------------------------------------
  * Specific Parsing Functions
  * ------------------------------------------------------------------------ *)
-
-(* --------------------------------------------------------------------------
- * private function compilationUnit()
- * --------------------------------------------------------------------------
- * Parses rule compilationUnit, constructs its AST node, passes the node
- * back in out-parameter astNode and returns the new lookahead symbol.
- *
- * compilationUnit :=
- *   definitionModule | implOrPrgmModule
- *   ;
- *
- * astnode: defModuleNode | impModuleNode
- * --------------------------------------------------------------------------
- *)
-PROCEDURE compilationUnit ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  lookahead : SymbolT;
-
-BEGIN
-  PARSER_DEBUG_INFO("compilationUnit");
-  
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  CASE lookahead.token OF
-    Token.Definition : lookahead := definitionModule(astNode)
-      
-  | Token.Implementation,
-    Token.Module : lookahead := implOrPrgmModule(astNode)
-  END; (* CASE *)
-  
-  RETURN lookahead
-END compilationUnit;
-
 
 (* --------------------------------------------------------------------------
  * private function definitionModule(astNode)
