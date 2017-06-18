@@ -59,8 +59,8 @@ VAR
 BEGIN
   fileType := Filename.fileType(source);
   
-  stats.lexicalWarnings := 0; stats.lexicalErrors := 0;
-  stats.syntaxWarnings := 0; stats.syntaxErrors := 0;
+  statistics.lexicalWarnings := 0; statistics.lexicalErrors := 0;
+  statistics.syntaxWarnings := 0; statistics.syntaxErrors := 0;
   
   IF FileName.isFileTypeDefOrMod(fileType) THEN
     lexer := Lexer.New(source, lexerStatus);
@@ -4737,7 +4737,7 @@ BEGIN
     Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
     
     (* update error count *)
-    stats.syntaxErrors := stats.syntaxErrors + 1;
+    statistics.syntaxErrors := statistics.syntaxErrors + 1;
     
     RETURN FALSE
   END (* IF *)
@@ -4772,7 +4772,7 @@ BEGIN
     Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
         
     (* update error count *)
-    stats.syntaxErrors := stats.syntaxErrors + 1;
+    statistics.syntaxErrors := statistics.syntaxErrors + 1;
     
     RETURN FALSE
   END (* IF *)
@@ -4809,7 +4809,7 @@ BEGIN
     Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
         
     (* update error count *)
-    stats.syntaxErrors := stats.syntaxErrors + 1;
+    statistics.syntaxErrors := statistics.syntaxErrors + 1;
     
     RETURN FALSE
   END (* IF *)
@@ -4845,7 +4845,7 @@ BEGIN
     Source.PrintLineAndMarkColumn(source, lookahead.line, lookahead.col);
         
     (* update error count *)
-    stats.syntaxErrors := stats.syntaxErrors + 1;
+    statistics.syntaxErrors := statistics.syntaxErrors + 1;
     
     RETURN FALSE
   END (* IF *)
