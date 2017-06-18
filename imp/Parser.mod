@@ -62,10 +62,10 @@ BEGIN
     lexer := Lexer.New(source, lexerStatus); (* TO DO: verify status *)
   
     CASE Filename.suffixType(source) OF
-    (* .def *)
+    (* .def, *.DEF *)
       Filename.FileType.Def : lookahead := definitionModule(ast);
     
-    (* .mod *)
+    (* .mod, .MOD *)
     | Filename.FileType.Mod : lookahead := implOrPrgmModule(ast);
     END; (* CASE *)
     
