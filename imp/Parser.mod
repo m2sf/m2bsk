@@ -1520,6 +1520,53 @@ END simpleVariadicFormalType;
 
 
 (* --------------------------------------------------------------------------
+ * private function varDefinition(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule varDefinition, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * varDefinition :=
+ *   identList ':' typeIdent
+ *   ;
+ *
+ * astNode: (VARDECL idlist typeId)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE varDefinition ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  idlist, typeId : AstT;
+  lookahead := SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("varDefinition");
+  
+  (* identList *)
+  lookahead := identList(idlist);
+  
+  (* ':' *)
+  IF matchToken(Token.Colon) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(VarDefinition)))
+  END; (* IF *)
+  
+  (* typeIdent *)
+  IF matchSet(FIRST(Qualident)) THEN
+    lookahead := qualident(typeId)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(VarDefinition))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.VarDecl, idlist, typeId);
+  
+  RETURN lookahead
+END varDefinition;
+
+
+(* --------------------------------------------------------------------------
  * private function procedureHeader(astNode)
  * --------------------------------------------------------------------------
  * Parses rule procedureHeader, constructs its AST node, passes the node back
@@ -4034,7 +4081,6 @@ BEGIN
     
     (* construct new node from previous and last leaf nodes *)
     leftNode := AST.NewNode(nodeType, leftNode, rightNode)
-    
   END; (* IF *)
   
   (* pass leftNode back in astNode *)
@@ -4930,6 +4976,5 @@ BEGIN
 END skipToMatchTokenOrTokenOrSet;
 
 (* TO DO: ParserDebugInfo() *)
-
 
 END Parser.
