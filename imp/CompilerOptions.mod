@@ -28,7 +28,7 @@ BEGIN
   IF value = TRUE THEN
     INCL(options, value)
   ELSE (* value = FALSE *)
-    EXCL(options,value)
+    EXCL(options, value)
   END
 END SetOption;
 
@@ -203,9 +203,10 @@ BEGIN
     Console.WriteChars(": ");
     IF option = TRUE THEN
       Console.WriteChars("on")
-    ELSE
+    ELSE (* option = FALSE *)
       Console.WriteChars("off")
-    END (* IF *)
+    END; (* IF *)
+    Console.WriteLn
   END (* FOR *)
 END PrintSettings;
 
