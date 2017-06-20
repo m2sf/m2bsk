@@ -1,0 +1,45 @@
+(*!m2pim*) (* Copyright (c) 2016 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE ArgParser;
+
+FROM String IMPORT StringT; (* alias for String.String *)
+
+
+(* Status Type *)
+
+TYPE Status = (
+  Success,
+  HelpRequested,
+  VersionRequested,
+  LicenseRequested,
+  ErrorsEncountered);
+
+
+(* ---------------------------------------------------------------------------
+ * function parseArgs()
+ * ---------------------------------------------------------------------------
+ * Parses command line arguments and sets compiler options accordingly.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE parseArgs : Status;
+
+
+(* ---------------------------------------------------------------------------
+ * function sourceFile()
+ * ---------------------------------------------------------------------------
+ * Returns a string with the source file argument.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE sourceFile : StringT;
+
+
+(* ---------------------------------------------------------------------------
+ * function errorCount()
+ * ---------------------------------------------------------------------------
+ * Returns the count of errors encountered while parsing the arguments.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE errorCount : CARDINAL;
+
+
+END ArgParser.
