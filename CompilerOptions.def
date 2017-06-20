@@ -1,0 +1,165 @@
+(*!m2pim*) (* Copyright (c) 2016 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE CompilerOptions;
+
+(* ---------------------------------------------------------------------------
+ * Type Option
+ * ---------------------------------------------------------------------------
+ * Enumerated values representing compiler options.
+ * ------------------------------------------------------------------------ *)
+
+TYPE Option = (
+
+  (* diagnostic options *)
+
+  Verbose,             (* --verbose *)
+  LexerDebug,          (* --lexer-debug *)
+  ParserDebug,         (* --parser-debug *)
+  ShowSettings,        (* --show-settings *)
+  ErrantSemicolons,    (* --errant-semicolons *)
+
+  (* build product options *)
+
+  AstRequired,         (* --ast, --no-ast *)
+  GraphRequired,       (* --graph, --no-graph *)
+  XlatRequired,        (* --xlat, --no-xlat *)
+  ObjRequired,         (* --obj, --no-obj *)
+
+  (* comment option *)
+
+  PreserveComments,    (* --preserve-comments, --strip-comments *)
+
+  (* capability options *)
+
+  DollarIdentifiers,   (* --dollar-identifiers, --no-dollar-identifiers *)
+  LowlineIdentifiers); (* --lowline-identifiers, --no-lowline-identifiers *)
+
+
+(* ---------------------------------------------------------------------------
+ * procedure SetOption(option, value)
+ * ---------------------------------------------------------------------------
+ * Sets the given option to the given boolean FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetOption ( option : Option; value : BOOLEAN );
+
+
+(* ---------------------------------------------------------------------------
+ * function verbose()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --verbose is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE verbose () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function lexerDebug()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --lexer-debug is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE lexerDebug () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function parserDebug()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --parser-debug is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE parserDebug () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function showSettings()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --show-settings is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE showSettings () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function errantSemicolons()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --errant-semicolons is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE errantSemicolons () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function astRequired()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --ast is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE astRequired () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function graphRequired()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --graph is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE graphRequired () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function xlatRequired()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --xlat is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE xlatRequired () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function objRequired()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --obj is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE objRequired () : BOOLEAN;
+
+
+
+(* ---------------------------------------------------------------------------
+ * function preserveComments()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --preserve-comments is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE preserveComments () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function lowlineIdentifiers()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --lowline-identifiers is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE lowlineIdentifiers () : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function dollarIdentifiers()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if option --dollar-identifiers is turned on, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE dollarIdentifiers () : BOOLEAN;
+ 
+
+(* ---------------------------------------------------------------------------
+ * procedure PrintSettings()
+ * ---------------------------------------------------------------------------
+ * Prints the current settings to the console.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE PrintSettings;
+
+
+END CompilerOptions.
