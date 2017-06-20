@@ -1,0 +1,37 @@
+(*!m2pim*) (* Copyright (c) 2016 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Console;
+
+(* Console output library *)
+
+FROM String IMPORT StringT; (* alias for String.String *)
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteChars(chars)
+ * ---------------------------------------------------------------------------
+ * Prints the given character array to the console.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteChars ( chars : ARRAY OF CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteStr(s)
+ * ---------------------------------------------------------------------------
+ * Prints the given string to the console.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteStr ( s : StringT );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteLn
+ * ---------------------------------------------------------------------------
+ * Prints newline to the console.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteLn;
+
+
+END Console.
