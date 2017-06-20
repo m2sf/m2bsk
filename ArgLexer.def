@@ -1,0 +1,165 @@
+(*!m2pim*) (* Copyright (c) 2016 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE ArgLexer;
+
+FROM String IMPORT StringT; (* alias for String.String *)
+
+
+(* ---------------------------------------------------------------------------
+ * Type Token
+ * ---------------------------------------------------------------------------
+ * Enumerated token values representing command line arguments.
+ * ------------------------------------------------------------------------ *)
+
+TYPE Token = (
+  
+  (* invalid argument *)
+  
+  Invalid,
+  
+  (* information options *)
+  
+  Help,                 (* --help, -h *)
+  Version,              (* --version, -V *)
+  License,              (* --license *)
+  
+  (* single product options *)
+  
+  SyntaxOnly,           (* --syntax-only *)
+  AstOnly,              (* --ast-only *)
+  GraphOnly,            (* --graph-only *)
+  XlatOnly,             (* --xlat-only *)
+  ObjOnly,              (* --obj-only *)
+  
+  (* multiple product options *)
+
+  Ast,                  (* --ast *)
+  NoAst,                (* --no-ast *)
+  Graph,                (* --graph *)
+  NoGraph,              (* --no-graph *)
+  Xlat,                 (* --xlat *)
+  NoXlat,               (* --no-xlat *)
+  Obj,                  (* --obj *)
+  NoObj,                (* --no-obj *)
+
+  (* comment option *)
+
+  PreserveComments,     (* --preserve-comments *)
+  StripComments,        (* --strip-comments *)
+
+  (* capability options *)
+
+  DollarIdentifiers,    (* --dollar-identifiers *)
+  NoDollarIdentifiers,  (* --no-dollar-identifiers *)
+  LowlineIdentifiers,   (* --lowline-identifiers *)
+  NoLowlineIdentifiers, (* --no-lowline-identifiers *)
+  
+  (* source file argument *)
+  
+  SourceFile,
+  
+  (* diagnostic options *)
+
+  Verbose,             (* --verbose *)
+  LexerDebug,          (* --lexer-debug *)
+  ParserDebug,         (* --parser-debug *)
+  ShowSettings,        (* --show-settings *)
+  ErrantSemicolons,    (* --errant-semicolons *)
+  
+  (* end of input sentinel *)
+  
+  EndOfInput);
+
+
+(* ---------------------------------------------------------------------------
+ * function nextToken()
+ * ---------------------------------------------------------------------------
+ * Reads and consumes the next commmand line argument and returns its token.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE nextToken : Token;
+
+
+(* ---------------------------------------------------------------------------
+ * function lastArg()
+ * ---------------------------------------------------------------------------
+ * Returns the argument string of the last consumed argument or NIL if the
+ * end of input token has been returned by a prior call to nextToken().
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE lastArg : StringT;
+
+
+(* ---------------------------------------------------------------------------
+ * function isInfoRequest(token)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if token represents an information request, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isInfoRequest ( token : Token ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function isCompilationRequest(token)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if token represents a compilation request, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isCompilationRequest ( token : Token ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function isProductOption(token)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if token represents a product option, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isProductOption ( token : Token ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function isSingleProductOption(token)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if token represents a single product option, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isSingleProductOption ( token : Token ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function isMultipleProductOption(token)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if token represents a multiple product option, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isMultipleProductOption ( token : Token ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function isCommentOption(token)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if token represents a comment option, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isCommentOption ( token : Token ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function isCapabilityOption(token)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if token represents a capability option, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isCapabilityOption ( token : Token ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function isDiagnosticsOption(token)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if token represents a diagnostics option, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isDiagnosticsOption ( token : Token ) : BOOLEAN;
+
+
+END ArgLexer.
