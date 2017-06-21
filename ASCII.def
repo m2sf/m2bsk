@@ -2,7 +2,7 @@
 
 DEFINITION MODULE ASCII;
 
-(* Mnemonics and Tests for 7-bit ISO-646 code points *)
+(* Mnemonics for 7-bit ISO-646 code points *)
 
 
 (* Control Codes *)
@@ -48,169 +48,58 @@ CONST
   SP = CHR(32);  (* 0u20 *)
 
 
-(* Digits *)
-
-  DIGIT_ZERO = CHR(48);
-  DIGIT_ONE = CHR(49);
-  DIGIT_TWO = CHR(50);
-  DIGIT_THREE = CHR(51);
-  DIGIT_FOUR = CHR(52);
-  DIGIT_FIVE = CHR(53);
-  DIGIT_SIX = CHR(54);
-  DIGIT_SEVEN = CHR(55);
-  DIGIT_EIGHT = CHR(56);
-  DIGIT_NINE = CHR(57);
-
-
-(* Letters *)
-
-  SMALL_LETTER_A = CHR(97);
-  SMALL_LETTER_B = CHR(98);
-  SMALL_LETTER_C = CHR(99);
-  SMALL_LETTER_D = CHR(100);
-  SMALL_LETTER_E = CHR(101);
-  SMALL_LETTER_F = CHR(102);
-  SMALL_LETTER_G = CHR(103);
-  SMALL_LETTER_H = CHR(104);
-  SMALL_LETTER_I = CHR(105);
-  SMALL_LETTER_J = CHR(106);
-  SMALL_LETTER_K = CHR(107);
-  SMALL_LETTER_L = CHR(108);
-  SMALL_LETTER_M = CHR(109);
-  SMALL_LETTER_N = CHR(110);
-  SMALL_LETTER_O = CHR(111);
-  SMALL_LETTER_P = CHR(112);
-  SMALL_LETTER_Q = CHR(113);
-  SMALL_LETTER_R = CHR(114);
-  SMALL_LETTER_S = CHR(115);
-  SMALL_LETTER_T = CHR(116);
-  SMALL_LETTER_U = CHR(117);
-  SMALL_LETTER_V = CHR(118);
-  SMALL_LETTER_W = CHR(119);
-  SMALL_LETTER_X = CHR(120);
-  SMALL_LETTER_Y = CHR(121);
-  SMALL_LETTER_Z = CHR(122);
-
-  CAPITAL_LETTER_A = CHR(65);
-  CAPITAL_LETTER_B = CHR(66);
-  CAPITAL_LETTER_C = CHR(67);
-  CAPITAL_LETTER_D = CHR(68);
-  CAPITAL_LETTER_E = CHR(69);
-  CAPITAL_LETTER_F = CHR(70);
-  CAPITAL_LETTER_G = CHR(71);
-  CAPITAL_LETTER_H = CHR(72);
-  CAPITAL_LETTER_I = CHR(73);
-  CAPITAL_LETTER_J = CHR(74);
-  CAPITAL_LETTER_K = CHR(75);
-  CAPITAL_LETTER_L = CHR(76);
-  CAPITAL_LETTER_M = CHR(77);
-  CAPITAL_LETTER_N = CHR(78);
-  CAPITAL_LETTER_O = CHR(79);
-  CAPITAL_LETTER_P = CHR(80);
-  CAPITAL_LETTER_Q = CHR(81);
-  CAPITAL_LETTER_R = CHR(82);
-  CAPITAL_LETTER_S = CHR(83);
-  CAPITAL_LETTER_T = CHR(84);
-  CAPITAL_LETTER_U = CHR(85);
-  CAPITAL_LETTER_V = CHR(86);
-  CAPITAL_LETTER_W = CHR(87);
-  CAPITAL_LETTER_X = CHR(88);
-  CAPITAL_LETTER_Y = CHR(89);
-  CAPITAL_LETTER_Z = CHR(90);
-
-
-  (* Non-Alphanumeric *)
+(* Non-Alphanumeric *)
   
-  EXCLAMATION_MARK = CHR(33);
-  QUOTATION_MARK = CHR(34);
-  NUMBER_SIGN = CHR(35);
-  DOLLAR_SIGN = CHR(36);
-  PERCENT_SIGN = CHR(37);
-  AMPERSAND = CHR(38);
-  APOSTROPHE = CHR(39);
-  LEFT_PARENTHESIS = CHR(40);
-  RIGHT_PARENTHESIS = CHR(41);
-  ASTERISK = CHR(42);
-  PLUS = CHR(43);
-  COMMA = CHR(44);
-  HYPHEN_MINUS = CHR(45);
-  FULLSTOP = CHR(46);
-  SOLIDUS = CHR(47);
-  COLON = CHR(58);
-  SEMICOLON = CHR(59);
-  LESS_THAN_SIGN = CHR(60);
-  EQUALS_SIGN = CHR(61);
-  GREATER_THAN_SIGN = CHR(62);
-  QUESTION_MARK = CHR(63);
-  COMMERCIAL_AT = CHR(64);
-  LEFT_SQUARE_BRACKET = CHR(91);
-  REVERSE_SOLIDUS = CHR(92);
-  RIGHT_SQUARE_BRACKET = CHR(93);
-  CIRCUMFLEX_ACCENT = CHR(94);
-  LOW_LINE = CHR(95);
-  GRAVE_ACCENT = CHR(96);
-  LEFT_CURLY_BRACKET = CHR(123);
-  VERTICAL_LINE = CHR(124);
-  RIGHT_CURLY_BRACKET = CHR(125);
-  TILDE = CHR(126);
+  EXCLAMATION  = CHR(33);  (* ! *)
+  DOUBLEQUOTE  = CHR(34);  (* " *)
+  OCTOTHORPE   = CHR(35);  (* # *)
+  DOLLAR       = CHR(36);  (* $ *)
+  PERCENT      = CHR(37);  (* % *)
+  AMPERSAND    = CHR(38);  (* & *)
+  SINGLEQUOTE  = CHR(39);  (* ' *)
+  LEFTPAREN    = CHR(40);  (* ( *)
+  RIGHTPAREN   = CHR(41);  (* ) *)
+  ASTERISK     = CHR(42);  (* * *)
+  PLUS         = CHR(43);  (* + *)
+  COMMA        = CHR(44);  (* , *)
+  MINUS        = CHR(45);  (* - *)
+  FULLSTOP     = CHR(46);  (* . *)
+  SOLIDUS      = CHR(47);  (* / *)
+  COLON        = CHR(58);  (* : *)
+  SEMICOLON    = CHR(59);  (* ; *)
+  LESS         = CHR(60);  (* < *)
+  EQUAL        = CHR(61);  (* = *)
+  GREATER      = CHR(62);  (* > *)
+  QUESTIONMARK = CHR(63);  (* ? *)
+  ATSIGN       = CHR(64);  (* @ *)
+  LEFTBRACKET  = CHR(91);  (* [ *)
+  BACKSLASH    = CHR(92);  (* \ *)
+  RIGHTBRACKET = CHR(93);  (* ] *)
+  CARET        = CHR(94);  (* ^ *)
+  LOWLINE      = CHR(95);  (* _ *)
+  BACKQUOTE    = CHR(96);  (* ` *)
+  LEFTBRACE    = CHR(123); (* { *)
+  VERTICALBAR  = CHR(124); (* | *)
+  RIGHTBRACE   = CHR(125); (* } *)
+  TILDE        = CHR(126); (* ~ *)
 
 
 (* Aliases *)
 
-  NEWLINE = LF;
-  
-  TAB = HT;
-  
-  SPACE = SP;
-  
-  EXCLAMATION = EXCLAMATION_MARK;
-  QUOTATION = QUOTATION_MARK;
-  SINGLEQUOTE = APOSTROPHE;
-  DOUBLEQUOTE = QUOTATION_MARK;
-  OCTOTHORPE = NUMBER_SIGN;
-  MINUS = HYPHEN_MINUS;
-  SLASH = SOLIDUS;
-  LESS = LESS_THAN_SIGN;
-  EQUALS = EQUALS_SIGN;
-  GREATER = GREATER_THAN_SIGN;
-  QMARK = QUESTION_MARK;
-  BACKSLASH = REVERSE_SOLIDUS;
-  CARET = CIRCUMFLEX_ACCENT;
-  BACKQUOTE = GRAVE_ACCENT;
-
-  LPAREN = LEFT_PARENTHESIS;
-  RPAREN = RIGHT_PARENTHESIS;
-  LBRACKET = LEFT_SQUARE_BRACKET;
-  RBRACKET = RIGHT_SQUARE_BRACKET;
-  LBRACE = LEFT_CURLY_BRACKET;
-  RBRACE = RIGHT_CURLY_BRACKET;
-
-
-(* Operations *)
-
-PROCEDURE isControl ( ch : CHAR ) : BOOLEAN;
-(* Returns TRUE if ch is a control code, otherwise FALSE. *)
-
-PROCEDURE isDigit ( ch : CHAR ) : BOOLEAN;
-(* Returns TRUE if ch is a digit, otherwise FALSE. *)
-
-PROCEDURE isLetter ( ch : CHAR ) : BOOLEAN;
-(* Returns TRUE if ch is a letter, otherwise FALSE. *)
-
-PROCEDURE isAlphaNum ( ch : CHAR ) : BOOLEAN;
-(* Returns TRUE if ch is alpha-numeric, otherwise FALSE. *)
-
-PROCEDURE isUpper ( ch : CHAR ) : BOOLEAN;
-(* Returns TRUE if ch is an uppercase letter, otherwise FALSE. *)
-
-PROCEDURE isLower ( ch : CHAR ) : BOOLEAN;
-(* Returns TRUE if ch is a lowercase letter, otherwise FALSE. *)
-
-PROCEDURE toUpper ( VAR ch : CHAR );
-(* Passes back the uppercase equivalent of ch if ch is a lowercase letter. *)
-
-PROCEDURE toLower ( VAR ch : CHAR );
-(* Passes back the lowercase equivalent of ch if ch is an uppercase letter. *)
+  NEWLINE    = LF;
+  TAB        = HT;
+  TABULATOR  = HT;
+  SPACE      = SP;
+  APOSTROPHE = SINGLEQUOTE;
+  PERIOD     = FULLSTOP;
+  SLASH      = SOLIDUS;
+  EQUALS     = EQUAL;
+  LPAREN     = LEFTPAREN;
+  RPAREN     = RIGHTPAREN;
+  LBRACKET   = LEFTBRACKET;
+  RBRACKET   = RIGHTBRACKET;
+  LBRACE     = LEFTBRACE;
+  RBRACE     = RIGHTBRACE;
 
 
 END ASCII.
