@@ -1,0 +1,50 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Char;
+
+(* Character tests and conversions *)
+
+
+(* Tests *)
+
+PROCEDURE isControl ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is a control code, otherwise FALSE. *)
+
+PROCEDURE isDigit ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is a digit, otherwise FALSE. *)
+
+PROCEDURE isAtoF ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is a base-16 digit, otherwise FALSE. *)
+
+PROCEDURE isLetter ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is a letter, otherwise FALSE. *)
+
+PROCEDURE isUpper ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is an uppercase letter, otherwise FALSE. *)
+
+PROCEDURE isLower ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is a lowercase letter, otherwise FALSE. *)
+
+PROCEDURE isAlphaNum ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is alpha-numeric, otherwise FALSE. *)
+
+PROCEDURE isPrintable ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is printable, otherwise FALSE. *)
+
+PROCEDURE isQuotable ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is quotable, otherwise FALSE. *)
+
+PROCEDURE isEscapable ( ch : CHAR ) : BOOLEAN;
+(* Returns TRUE if ch is escapable, otherwise FALSE. *)
+
+
+(* Conversions *)
+
+PROCEDURE toUpper ( VAR ch : CHAR );
+(* Passes back the uppercase equivalent of ch if ch is a lowercase letter. *)
+
+PROCEDURE toLower ( VAR ch : CHAR );
+(* Passes back the lowercase equivalent of ch if ch is an uppercase letter. *)
+
+
+END Char.
