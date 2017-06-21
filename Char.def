@@ -40,11 +40,19 @@ PROCEDURE isEscapable ( ch : CHAR ) : BOOLEAN;
 
 (* Conversions *)
 
-PROCEDURE toUpper ( VAR ch : CHAR );
-(* Passes back the uppercase equivalent of ch if ch is a lowercase letter. *)
+PROCEDURE toUpper ( ch : CHAR ) : CHAR;
+(* Returns the uppercase equivalent of ch if ch is a lowercase letter.
+   Otherwise returns ch. *)
 
-PROCEDURE toLower ( VAR ch : CHAR );
-(* Passes back the lowercase equivalent of ch if ch is an uppercase letter. *)
+PROCEDURE ToUpper ( VAR ch : CHAR );
+(* Replaces ch with its uppercase equivalent if ch is a lowercase letter. *)
+
+PROCEDURE toLower ( ch : CHAR ) : CHAR;
+(* Returns the lowercase equivalent of ch if ch is an uppercase letter.
+   Otherwise returns ch. *)
+
+PROCEDURE ToLower ( VAR ch : CHAR );
+(* Replaces ch with its lowercase equivalent if ch is a uppercase letter. *)
 
 
 END Char.
