@@ -188,7 +188,6 @@ BEGIN
   (* check for any other symbol *)
   ELSE
     CASE next OF
-    
     (* next symbol is line comment *)
       "!" :
         Source.MarkLexeme(source, sym.line, sym.column);
@@ -196,7 +195,8 @@ BEGIN
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
     (* next symbol is quoted literal *)
-    | '"', "'" :
+    | ASCII.SINGLEQUOTE,
+      ASCII.DOUBLEQUOTE :
         Source.MarkLexeme(source, sym.line, sym.column);
         MatchLex.QuotedLiteral(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
