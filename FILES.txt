@@ -1,0 +1,46 @@
+/
+  /src  -- source directory
+  /src/imp -- implementation directory
+  FIRST.txt -- FIRST sets for all non-terminals
+  FOLLOW.txt -- FOLLOW sets for all non-terminals
+  README.md -- project brief
+  m2bsk-grammar.gll -- Modula-2 LL(1) grammar in EBNF
+
+/src
+  ASCII.def -- ISO646 character code constant definitions
+  AST.def -- interface for Abstract Syntax Tree
+  ArgLexer.def -- interface for command line argument lexer
+  ArgParser.def -- interface for command line argument parser
+  AstNodeType.def -- interface for AST node type consistency checks
+  AstQueue.def -- interface to AST node queue (FIFO)
+  BuildParams.def -- build parameter definitions
+  Char.def -- interface for ISO646 character tests and conversions
+  CompilerOptions.def -- interface to compiler option manager
+  Console.def -- interface to console output library
+  DepGraph.def -- interface to dependency graph generator
+  FileSystem.def -- interface to file system
+  Fileutils.def -- interface to portable file library
+  LexQueue.def -- interface to lexeme queue (FIFO)
+  Lexer.def -- interface to Modula-2 lexer
+  MatchLex.def -- interface to lexer support library
+  ModuleKey.def -- interface to module key generator
+  NonTerminals.def -- interface to FIRST/FOLLOW sets
+  Parser.def -- interface to Modula-2 parser
+  Pathnames.def -- interface to portable pathname library
+  SimpleFileIO.def -- interface to File I/O library
+  Source.def -- interface to source file reader
+  String.def -- interface to string type
+  Token.def -- token definitions and interface to token tests
+  TokenSet.def -- interface to token set library
+  UnsignedInt.def -- PIM compliant unsigned integer definitions
+  
+/imp
+  ArgLexer.mod -- command line argument lexer
+  ArgParser.mod -- command line argument parser
+  Char.mod -- ISO646 character tests and conversions
+  CompilerOptions.mod -- compiler option manager
+  Lexer.mod -- Modula-2 lexer
+  MatchLex.mod -- lexer support library
+  Parser.mod -- Modula-2 parser
+  Source.mod -- source file reader
+  Token.mod -- token tests
