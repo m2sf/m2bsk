@@ -13,7 +13,7 @@ PROCEDURE isControl ( ch : CHAR ) : BOOLEAN;
 (* Returns TRUE if ch is a control code, otherwise FALSE. *)
 
 BEGIN
-  RETURN ((ch >= ASCII.NUL) AND (ch <= ASCII.US)) OR (ch = ASCII.DEL)
+  RETURN (ch <= US) OR (ch = DEL)
 END isControl;
 
 
