@@ -24,13 +24,13 @@ TYPE CharProc = PROCEDURE ( CHAR );
 
 (* Operations *)
 
-PROCEDURE forArray ( VAR (* CONST *) aoc : ARRAY OF CHAR) : String;
+PROCEDURE forArray ( VAR (* CONST *) array : ARRAY OF CHAR) : String;
 (* Looks up the interned string for the given character array and returns it.
    Creates and returns a new interned string if no matching entry is found. *)
 
 
 PROCEDURE forArraySlice
-  ( VAR (* CONST *) copyFrom : ARRAY OF CHAR; start, end : CARDINAL) : String;
+  ( VAR (* CONST *) array : ARRAY OF CHAR; start, end : CARDINAL) : String;
 (* Looks up the interned string for the given slice of the given character
    array and returns it. Creates and returns a new interned string if no
    matching entry for the slice is found. *)
@@ -57,29 +57,33 @@ PROCEDURE charAtIndex ( string : String; index : CARDINAL ) : CHAR;
    Returns ASCII.NUL if string is NIL or index is out of range. *)
 
 
-PROCEDURE CopyToArray ( string : String; VAR aoc : ARRAY OF CHAR );
-(* Copies the given string to the given array reference. Passes back an empty
-   character array if string is NIL or if the array size is insufficient to
-   hold the entire string. *)
+PROCEDURE CopyToArray
+  ( string : String; VAR array : ARRAY OF CHAR; VAR charsCopied : CARDINAL );
+(* Copies the given string to the given array reference. Returns without copy-
+   ing if string is NIL or if the array size is insufficient to hold the
+   entire string. Passes the number of characters copied in charsCopied. *)
 
 
 PROCEDURE CopySliceToArray
-  ( string : String; start, end : CARDINAL; VAR aoc : ARRAY OF CHAR );
-(* Copies the given slice of the given string to the given array. Passes back
-   an empty character array if string is NIL,  or if start and end do not
-   specify a valid slice within the string or if the array size is
-   insufficient to hold the slice. *)
+  ( string : String;
+    start, end : CARDINAL;
+    VAR array : ARRAY OF CHAR;
+    VAR charsCopied : CARDINAL );
+(* Copies the given slice of the given string to the given array.  Returns
+   without copying if string is NIL, if start and end do not specify a valid
+   slice within the string or if the array size is insufficient to hold the
+   entire slice. Passes the number of characters copied in charsCopied. *)
 
 
 PROCEDURE matchesArray
-  ( string : String; VAR (* CONST *) aoc : ARRAY OF CHAR ) : BOOLEAN;
+  ( string : String; VAR (* CONST *) array : ARRAY OF CHAR ) : BOOLEAN;
 (* Returns TRUE if the given string matches the given array. Returns FALSE
    if string is NIL or if string does not match the array. *)
 
 
 PROCEDURE matchesArraySlice
   ( string : String;
-    VAR (* CONST *) aoc : ARRAY OF CHAR;
+    VAR (* CONST *) array : ARRAY OF CHAR;
     start, end : CARDINAL ) : BOOLEAN;
 (* Returns TRUE if the given string matches the given slice of the given
    array. Returns FALSE if string is NIL or if start and end do not specify
@@ -94,6 +98,12 @@ PROCEDURE WithCharsInSliceDo
   ( string : String; start, end : CARDINAL; proc : CharProc );
 (* Executes proc for each character in the given slice of string
    passing each character from start to end. *)
+
+
+(* Introspection *)
+
+PROCEDURE count : CARDINAL;
+(* Returns the number of interned strings. *)
 
 
 END String.
