@@ -24,7 +24,7 @@ BEGIN
   FOR index := 0 TO HIGH(chars) DO
     ch := chars[index];
     IF ch > ASCII.US THEN
-      Terminal.Write(chars[index])
+      Terminal.Write(ch)
     ELSIF ch = ASCII.NUL THEN
       EXIT
     END (* IF *)
@@ -63,7 +63,7 @@ BEGIN
   FOR index := 0 TO HIGH(chars) DO
     ch := chars[index];
     IF ch > ASCII.US THEN
-      Terminal.Write(chars[index])
+      Terminal.Write(ch)
     ELSIF ch = ASCII.NUL THEN
       EXIT
     END (* IF *)
