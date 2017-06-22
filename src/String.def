@@ -36,7 +36,7 @@ PROCEDURE forArraySlice
    matching entry for the slice is found. *)
 
 
-PROCEDURE forSlice ( string : String; start, end : CARDINAL ) String;
+PROCEDURE forSlice ( string : String; start, end : CARDINAL ) : String;
 (* Looks up the interned string for the given slice of the given string
    and returns it. Creates and returns a new interned string if no
    matching entry for the slice is found. *)
