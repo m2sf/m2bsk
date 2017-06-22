@@ -54,7 +54,7 @@ PROCEDURE length ( string : String ) : CARDINAL;
 
 PROCEDURE charAtIndex ( string : String; index : CARDINAL ) : CHAR;
 (* Returns the character at the given index in the given string.
-   Returns ASCII.NUL if string is NIL or index is out of range. *)
+   Returns ASCII.NUL if string is NIL or if index is out of range. *)
 
 
 PROCEDURE CopyToArray
