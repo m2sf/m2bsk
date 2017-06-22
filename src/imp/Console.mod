@@ -41,7 +41,7 @@ END WriteChars;
 PROCEDURE WriteStr ( s : StringT );
 
 BEGIN
-  IF (s # NIL) AND (String.length(s) > 0)
+  IF (s # NIL) AND (String.length(s) > 0) THEN
     String.WithCharsDo(s, Terminal.WriteString)
   END (* IF *)
 END WriteStr;
@@ -70,7 +70,7 @@ BEGIN
   END; (* FOR *)
   
   (* print s *)
-  IF (s # NIL) AND (String.length(s) > 0)
+  IF (s # NIL) AND (String.length(s) > 0) THEN
     String.WithCharsDo(s, Terminal.WriteString)
   END (* IF *)
 END WriteCharsAndStr;
