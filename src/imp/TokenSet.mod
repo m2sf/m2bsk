@@ -40,7 +40,7 @@ VAR
  * Passes a newly allocated and initialised TokenSet instance back in set.
  * The set is initalised from parameters segment2 to segment0 as follows:
  *  
- *   bit 95                     bit 0
+ *   bit 95                   bit 0
  *    v                          v
  *   [<------------set----------->]
  *   [segment2][segment1][segment0]
