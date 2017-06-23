@@ -68,7 +68,7 @@ BEGIN
   
   (* initialise segment2 by clearing unused higher bits *)
   
-  (* determine highest bit in segment2 *)
+  (* determine highest token bit in segment2 *)
   highBitInSeg2 := ORD(MAX(TokenT)) MOD 32;
   
   (* shift lower bits out to the right *)
@@ -112,9 +112,9 @@ BEGIN
   
   (* initialise as an empty set *)
   newSet^.count := 0;
-  newSet^.segment0 := 0;
-  newSet^.segment1 := 0;
-  newSet^.segment2 := 0;
+  newSet^.segment[0] := 0;
+  newSet^.segment[1] := 0;
+  newSet^.segment[2] := 0;
   
   (* add each token in tokenList to the new set *)
   FOR index := 0 TO HIGH(tokenList) DO
