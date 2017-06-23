@@ -1,0 +1,44 @@
+(*!m2pim*) (* Copyright (c) 2010-2017 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Hash; (* requires 32-bit CARDINAL *)
+
+(* General Purpose 32-bit Hash Function *)
+
+
+(* ---------------------------------------------------------------------------
+ * Hash key type
+ * ------------------------------------------------------------------------ *)
+
+TYPE Key = CARDINAL; (* requires 32-bit CARDINAL *)
+
+
+
+(* ---------------------------------------------------------------------------
+ * Initial value for incremental hash calculation
+ * ------------------------------------------------------------------------ *)
+
+CONST initialValue = 0;
+
+
+(* ---------------------------------------------------------------------------
+ * function:  Hash.valueForNextChar( hash, ch )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE valueForNextChar ( hash : Key; ch : CHAR ) : Key;
+
+
+(* ---------------------------------------------------------------------------
+ * function:  Hash.finalValue( hash )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE finalValue ( hash : Key ) : Key;
+
+
+(* ---------------------------------------------------------------------------
+ * function:  Hash.valueForArray( array )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE valueForArray ( VAR (* CONST *) array : ARRAY OF CHAR ) : Key;
+
+
+END Hash.
