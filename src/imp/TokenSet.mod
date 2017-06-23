@@ -77,6 +77,7 @@ BEGIN
   newSet^segment[2] := segment2 - mask;
   
   (* count total number of bits *)
+  newSet^.count := 0;
   FOR segIndex := 0 TO 2 DO
     FOR bit := 0 TO 31 DO
       IF ODD(segment0 DIV pow2[bit]) THEN
