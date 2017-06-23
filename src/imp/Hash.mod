@@ -118,14 +118,18 @@ END SHL;
 PROCEDURE ClearHighBits ( VAR hash : Key; lowestBitToClear : CARDINAL );
 
 VAR
+  mask : Key;
   bitToClear : CARDINAL;
   
 BEGIN
-  FOR bitToClear := 32 TO lowestBitToClear BY -1 DO
-    IF hash >= pow2[bitToClear] THEN
-      hash := hash - pow2[bitToClear]
-    END (* IF *)
-  END (* FOR *)
+  (* shift lower bits out to the right *)
+  mask := hash DIV Key(lowestBitToClear + 1);
+  
+  (* shift them back, thereby clearing the low bits *)
+  mask := mask * Key(pow2[lowestBitToClear + 1]);
+  
+  (* subtract the mask, thereby clearing the high bits *)
+  hash := hash - mask;
 END ClearHighBits;
 
 
