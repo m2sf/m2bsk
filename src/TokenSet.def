@@ -1,6 +1,6 @@
 (*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
 
-DEFINITION MODULE TokenSet;
+DEFINITION MODULE TokenSet; (* requires 32-bit CARDINAL *)
 
 (* Token Set ADT for Modula-2 R10 Bootstrap Kernel *)
 
@@ -24,7 +24,7 @@ TYPE TokenSetT = TokenSet; (* for unqualified use *)
  * Passes a newly allocated and initialised TokenSet instance back in set.
  * The set is initalised from parameters segment2 to segment0 as follows:
  *  
- *   bit 95                     bit 0
+ *   bit 95                   bit 0
  *    v                          v
  *   [<------------set----------->]
  *   [segment2][segment1][segment0]
