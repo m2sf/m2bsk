@@ -61,8 +61,12 @@ VAR
 BEGIN
   (* allocate new set *)
   ALLOCATE(newSet, TSIZE(Descriptor));
+  
+  (* initialise segment0 and segment1 as passed in *)
   newSet^segment[0] := segment0;
   newSet^segment[1] := segment1;
+  
+  (* initialise segment2 by clearing unused higher bits *)
   
   (* determine highest bit in segment2 *)
   highBitInSeg2 := ORD(MAX(TokenT)) MOD 32;
@@ -76,7 +80,7 @@ BEGIN
   (* subtract the mask, thereby clearing the bits above the highest bit *)  
   newSet^segment[2] := segment2 - mask;
   
-  (* count total number of bits *)
+  (* count total number of bits to initialise counter *)
   newSet^.count := 0;
   FOR segIndex := 0 TO 2 DO
     FOR bit := 0 TO 31 DO
@@ -86,7 +90,7 @@ BEGIN
     END (* FOR *)
   END (* FOR *)
   
-  (* pass back newSet *)
+  (* pass back new set *)
   set := newSet
 END NewFromRawData;
 
@@ -103,7 +107,22 @@ PROCEDURE NewFromArray
   ( VAR set : TokenSet; tokenList : ARRAY OF Token );
 
 BEGIN
-  (* TO DO *)
+  (* allocate new set *)
+  ALLOCATE(newSet, TSIZE(Descriptor));
+  
+  (* initialise as an empty set *)
+  newSet^.count := 0;
+  newSet^.segment0 := 0;
+  newSet^.segment1 := 0;
+  newSet^.segment2 := 0;
+  
+  (* add each token in tokenList to the new set *)
+  FOR index := 0 TO HIGH(tokenList) DO
+    Insert(newSet, tokenList[index])
+  END (* FOR *)
+  
+  (* pass back new set *)
+  set := newSet
 END NewFromArray;
 
 
