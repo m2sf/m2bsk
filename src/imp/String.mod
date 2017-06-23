@@ -97,9 +97,12 @@ TYPE StringDescriptor = RECORD
   |            78 : intern : POINTER TO AOC.Len78
   |            79 : intern : POINTER TO AOC.Len79
   |            80 : intern : POINTER TO AOC.Len80
-  |    81 ..  128 : intern : POINTER TO AOC.Len128
+  |    81 ..   96 : intern : POINTER TO AOC.Len96
+  |    97 ..  112 : intern : POINTER TO AOC.Len112
+  |   113 ..  128 : intern : POINTER TO AOC.Len128
   |   129 ..  256 : intern : POINTER TO AOC.Len256
-  |   257 ..  512 : intern : POINTER TO AOC.Len512
+  |   257 ..  384 : intern : POINTER TO AOC.Len384
+  |   385 ..  512 : intern : POINTER TO AOC.Len512
   |   513 ..  768 : intern : POINTER TO AOC.Len768
   |   769 .. 1024 : intern : POINTER TO AOC.Len1024
   |  1025 .. 1280 : intern : POINTER TO AOC.Len1280
@@ -579,9 +582,12 @@ BEGIN
   |            78 : string^.intern := AOC.Len78(addr)
   |            79 : string^.intern := AOC.Len79(addr)
   |            80 : string^.intern := AOC.Len80(addr)
-  |    81 ..  128 : string^.intern := AOC.Len128(addr)
+  |    81 ..   96 : string^.intern := AOC.Len96(addr)
+  |    97 ..  112 : string^.intern := AOC.Len112(addr)
+  |   113 ..  128 : string^.intern := AOC.Len128(addr)
   |   129 ..  256 : string^.intern := AOC.Len256(addr)
-  |   257 ..  512 : string^.intern := AOC.Len512(addr)
+  |   257 ..  384 : string^.intern := AOC.Len384(addr)
+  |   385 ..  512 : string^.intern := AOC.Len512(addr)
   |   513 ..  768 : string^.intern := AOC.Len768(addr)
   |   769 .. 1024 : string^.intern := AOC.Len1024(addr)
   |  1025 .. 1280 : string^.intern := AOC.Len1280(addr)
@@ -629,9 +635,12 @@ BEGIN
   (* allocate space for intern *)
   CASE size OF
   |     1 ..   80 : ALLOCATE(addr, size);
-  |    81 ..  128 : ALLOCATE(addr, 128)
+  |    81 ..   96 : ALLOCATE(addr, 96)
+  |    97 ..  112 : ALLOCATE(addr, 112)
+  |   113 ..  128 : ALLOCATE(addr, 128)
   |   129 ..  256 : ALLOCATE(addr, 256)
-  |   257 ..  512 : ALLOCATE(addr, 512)
+  |   257 ..  384 : ALLOCATE(addr, 384)
+  |   385 ..  512 : ALLOCATE(addr, 512)
   |   513 ..  768 : ALLOCATE(addr, 768)
   |   769 .. 1024 : ALLOCATE(addr, 1024)
   |  1025 .. 1280 : ALLOCATE(addr, 1280)
