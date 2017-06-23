@@ -114,7 +114,9 @@ VAR
   
 BEGIN
   FOR bitToClear := 32 TO lowestBitToClear BY -1 DO
-    hash := hash - pow2[bitToClear]
+    IF hash >= pow2[bitToClear] THEN
+      hash := hash - pow2[bitToClear]
+    END (* IF *)
   END (* FOR *)
 END ClearHighBits;
 
