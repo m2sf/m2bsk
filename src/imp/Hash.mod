@@ -36,7 +36,11 @@ PROCEDURE finalValue ( hash : Key ) : Key;
 
 BEGIN
   (* Clear bit 31 *)
-  RETURN hash - pow2[31]
+  IF hash >= pow2[31] THEN
+    hash := hash - pow2[31]
+  END; (* IF *)
+  
+  RETURN hash
 END finalValue;
 
 
@@ -62,8 +66,12 @@ BEGIN
     ch := array[index]
   END; (* WHILE *)
   
-  (* Clear bit 31 and return hash *)
-  RETURN hash - pow2[31]
+  (* Clear bit 31 *)
+  IF hash >= pow2[31] THEN
+    hash := hash - pow2[31]
+  END; (* IF *)
+  
+  RETURN hash
 END valueForArray;
 
 
