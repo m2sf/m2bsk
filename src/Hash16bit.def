@@ -1,0 +1,52 @@
+(*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Hash; (* requires 16-bit CARDINAL *)
+
+(* General Purpose 32-bit Hash Function *)
+
+IMPORT ASCII;
+
+FROM SYSTEM IMPORT TSIZE;
+
+
+(* ---------------------------------------------------------------------------
+ * Key type (32 bit)
+ * ---------------------------------------------------------------------------
+ *
+ *    <----highBits----->   <-----lowBits----->
+ *   31                16  15                 0
+ *    v                 v   v                 v
+ *   [xxxx xxxx xxxx xxxx] [xxxx xxxx xxxx xxxx]
+ *    ^                 ^   ^                 ^
+ *   15                 0  15                 0
+ *
+ * ------------------------------------------------------------------------ *)
+
+TYPE Key = RECORD
+  highBits,
+  lowBits : CARDINAL
+END; (* Key *)
+
+
+(* ---------------------------------------------------------------------------
+ * function:  Hash.valueForNextChar( hash, ch )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE valueForNextChar ( hash : Key; ch : CHAR ) : Key;
+
+
+(* ---------------------------------------------------------------------------
+ * function:  Hash.finalValue( hash )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE finalValue ( hash : Key ) : Key;
+
+
+(* ---------------------------------------------------------------------------
+ * function:  Hash.valueForArray( array )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE valueForArray ( VAR (* CONST *) array : ARRAY OF CHAR ) : Key;
+
+
+END Hash.
