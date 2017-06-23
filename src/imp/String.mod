@@ -6,8 +6,6 @@ IMPLEMENTATION MODULE String;
 
 IMPORT ASCII, SYSTEM, AOC, Hash;
 
-FROM Hash IMPORT HashT; (* alias for Hash.Hash *)
-
 FROM Storage IMPORT ALLOCATE;
 
 
@@ -134,7 +132,7 @@ END; (* StringTable *)
 TYPE TableEntry = POINTER TO EntryDescriptor;
 
 TYPE EntryDescriptor = RECORD
-  hash   : HashT;
+  hash   : Hash.Key;
   string : String;
   next   : TableEntry
 END; (* EntryDescriptor *)
@@ -694,12 +692,12 @@ PROCEDURE lookupOrInsert
   ( VAR array : ARRAY OF CHAR; start, end : CARDINAL ) : String;
 
 VAR
-  hash : HashT;
+  hash : Hash.Key;
   bucketIndex : CARDINAL;
   thisEntry, newEntry : TableEntry;
   
 BEGIN
-  hash := Hash.Key(array);
+  hash := Hash.valueForArray(array);
   bucketIndex := hash MOD BucketCount;
   IF bucket[bucketIndex] = NIL THEN
     newEntry := NewTableEntry(hash, array, start, end);
@@ -741,7 +739,7 @@ END lookupOrInsert;
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE NewTableEntry
-  ( hash : HashtT;
+  ( hash : Hash.Key;
     VAR array : ARRAY OF CHAR;
     start, end : CARDINAL ) : TableEntry;
 
