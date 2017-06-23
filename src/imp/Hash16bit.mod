@@ -98,30 +98,88 @@ END valueForArray;
 (* ---------------------------------------------------------------------------
  * function: SHL( hash, shiftFactor )
  * ---------------------------------------------------------------------------
- * Returns the value of hash shifted left by shiftFactor.
+ * 32-bit Left-Shift. Returns the value of hash shifted left by shiftFactor.
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE SHL ( hash : Key; shiftFactor : CARDINAL ) : Key;
 
 VAR
-  pivotalBit : CARDINAL;
+  pivotalBit, carryBits : CARDINAL;
   
 BEGIN
-  (* shifting by more than 31 produces all zeroes *)
-  IF shiftFactor > 31 THEN
-    RETURN 0
-  END; (* IF *)
   
-  (* bit at position 32-shiftFactor is pivotal *)
-  pivotalBit := 32 - shiftFactor;
+  CASE shiftFactor OF
+  (* shifting by 0 ... *) 
+    0 :
+      (* leaves result unchanged *)
+      
+  (* shifting by 1-15 ... *)
+  | 1 .. 15 :
+      (* partially moves lowBits into highBits *)
+      
+      (* bit at position 16-shiftFactor is pivotal *)
+      pivotalBit := 16 - shiftFactor;
+      
+      (* remember bits that will be shifted out of lowBits *)
+      carryBits := hash.lowBits DIV pivotalBit;
+      
+      (* shift lowBits *)
+      
+      (* clear bits including and above pivotal bit to avoid overflow *)
+      IF hash.lowBits >= pow2[pivotalBit] THEN
+        ClearBitsInclAndAbove(hash.lowBits, pivotalBit)
+      END; (* IF *)
+      
+      (* safely shift lowBits *)
+      hash.lowBits := hash.lowBits * pow2[shiftFactor];
+      
+      (* shift highBits *)
+      
+      (* clear bits including and above pivotal bit to avoid overflow *)
+      IF hash.highBits >= pow2[pivotalBit] THEN
+        ClearBitsInclAndAbove(hash.highBits, pivotalBit)
+      END; (* IF *)
+      
+      (* safely shift highBits *)
+      hash.highBits := hash.highBits * pow2[shiftFactor];
+      
+      (* add the carry bits shifted out of lowBits *)
+      hash.highBits := hash.highBits + carryBits
+      
+  (* shifting by 16 ... *)
+  | 16 :
+      (* moves all lowBits into highBits and clears lowBits *)
+      hash.highBits := hash.lowBits;
+      hash.lowBits := 0
   
-  (* clear bits including and above pivotal bit to avoid overflow *)
-  IF hash >= pow2[pivotalBit] THEN
-    ClearHighBits(hash, pivotalBit)
-  END; (* IF *)
+  (* shifting by 17-31 ... *)
+  | 17 .. 31 :
+      (* moves lowBits into highBits, clears lowBits, shifts highBits *)
+      
+      hash.highBits := hash.lowBits;
+      hash.lowBits := 0;
+      
+      (* bit at position 32-shiftFactor is pivotal *)
+      pivotalBit := 32 - shiftFactor;
+
+      (* shift highBits *)
+      
+      (* clear bits including and above pivotal bit to avoid overflow *)
+      IF hash.highBits >= pow2[pivotalBit] THEN
+        ClearBitsInclAndAbove(hash.highBits, pivotalBit)
+      END; (* IF *)
+      
+      (* safely shift highBits *)
+      hash.highBits := hash.highBits * pow2[shiftFactor];
+      
+  (* shifting by more than 31 ... *)
+  ELSE
+    (* produces all zeroes *)
+    hash.lowBits := 0;
+    hash.highBits := 0
+  END; (* CASE *)
   
-  (* shift left safely *)
-  RETURN hash * pow2[shiftFactor]
+  RETURN hash
 END SHL;
 
 
@@ -231,96 +289,6 @@ BEGIN
   (* add the complement to the minuend *)
   Add(left, complement)
 END Sub;
-
-
-(* ---------------------------------------------------------------------------
- * function: SHL( hash, shiftFactor )
- * ---------------------------------------------------------------------------
- * 32-bit Left-Shift. Returns the value of hash shifted left by shiftFactor.
- * ------------------------------------------------------------------------ *)
-
-
-
-PROCEDURE SHL ( hash : Key; shiftFactor : CARDINAL ) : Key;
-
-VAR
-  pivotalBit, carryBits : CARDINAL;
-  
-BEGIN
-  
-  CASE shiftFactor OF
-  (* shifting by 0 ... *) 
-    0 :
-      (* leaves result unchanged *)
-      
-  (* shifting by 1-15 ... *)
-  | 1 .. 15 :
-      (* partially moves lowBits into highBits *)
-      
-      (* bit at position 16-shiftFactor is pivotal *)
-      pivotalBit := 16 - shiftFactor;
-      
-      (* remember bits that will be shifted out of lowBits *)
-      carryBits := hash.lowBits DIV pivotalBit;
-      
-      (* shift lowBits *)
-      
-      (* clear bits including and above pivotal bit to avoid overflow *)
-      IF hash.lowBits >= pow2[pivotalBit] THEN
-        ClearBitsInclAndAbove(hash.lowBits, pivotalBit)
-      END; (* IF *)
-      
-      (* safely shift lowBits *)
-      hash.lowBits := hash.lowBits * pow2[shiftFactor];
-      
-      (* shift highBits *)
-      
-      (* clear bits including and above pivotal bit to avoid overflow *)
-      IF hash.highBits >= pow2[pivotalBit] THEN
-        ClearBitsInclAndAbove(hash.highBits, pivotalBit)
-      END; (* IF *)
-      
-      (* safely shift highBits *)
-      hash.highBits := hash.highBits * pow2[shiftFactor];
-      
-      (* add the carry bits shifted out of lowBits *)
-      hash.highBits := hash.highBits + carryBits
-      
-  (* shifting by 16 ... *)
-  | 16 :
-      (* moves all lowBits into highBits and clears lowBits *)
-      hash.highBits := hash.lowBits;
-      hash.lowBits := 0
-  
-  (* shifting by 17-31 ... *)
-  | 17 .. 31 :
-      (* moves lowBits into highBits, clears lowBits, shifts highBits *)
-      
-      hash.highBits := hash.lowBits;
-      hash.lowBits := 0;
-      
-      (* bit at position 32-shiftFactor is pivotal *)
-      pivotalBit := 32 - shiftFactor;
-
-      (* shift highBits *)
-      
-      (* clear bits including and above pivotal bit to avoid overflow *)
-      IF hash.highBits >= pow2[pivotalBit] THEN
-        ClearBitsInclAndAbove(hash.highBits, pivotalBit)
-      END; (* IF *)
-      
-      (* safely shift highBits *)
-      hash.highBits := hash.highBits * pow2[shiftFactor];
-      
-  (* shifting by more than 31 ... *)
-  ELSE
-    (* produces all zeroes *)
-    hash.lowBits := 0;
-    hash.highBits := 0
-  END; (* CASE *)
-  
-  RETURN hash
-END SHL;
 
 
 (* ---------------------------------------------------------------------------
