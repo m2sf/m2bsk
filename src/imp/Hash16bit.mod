@@ -170,7 +170,7 @@ BEGIN
       END; (* IF *)
       
       (* safely shift highBits *)
-      hash.highBits := hash.highBits * pow2[shiftFactor];
+      hash.highBits := hash.highBits * pow2[(shiftFactor MOD 16)];
       
   (* shifting by more than 31 ... *)
   ELSE
@@ -320,7 +320,7 @@ END InitPow2Table;
 
 
 BEGIN (* Hash *)
-  (* bail out if CARDINAL is not 32-bit wide *)
+  (* bail out if CARDINAL is not 16-bit wide *)
   IF TSIZE(CARDINAL) # 16 THEN HALT END;
   
   (* Initialise data table *)
