@@ -1,6 +1,6 @@
 (*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
 
-IMPLEMENTATION MODULE Pathname; (* POSIX *)
+IMPLEMENTATION MODULE Pathname; (* POSIX version *)
 
 (* POSIX Pathname Parser for Modula-2 R10 Bootstrap Kernel *)
 
@@ -17,29 +17,6 @@ TYPE Descriptor = RECORD
   suffix     : StringT;
   suffixType : SuffixType
 END; (* Descriptor *)
-
-
-(* Filetypes *)
-
-TYPE SuffixType =
-  ( NoSuffix,      (*  no  suffix  *)
-    DefSuffix,     (* .def or .DEF *)
-    ModSuffix,     (* .mod or .MOD *)
-    SymSuffix,     (* .sym or .SYM *)
-    AstSuffix,     (* .ast or .AST *)
-    DotSuffix,     (* .dot or .DOT *)
-    ObjSuffix,     (* .obj or .OBJ *)
-    OtherSuffix ); (*  any others  *)
-
-
-(* Status type *)    
-
-TYPE Status =
-  ( Success,
-    InvalidPath,
-    InvalidFilename,
-    InvalidReference,
-    AllocationFailed );
 
 
 (* Operations *)
