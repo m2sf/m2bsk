@@ -112,6 +112,15 @@ PROCEDURE suffix ( path : Pathname ) : StringT;
 PROCEDURE suffixType ( path : Pathname ) : SuffixType;
 
 
+(* --------------------------------------------------------------------------
+ * procedure Release(path)
+ * --------------------------------------------------------------------------
+ * Releases the path object and sets path to nil.
+ * ------------------------------------------------------------------------ *)
+ 
+PROCEDURE Release ( VAR path : Pathname );
+
+
 (* Operations on character arrays *)
 
 (* --------------------------------------------------------------------------
