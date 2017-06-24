@@ -4,6 +4,13 @@ IMPLEMENTATION MODULE Pathname; (* POSIX version *)
 
 (* POSIX Pathname Parser for Modula-2 R10 Bootstrap Kernel *)
 
+IMPORT ASCII, String, PathnamePolicy;
+
+IMPORT StringT; (* alias for String.String *)
+
+FROM STORAGE IMPORT ALLOCATE, DEALLOCATE;
+FROM SYSTEM IMPORT TSIZE;
+
 
 (* Pathname type *)
 
@@ -162,6 +169,7 @@ END suffixType;
 PROCEDURE Release ( VAR path : Pathname );
 
 BEGIN
+  (* bail out if path invalid *)
   IF path = NIL THEN
     RETURN
   END; (* IF *)
