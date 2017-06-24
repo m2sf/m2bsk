@@ -1,0 +1,135 @@
+(*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Pathname;
+
+(* Pathname Parser Interface for Modula-2 R10 Bootstrap Kernel *)
+
+
+(* Pathname type *)
+
+TYPE Pathname; (* OPAQUE *)
+
+TYPE PathnameT = Pathname; (* for unqualified use *)
+
+
+(* Filetypes *)
+
+TYPE SuffixType =
+  ( NoSuffix,      (*  no  suffix  *)
+    DefSuffix,     (* .def or .DEF *)
+    ModSuffix,     (* .mod or .MOD *)
+    SymSuffix,     (* .sym or .SYM *)
+    AstSuffix,     (* .ast or .AST *)
+    DotSuffix,     (* .dot or .DOT *)
+    ObjSuffix,     (* .obj or .OBJ *)
+    OtherSuffix ); (*  any others  *)
+
+
+(* Status type *)    
+
+TYPE Status =
+  ( Success,
+    InvalidPath,
+    InvalidFilename,
+    InvalidReference,
+    AllocationFailed );
+
+
+(* Operations *)
+
+(* --------------------------------------------------------------------------
+ * procedure NewFromOSPath(path, osPath, status)
+ * --------------------------------------------------------------------------
+ * Creates a new pathname object, initialised from the path in osPath.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE NewFromOSPath
+  ( VAR path : Pathname; osPath : ARRAY OF CHAR; VAR status : Status );
+
+
+(* --------------------------------------------------------------------------
+ * procedure newFromComponents(path, dirpath, basename, suffix, status)
+ * --------------------------------------------------------------------------
+ * Creates a new pathname object from the given component strings.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE newFromComponents
+  ( VAR path : Pathname;
+    dirpath, basename, suffix : StringT; VAR status : Status );
+
+
+(* --------------------------------------------------------------------------
+ * function fullPath(path)
+ * --------------------------------------------------------------------------
+ * Returns a string with the full pathname of path.
+ * ------------------------------------------------------------------------ *)
+ 
+PROCEDURE fullPath ( path : Pathname ) : StringT;
+
+
+(* --------------------------------------------------------------------------
+ * function dirPath(path)
+ * --------------------------------------------------------------------------
+ * Returns a string with the dirpath of path.
+ * ------------------------------------------------------------------------ *)
+ 
+PROCEDURE dirPath ( path : Pathname ) : StringT;
+
+
+(* --------------------------------------------------------------------------
+ * function filename(path)
+ * --------------------------------------------------------------------------
+ * Returns a string with the filename of path.
+ * ------------------------------------------------------------------------ *)
+ 
+PROCEDURE filename ( path : Pathname ) : StringT;
+
+
+(* --------------------------------------------------------------------------
+ * function basename(path)
+ * --------------------------------------------------------------------------
+ * Returns a string with the basename of path.
+ * ------------------------------------------------------------------------ *)
+ 
+PROCEDURE basename ( path : Pathname ) : StringT;
+
+
+(* --------------------------------------------------------------------------
+ * function suffix(path)
+ * --------------------------------------------------------------------------
+ * Returns a string with the suffix of path.
+ * ------------------------------------------------------------------------ *)
+ 
+PROCEDURE suffix ( path : Pathname ) : StringT;
+
+
+(* --------------------------------------------------------------------------
+ * function suffixType(path)
+ * --------------------------------------------------------------------------
+ * Returns the suffix type of path.
+ * ------------------------------------------------------------------------ *)
+ 
+PROCEDURE suffixType ( path : Pathname ) : SuffixType;
+
+
+(* Operations on character arrays *)
+
+(* --------------------------------------------------------------------------
+ * function isValidOSPath(osPath)
+ * --------------------------------------------------------------------------
+ * Returns TRUE if osPath is a valid pathname, otherwise FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isValidOSPath ( osPath : ARRAY OF CHAR ) : BOOLEAN;
+
+
+(* --------------------------------------------------------------------------
+ * function isValidFilename(filename)
+ * --------------------------------------------------------------------------
+ * Returns TRUE if filename is a valid filename, otherwise FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE isValidFilename ( filename : ARRAY OF CHAR ) : BOOLEAN;
+
+
+END Pathname.
