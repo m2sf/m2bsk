@@ -1,8 +1,8 @@
 (*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
 
-IMPLEMENTATION MODULE Pathname;
+IMPLEMENTATION MODULE Pathname; (* POSIX *)
 
-(* Pathname Parser for Modula-2 R10 Bootstrap Kernel *)
+(* POSIX Pathname Parser for Modula-2 R10 Bootstrap Kernel *)
 
 
 (* Pathname type *)
