@@ -26,6 +26,16 @@ TYPE Descriptor = RECORD
 END; (* Descriptor *)
 
 
+(* Result type *)
+
+TYPE Result = RECORD
+  found  : BOOLEAN;
+  start,
+  end    : CARDINAL;
+  status : Status
+END; (* Result *)
+
+
 (* Operations *)
 
 (* --------------------------------------------------------------------------
@@ -37,8 +47,66 @@ END; (* Descriptor *)
 PROCEDURE NewFromOSPath
   ( VAR path : Pathname; osPath : ARRAY OF CHAR; VAR status : Status );
 
+VAR
+  valid : BOOLEAN;
+  charsProcessed : CARDINAL;
+  dirpath, filename, suffix : Result;
+
 BEGIN
-  (* TO DO *)
+  IF (HIGH(osPath) = 0) OR osPath[0] = ASCII.NUL THEN
+    status := InvalidPath;
+    RETURN
+  END; (* IF *)
+  
+  charsProcessed := parsePathname(osPath, 0, dirpath, filename, suffix);
+  
+  IF NOT dirpath.found AND NOT filename.found THEN
+    status := dirpath.status;
+    RETURN
+  END; (* IF *)
+  
+  ALLOCATE(newPath, TSIZE(Descriptor));
+  
+  (* obtain dirpath string *)
+  IF dirpath.found AND dirpath.status = Success THEN
+    status := dirpath.status;
+    fullPathStart := dirpath.start;
+    newPath^.dirpath :=
+      String.forArraySlice(osPath, dirpath.start, dirpath.end)
+  ELSE
+    status := filename.status;
+    fullPathStart := filename.start;
+    newPath^.dirpath := NIL;
+  END; (* IF *)
+  
+  (* obtain filename string *)
+  IF filename.found AND filename.status = Success THEN
+    fullPathEnd := filename.end;
+    newPath^.filename :=
+      String.forArraySlice(osPath, filename.start, filename.end)
+  ELSE
+    fullPathEnd := dirpath.end;
+    newPath^.filename := NIL
+  END; (* IF *)
+  
+  (* obtain basename and suffix strings *)
+  IF suffix.found AND suffix.status = Success THEN
+    newPath^.basename :=
+      String.forArraySlice(osPath, filename.start, suffix.start - 2)
+    newPath^.suffix :=
+      String.forArraySlice(osPath, suffix.start, suffix.end);
+    newPath^.suffixType := suffixTypeForString(newPath^.suffix)
+  ELSE
+    newPath^.basename := newPath^.filename;
+    newPath^.suffix := NIL;
+    newPath^.suffixType := NoSuffix
+  END; (* IF *)
+  
+  (* obtain full path string *)
+  newPath^.fullPath :=
+    String.forArraySlice(osPath, fullPathStart, fullPathEnd);
+    
+  path := newPath;
 END NewFromOsPath;
 
 
@@ -279,7 +347,7 @@ END isOptionalComponentChar;
 
 
 (* --------------------------------------------------------------------------
- * function parsePathname(path, index, valid, filenameIndex)
+ * function parsePathname(path, startIndex, dirpath, basename, suffix)
  * --------------------------------------------------------------------------
  * pathname :=
  *   rootPath | ( '~' | '.' | parentPath ) rootPath? | filenameOnly
@@ -287,10 +355,11 @@ END isOptionalComponentChar;
  * ----------------------------------------------------------------------- *)
 
 PROCEDURE parsePathname
-  ( VAR path          : ARRAY OF CHAR;
-    index             : CARDINAL;
-    VAR valid         : BOOLEAN;
-    VAR filenameIndex : CARDINAL ) : CARDINAL;
+  ( VAR (* CONST *) path : ARRAY OF CHAR;
+    startIndex           : CARDINAL;
+    VAR dirpath,
+    basename,
+    suffix               : Result ) : CARDINAL;
 
 BEGIN
   (* TO DO *)
