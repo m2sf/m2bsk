@@ -4,6 +4,8 @@ DEFINITION MODULE Pathname;
 
 (* Pathname Parser Interface for Modula-2 R10 Bootstrap Kernel *)
 
+FROM String IMPORT StringT; (* alias for String.String *)
+
 
 (* Pathname type *)
 
