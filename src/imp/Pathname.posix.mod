@@ -4,7 +4,7 @@ IMPLEMENTATION MODULE Pathname; (* POSIX version *)
 
 (* POSIX Pathname Parser for Modula-2 R10 Bootstrap Kernel *)
 
-IMPORT ASCII, String, PathnamePolicy;
+IMPORT ASCII, Char, String, PathnamePolicy;
 
 IMPORT StringT; (* alias for String.String *)
 
@@ -257,7 +257,7 @@ END isPathComponentChar;
 PROCEDURE isPathComponentLeadChar( ch : CHAR ) : BOOLEAN;
 
 BEGIN
-  RETURN ASCII.isAlphanumeric(ch) OR (ch = '_')
+  RETURN Char.isAlphanumeric(ch) OR (ch = '_')
 END isPathComponentLeadChar;
 
 
