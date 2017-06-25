@@ -1,0 +1,94 @@
+(*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE FilenameXlat;
+
+(* Filename translation interface for Modula-2 R10 Bootstrap Kernel *)
+
+FROM String IMPORT StringT; (* alias for String.String *)
+
+
+(* --------------------------------------------------------------------------
+ * Filename Translation
+ * --------------------------------------------------------------------------
+ * Modula-2 module identifiers are used to derive the filenames for the
+ * module's definition and implementation files. Since identifiers are case
+ * sensitive in Modula-2 this can lead to ambiguities on case-insensitive
+ * filesystems such as are used by default on MacOS and Windows operating
+ * systems. Furthermore, module identifiers may be longer than the maximum
+ * permitted filename length on filesystems with severely limited filename
+ * lengths such as FAT16, used by default on MS-DOS and still in use on
+ * modern USB storage devices. To provide a portable solution to this
+ * problem, M2BSK uses a simple but effective filename translation system.
+ *
+ * A plain text file with filename translations and named M2FNDICT.TXT may
+ * be placed in any directory in which Modula-2 source files are found.
+ * M2BSK reads this dictionary file to determine whether any module
+ * identifier needs to be translated to obtain its associated filename.
+ *
+ * At this time, dictionary files need to be edited by hand.
+ *
+ * The syntax of the dictionary file is as follows:
+ *
+ *   dictionary :=
+ *     translation ( ',' translation )* ';'
+ *     ;
+ *
+ *   translation :=
+ *     moduleIdent '=' actualBasename '.*'
+ *     ;
+ *
+ *   moduleIdent := StdIdent;
+ *
+ *   actualBasename := StdIdent ( '-' Digit Digit )?
+ *
+ * Space, tabulator and newline between symbols are ignored.
+ * --------------------------------------------------------------------------
+ * Example dictionary for FAT32 and HFS+ filesystems:
+ *
+ *   UNISTRING = Unistring-00.*,
+ *   UniString = Unistring-01.*;
+ * --------------------------------------------------------------------------
+ * Example dictionary for FAT16 filesystem:
+ *
+ *   COMPLEX = COMPL-00.*,
+ *   ComplexMath = COMPL-01.*;
+ * ------------------------------------------------------------------------ *)
+
+
+(* Status type *)    
+
+TYPE Status =
+  ( Success,
+    InvalidPath,
+    InvalidFilename,
+    InvalidReference,
+    AllocationFailed );
+
+
+(* Operations *)
+
+(* --------------------------------------------------------------------------
+ * function actualFilename(fullPath, status)
+ * --------------------------------------------------------------------------
+ * Returns the actual filename for the file denoted by fullPath.
+ * No filename translation takes place if no dictionary file is found in the
+ * file's directory or no entry for the file exists in the dictionary file.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE actualFilename
+  ( VAR (* CONST *) fullPath : ARRAY OF CHAR; VAR status : Status ) : StringT;
+
+
+(* --------------------------------------------------------------------------
+ * function actualFullPath(fullPath, status)
+ * --------------------------------------------------------------------------
+ * Returns the actual full pathname for the file denoted by fullPath.
+ * No filename translation takes place if no dictionary file is found in the
+ * file's directory or no entry for the file exists in the dictionary file.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE actualFullPath
+  ( VAR (* CONST *) fullPath : ARRAY OF CHAR; VAR status : Status ) : StringT;
+
+
+END FilenameXlat.
