@@ -23,6 +23,7 @@
   Console.def -- interface to console output library
   DepGraph.def -- interface to dependency graph generator
   FileSystem.def -- interface to file system
+  FilenameXlat.def -- interface to filename translation
   Fileutils.def -- interface to portable file library
   Hash.16bit.def -- interface to 16-bit version of hash function
   Hash.32bit.def -- interface to 32-bit version of hash function
