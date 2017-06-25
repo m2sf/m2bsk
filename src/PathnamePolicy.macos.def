@@ -1,0 +1,50 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE PathnamePolicy; (* MacOS version *)
+
+(* Pathname policy parameters *)
+
+(* --------------------------------------------------------------------------
+ * All settings are applied at compile time and cannot be changed at runtime!
+ * ----------------------------------------------------------------------- *)
+
+(* --------------------------------------------------------------------------
+ * Use of special characters in pathname components
+ * --------------------------------------------------------------------------
+ * The following constants define whether certain special characters may or
+ * may not occur legally within a pathname component:
+ *
+ * PathCompMayContainPeriod
+ *   enables or disables the use of period ('.') in a pathname component.
+ *
+ *   Restrictions
+ *   - a period may not be trailing nor consecutive,
+ *
+ * PathCompMayContainSpace
+ *   enables or disables the use of space (' ') in a pathname component.
+ *
+ *   Restrictions
+ *   - a space may not be leading nor trailing nor consecutive,
+ *
+ * PathCompMayContainMinus
+ *   enables or disables the use of minus ('-') in a pathname component.
+ *
+ *   Restrictions
+ *   - a minus may not be leading.
+ *
+ * PathCompMayContainTilde
+ *   enables or disables the use of tilde ('~') in a pathname component.
+ *
+ *   Restrictions
+ *   - a tilde may not be leading.
+ * ----------------------------------------------------------------------- *)
+
+
+CONST
+  PathCompMayContainPeriod = TRUE; (* enabled *)
+  PathCompMayContainSpace = TRUE;  (* enabled *)
+  PathCompMayContainMinus = TRUE;  (* enabled *)
+  PathCompMayContainTilde = FALSE; (* disabled *)
+
+
+END PathnamePolicy.
