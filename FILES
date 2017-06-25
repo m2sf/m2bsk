@@ -1,12 +1,15 @@
 /
   /src  -- source directory
   /src/imp -- implementation directory
+  FILES -- this file
   FIRST.txt -- FIRST sets for all non-terminals
   FOLLOW.txt -- FOLLOW sets for all non-terminals
   README.md -- project brief
   m2bsk-grammar.gll -- Modula-2 LL(1) grammar in EBNF
+  resword-trie-analysis.txt -- Trie analysis for Modula-2 reserved words
 
 /src
+  AOC.def -- CHAR array type definitions for internal use
   ASCII.def -- ISO646 character code constant definitions
   AST.def -- interface for Abstract Syntax Tree
   ArgLexer.def -- interface for command line argument lexer
@@ -15,32 +18,61 @@
   AstQueue.def -- interface to AST node queue (FIFO)
   BuildParams.def -- build parameter definitions
   Char.def -- interface for ISO646 character tests and conversions
+  CardMath.def -- interface to CARDINAL math library
   CompilerOptions.def -- interface to compiler option manager
   Console.def -- interface to console output library
   DepGraph.def -- interface to dependency graph generator
   FileSystem.def -- interface to file system
   Fileutils.def -- interface to portable file library
+  Hash.16bit.def -- interface to 16-bit version of hash function
+  Hash.32bit.def -- interface to 32-bit version of hash function
+  Hash.64bit.def -- interface to 64-bit version of hash function
   LexQueue.def -- interface to lexeme queue (FIFO)
   Lexer.def -- interface to Modula-2 lexer
   MatchLex.def -- interface to lexer support library
   ModuleKey.def -- interface to module key generator
   NonTerminals.def -- interface to FIRST/FOLLOW sets
   Parser.def -- interface to Modula-2 parser
-  Pathnames.def -- interface to portable pathname library
+  Pathname.def -- interface to portable pathname library
+  PathnamePolicy.amigaos.def -- pathname policy definitions for AmigaOS
+  PathnamePolicy.macos.def -- pathname policy definitions for MacOS
+  PathnamePolicy.msdos.def -- pathname policy definitions for MS-DOS
+  PathnamePolicy.openvms.def -- pathname policy definitions for OpenVMS
+  PathnamePolicy.os2.def -- pathname policy definitions for OS/2
+  PathnamePolicy.posix.def -- pathname policy definitions for Unix/POSIX
+  PathnamePolicy.windows.def -- pathname policy definitions for MS-Windows
+  PathnamePolicy.default.def -- default pathname policy definitions
   SimpleFileIO.def -- interface to File I/O library
   Source.def -- interface to source file reader
   String.def -- interface to string type
   Token.def -- token definitions and interface to token tests
-  TokenSet.def -- interface to token set library
+  TokenSet.16bit.def -- interface to 16-bit version of token set library
+  TokenSet.32bit.def -- interface to 32-bit version of token set library
+  TokenSet.64bit.def -- interface to 64-bit version of token set library
   UnsignedInt.def -- PIM compliant unsigned integer definitions
   
 /imp
   ArgLexer.mod -- command line argument lexer
   ArgParser.mod -- command line argument parser
+  CardMath.16bit.mod -- 16-bit version of cardinal math library
+  CardMath.32bit.mod -- 32-bit version of cardinal math library
+  CardMath.64bit.mod -- 64-bit version of cardinal math library
   Char.mod -- ISO646 character tests and conversions
   CompilerOptions.mod -- compiler option manager
+  Console.mod -- console output library
+  Hash.16bit.mod -- 16-bit version of general purpose 32-bit hash function
+  Hash.32bit.mod -- 32-bit version of general purpose 32-bit hash function
+  Hash.64bit.mod -- 64-bit version of general purpose 32-bit hash function
   Lexer.mod -- Modula-2 lexer
   MatchLex.mod -- lexer support library
   Parser.mod -- Modula-2 parser
+  Pathname.amigaos.mod -- AmigaOS version of pathname library
+  Pathname.macos.mod -- MacOS version of pathname library
+  Pathname.openvms.mod -- OpenVMS version of pathname library
+  Pathname.posix.mod -- Unix/POSIX version of pathname library
+  Pathname.windows.mod -- MS-DOS, OS/2 and Windows version of pathname library
   Source.mod -- source file reader
   Token.mod -- token tests
+  TokenSet.16bit.mod -- 16-bit version of token set library
+  TokenSet.32bit.mod -- 32-bit version of token set library
+  TokenSet.64bit.mod -- 64-bit version of token set library
