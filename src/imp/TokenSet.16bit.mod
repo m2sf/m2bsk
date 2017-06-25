@@ -8,6 +8,7 @@ IMPORT Console;
 
 FROM Token IMPORT TokenT; (* alias for Token.Token *)
 
+FROM CardMath IMPORT pow2;
 FROM SYSTEM IMPORT TSIZE;
 FROM Storage IMPORT ALLOCATE, DEALLOCATE;
 
@@ -27,14 +28,6 @@ TYPE Descriptor = RECORD
   count   : CARDINAL;
   segment : ARRAY [0..SegCount-1] OF CARDINAL
 END; (* Descriptor *)
-
-
-(* --------------------------------------------------------------------------
- * Data table for powers of 2
- * ----------------------------------------------------------------------- *)
-
-VAR
-  pow2 : ARRAY [0..Bitwidth-1] OF CARDINAL;
 
 
 (* Operations *)
@@ -93,7 +86,7 @@ BEGIN
   newSet^.count := 0;
   FOR segIndex := 0 TO SegCount-1 DO
     FOR bit := 0 TO Bitwidth-1 DO
-      IF ODD(segment[segIndex] DIV pow2[bit]) THEN
+      IF ODD(segment[segIndex] DIV pow2(bit)) THEN
         newSet^.count := newSet^.count + 1
       END (* IF *)
     END (* FOR *)
@@ -147,7 +140,7 @@ END NewFromArray;
 PROCEDURE Insert ( set : TokenSet; token : TokenT );
 
 VAR
-  segIndex, bit : CARDINAL;
+  segIndex, bit, pow2bit : CARDINAL;
   
 BEGIN
   (* bail out if set is invalid *)
@@ -158,13 +151,14 @@ BEGIN
   (* determine segment and bit where token is stored *)
   segIndex := ORD(token) DIV Bitwidth;
   bit := ORD(token) MOD Bitwidth;
+  pow2bit := pow2(bit);
   
   (* test bit in segment *)
-  IF ODD(set^.segment[segIndex] DIV pow2[bit]) (* bit is set *) THEN
+  IF ODD(set^.segment[segIndex] DIV pow2bit) (* bit is set *) THEN
     RETURN
   ELSE (* bit is not set *)
     (* set the bit *)
-    set^.segment[segIndex] := set^.segment[segIndex] + pow2[bit];
+    set^.segment[segIndex] := set^.segment[segIndex] + pow2bit;
     
     (* update counter *)
     set^.count := set^.count + 1
@@ -181,7 +175,7 @@ END Insert;
 PROCEDURE Remove ( set : TokenSet; token : TokenT );
 
 VAR
-  segIndex, bit : CARDINAL;
+  segIndex, bit, pow2bit : CARDINAL;
   
 BEGIN
   (* bail out if set is invalid *)
@@ -192,11 +186,12 @@ BEGIN
   (* determine segment and bit where token is stored *)
   segIndex := ORD(token) DIV Bitwidth;
   bit := ORD(token) MOD Bitwidth;
+  pow2bit := pow2(bit);
   
   (* test bit in segment *)
-  IF ODD(set^.segment[segIndex] DIV pow2[bit]) (* bit is set *) THEN
+  IF ODD(set^.segment[segIndex] DIV pow2bit) (* bit is set *) THEN
     (* clear the bit *)
-    set^.segment[segIndex] := set^.segment[segIndex] - pow2[bit];
+    set^.segment[segIndex] := set^.segment[segIndex] - pow2bit;
     
     (* update counter *)
     set^.count := set^.count - 1
@@ -239,7 +234,7 @@ BEGIN
   segIndex := ORD(token) DIV Bitwidth;
   bit := ORD(token) MOD Bitwidth;
   
-  RETURN ODD(set^.segment[segIndex] DIV pow2[bit]) (* bit is set *)
+  RETURN ODD(set^.segment[segIndex] DIV pow2(bit)) (* bit is set *)
 END isElem;
 
 
@@ -335,46 +330,11 @@ BEGIN
 END Release;
 
 
-(* ************************************************************************ *
- * Private Operations                                                       *
- * ************************************************************************ *)
-
-(* --------------------------------------------------------------------------
- * procedure: InitPow2Table
- * --------------------------------------------------------------------------
- * Initialises data table with powers of 2.
- * ----------------------------------------------------------------------- *)
-
-PROCEDURE InitPow2Table;
-
-BEGIN
-  pow2[0] := 1;
-  pow2[1] := 2;
-  pow2[2] := 4;
-  pow2[3] := 8;
-  pow2[4] := 16;
-  pow2[5] := 32;
-  pow2[6] := 64;
-  pow2[7] := 128;
-  pow2[8] := 256;
-  pow2[9] := 512;
-  pow2[10] := 1024;
-  pow2[11] := 2048;
-  pow2[12] := 4096;
-  pow2[13] := 8192;
-  pow2[14] := 16384;
-  pow2[15] := 32768
-END InitPow2Table;
-
-
 BEGIN (* TokenSet *)
   (* bail out if CARDINAL is not 16-bit wide *)
   IF TSIZE(CARDINAL) # Bitwidth THEN
     Console.WriteChars("Library TokenSet requires 16-bit CARDINALs.");
     Console.WriteLn;
     HALT
-  END; (* IF *)
-  
-  (* Initialise data table *)
-  InitPow2Table
+  END (* IF *)
 END TokenSet.
