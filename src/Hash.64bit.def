@@ -9,7 +9,7 @@ DEFINITION MODULE Hash; (* 32/64-bit version *)
  * Hash key type
  * ------------------------------------------------------------------------ *)
 
-TYPE Key = CARDINAL; (* requires 32/64 bit CARDINAL *)
+TYPE Key = CARDINAL; (* requires 32 or 64-bit CARDINAL *)
 
 
 

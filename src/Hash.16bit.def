@@ -1,6 +1,6 @@
 (*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
 
-DEFINITION MODULE Hash; (* requires 16-bit CARDINAL *)
+DEFINITION MODULE Hash; (* 16-bit version *)
 
 (* General Purpose 32-bit Hash Function *)
 
@@ -22,7 +22,7 @@ FROM SYSTEM IMPORT TSIZE;
  *
  * ------------------------------------------------------------------------ *)
 
-TYPE Key = RECORD
+TYPE Key = RECORD (* requires 16-bit CARDINAL *)
   highBits,
   lowBits : CARDINAL
 END; (* Key *)
