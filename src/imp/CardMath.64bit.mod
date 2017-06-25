@@ -37,7 +37,7 @@ END pow2;
 (* --------------------------------------------------------------------------
  * function log2(n)
  * --------------------------------------------------------------------------
- * Returns the (truncated) logarithm of 2 for argument n
+ * Returns the integral part of the logarithm of 2 for argument n
  * ----------------------------------------------------------------------- *)
 
 PROCEDURE log2 ( n : CARDINAL ) : CARDINAL;
