@@ -1,5 +1,7 @@
 # m2bsk
 
+[![Join the chat at https://gitter.im/m2bsk/Lobby](https://badges.gitter.im/m2bsk/Lobby.svg)](https://gitter.im/m2bsk/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 PIM hosted Modula-2 R10 Bootstrap Kernel
 
 M2BSK is a bootstrap kernel for the revised Modula-2 language by B.Kowarsch and R.Sutcliffe "Modula-2 Revision 2010", aka Modula-2 R10.
