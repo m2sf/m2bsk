@@ -12,6 +12,11 @@ FROM SYSTEM IMPORT TSIZE;
 FROM Storage IMPORT ALLOCATE, DEALLOCATE;
 
 
+CONST
+  Bitwidth = 32;
+  SegCount = Bitwidth ORD(MAX(TokenT)) DIV Bitwidth;
+
+
 (* --------------------------------------------------------------------------
  * TokenSet type
  * ----------------------------------------------------------------------- *)
@@ -20,7 +25,7 @@ TYPE TokenSet = POINTER TO Descriptor;
 
 TYPE Descriptor = RECORD
   count   : CARDINAL;
-  segment : ARRAY [0..2] OF CARDINAL
+  segment : ARRAY [0..SegCount-1] OF CARDINAL
 END; (* Descriptor *)
 
 
@@ -29,7 +34,7 @@ END; (* Descriptor *)
  * ----------------------------------------------------------------------- *)
 
 VAR
-  pow2 : ARRAY [0..31] OF CARDINAL;
+  pow2 : ARRAY [0..Bitwidth-1] OF CARDINAL;
 
 
 (* Operations *)
@@ -40,12 +45,12 @@ VAR
  * Passes a newly allocated and initialised TokenSet instance back in set.
  * The set is initalised from parameters segment2 to segment0 as follows:
  *  
- *   bit 95                   bit 0
+ *   bit 127                  bit 0
  *    v                          v
  *   [<------------set----------->]
  *   [segment2][segment1][segment0]
  *    ^         ^         ^                
- *   bit 32    bit 32    bit 32
+ *   bit 31    bit 31    bit 31
  *  
  * The bits in set correspond to the token values of type Token.
  * ----------------------------------------------------------------------- *)
@@ -69,7 +74,7 @@ BEGIN
   (* initialise segment2 by clearing unused higher bits *)
   
   (* determine highest token bit in segment2 *)
-  highBitInSeg2 := ORD(MAX(TokenT)) MOD 32;
+  highBitInSeg2 := ORD(MAX(TokenT)) MOD Bitwidth;
   
   (* shift lower bits out to the right *)
   mask := segment2 DIV (highBitInSeg2 + 1);
@@ -82,9 +87,9 @@ BEGIN
   
   (* count total number of bits to initialise counter *)
   newSet^.count := 0;
-  FOR segIndex := 0 TO 2 DO
-    FOR bit := 0 TO 31 DO
-      IF ODD(segment0 DIV pow2[bit]) THEN
+  FOR segIndex := 0 TO SegCount-1 DO
+    FOR bit := 0 TO Bitwidth-1 DO
+      IF ODD(segment[segIndex] DIV pow2[bit]) THEN
         newSet^.count := newSet^.count + 1
       END (* IF *)
     END (* FOR *)
@@ -144,8 +149,8 @@ BEGIN
   END; (* IF *)
   
   (* determine segment and bit where token is stored *)
-  segIndex := ORD(token) DIV 32;
-  bit := ORD(token) MOD 32;
+  segIndex := ORD(token) DIV Bitwidth;
+  bit := ORD(token) MOD Bitwidth;
   
   (* test bit in segment *)
   IF ODD(set^.segment[segIndex] DIV pow2[bit]) (* bit is set *) THEN
@@ -178,8 +183,8 @@ BEGIN
   END; (* IF *)
   
   (* determine segment and bit where token is stored *)
-  segIndex := ORD(token) DIV 32;
-  bit := ORD(token) MOD 32;
+  segIndex := ORD(token) DIV Bitwidth;
+  bit := ORD(token) MOD Bitwidth;
   
   (* test bit in segment *)
   IF ODD(set^.segment[segIndex] DIV pow2[bit]) (* bit is set *) THEN
@@ -224,8 +229,8 @@ BEGIN
   END; (* IF *)
   
   (* determine segment and bit where token is stored *)
-  segIndex := ORD(token) DIV 32;
-  bit := ORD(token) MOD 32;
+  segIndex := ORD(token) DIV Bitwidth;
+  bit := ORD(token) MOD Bitwidth;
   
   RETURN ODD(set^.segment[segIndex] DIV pow2[bit]) (* bit is set *)
 END isElem;
@@ -370,7 +375,11 @@ END InitPow2Table;
 
 BEGIN (* TokenSet *)
   (* bail out if CARDINAL is not 32-bit wide *)
-  IF TSIZE(CARDINAL) # 32 THEN HALT END;
+  IF TSIZE(CARDINAL) # Bitwidth THEN
+    Console.WriteChars("Library TokenSet requires 32-bit CARDINALs.");
+    Console.WriteLn;
+    HALT
+  END; (* IF *)
   
   (* Initialise data table *)
   InitPow2Table
