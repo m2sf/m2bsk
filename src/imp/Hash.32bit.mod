@@ -7,6 +7,12 @@ IMPLEMENTATION MODULE Hash; (* requires 32-bit CARDINAL *)
 IMPORT ASCII;
 
 FROM SYSTEM IMPORT TSIZE;
+FROM CardMath IMPORT log2;
+
+
+CONST
+  CardBitwidth = 32;
+  HashBitwidth = 32;
 
 
 (* ---------------------------------------------------------------------------
@@ -21,23 +27,19 @@ END valueForNextChar;
 
 
 (* ---------------------------------------------------------------------------
- * Data table for powers of 2
- * ------------------------------------------------------------------------ *)
-
-VAR
-  pow2 : ARRAY [0..31] OF CARDINAL;
-
-
-(* ---------------------------------------------------------------------------
  * function:  Hash.finalValue( hash )
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE finalValue ( hash : Key ) : Key;
 
+VAR
+  pow2max : CARDINAL;
+  
 BEGIN
-  (* Clear bit 31 *)
-  IF hash >= pow2[31] THEN
-    hash := hash - pow2[31]
+  (* Clear highest bit in hash value *)
+  pow2max := pow2(HashBitwidth-1);
+  IF hash >= pow2max THEN
+    hash := hash - pow2max
   END; (* IF *)
   
   RETURN hash
@@ -66,9 +68,10 @@ BEGIN
     ch := array[index]
   END; (* WHILE *)
   
-  (* Clear bit 31 *)
-  IF hash >= pow2[31] THEN
-    hash := hash - pow2[31]
+  (* Clear highest bit in hash value *)
+  pow2max := pow2(HashBitwidth-1);
+  IF hash >= pow2max THEN
+    hash := hash - pow2max
   END; (* IF *)
   
   RETURN hash
@@ -91,31 +94,32 @@ VAR
   pivotalBit : CARDINAL;
   
 BEGIN
-  (* shifting by more than 31 produces all zeroes *)
-  IF shiftFactor > 31 THEN
+  (* shifting by HashBitwidth and more produces all zeroes *)
+  IF shiftFactor > HashBitwidth-1 THEN
     RETURN 0
   END; (* IF *)
   
-  (* bit at position 32-shiftFactor is pivotal *)
-  pivotalBit := 32 - shiftFactor;
+  (* bit at position CardBitwidth-shiftFactor is pivotal *)
+  pivotalBit := CardBitwidth - shiftFactor;
   
   (* clear bits including and above pivotal bit to avoid overflow *)
-  IF hash >= pow2[pivotalBit] THEN
-    ClearHighBits(hash, pivotalBit)
+  IF hash >= pow2(pivotalBit) THEN
+    ClearBitsInclAndAbove(hash, pivotalBit)
   END; (* IF *)
   
   (* shift left safely *)
-  RETURN hash * pow2[shiftFactor]
+  RETURN hash * pow2(shiftFactor)
 END SHL;
 
 
 (* ---------------------------------------------------------------------------
- * procedure: ClearHighBits( hash, lowestBitToClear )
+ * procedure: ClearBitsInclAndAbove( value, lowestBitToClear )
  * ---------------------------------------------------------------------------
  * Clears all bits including and above bit at position lowestBitToClear.
  * ------------------------------------------------------------------------ *)
 
-PROCEDURE ClearHighBits ( VAR hash : Key; lowestBitToClear : CARDINAL );
+PROCEDURE ClearBitsInclAndAbove
+  ( VAR value : CARDINAL; lowestBitToClear : CARDINAL );
 
 VAR
   mask : Key;
@@ -123,64 +127,21 @@ VAR
   
 BEGIN
   (* shift lower bits out to the right *)
-  mask := hash DIV Key(lowestBitToClear + 1);
+  mask := hash DIV Key(lowestBitToClear+1);
   
   (* shift them back, thereby clearing the low bits *)
-  mask := mask * Key(pow2[lowestBitToClear + 1]);
+  mask := mask * Key(pow2(lowestBitToClear+1));
   
   (* subtract the mask, thereby clearing the high bits *)
   hash := hash - mask;
-END ClearHighBits;
-
-
-(* ---------------------------------------------------------------------------
- * procedure: InitPow2Table
- * ---------------------------------------------------------------------------
- * Initialises data table with powers of 2.
- * ------------------------------------------------------------------------ *)
-
-PROCEDURE InitPow2Table;
-
-BEGIN
-  pow2[0] := 1;
-  pow2[1] := 2;
-  pow2[2] := 4;
-  pow2[3] := 8;
-  pow2[4] := 16;
-  pow2[5] := 32;
-  pow2[6] := 64;
-  pow2[7] := 128;
-  pow2[8] := 256;
-  pow2[9] := 512;
-  pow2[10] := 1024;
-  pow2[11] := 2048;
-  pow2[12] := 4096;
-  pow2[13] := 8192;
-  pow2[14] := 16384;
-  pow2[15] := 32768;
-  pow2[16] := 65536;
-  pow2[17] := 131072;
-  pow2[18] := 262144;
-  pow2[19] := 524288;
-  pow2[20] := 1048576;
-  pow2[21] := 2097152;
-  pow2[22] := 4194304;
-  pow2[23] := 8388608;
-  pow2[24] := 16777216;
-  pow2[25] := 33554432;
-  pow2[26] := 67108864;
-  pow2[27] := 134217728;
-  pow2[28] := 268435456;
-  pow2[29] := 536870912;
-  pow2[30] := 1073741824;
-  pow2[31] := 2147483648
-END InitPow2Table;
+END ClearBitsInclAndAbove;
 
 
 BEGIN (* Hash *)
   (* bail out if CARDINAL is not 32-bit wide *)
-  IF TSIZE(CARDINAL) # 32 THEN HALT END;
-  
-  (* Initialise data table *)
-  InitPow2Table
+  IF TSIZE(CARDINAL) # CardBitwidth THEN
+    Console.WriteChars("Library Hash requires 32-bit CARDINALs.");
+    Console.WriteLn;
+    HALT
+  END (* IF *)
 END Hash.

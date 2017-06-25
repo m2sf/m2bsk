@@ -7,6 +7,12 @@ IMPLEMENTATION MODULE Hash; (* requires 16-bit CARDINAL *)
 IMPORT ASCII;
 
 FROM SYSTEM IMPORT TSIZE;
+FROM CardMath IMPORT log2;
+
+
+CONST
+  CardBitwidth = 16;
+  HashBitwidth = 32;
 
 
 (* ---------------------------------------------------------------------------
@@ -30,23 +36,19 @@ END valueForNextChar;
 
 
 (* ---------------------------------------------------------------------------
- * Data table for powers of 2
- * ------------------------------------------------------------------------ *)
-
-VAR
-  pow2 : ARRAY [0..15] OF CARDINAL;
-
-
-(* ---------------------------------------------------------------------------
  * function:  Hash.finalValue( hash )
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE finalValue ( hash : Key ) : Key;
 
+VAR
+  pow2max := CARDINAL;
+  
 BEGIN
-  (* Clear bit 31 *)
-  IF hash.highBits >= pow2[15] THEN
-    hash.highBits := hash.highBits - pow2[15]
+  (* Clear highest bit in hash value *)
+  pow2max := pow2(CardBitwidth-1);
+  IF hash.highBits >= pow2max THEN
+    hash.highBits := hash.highBits - pow2max
   END; (* IF *)
   
   RETURN hash
@@ -62,7 +64,7 @@ PROCEDURE valueForArray ( VAR (* CONST *) array : ARRAY OF CHAR ) : Key;
 VAR
   ch : CHAR;
   index : CARDINAL;
-  newHash, hash : Key;
+  newHash, hash, pow2max : Key;
   
 BEGIN
   index := 0;
@@ -82,9 +84,10 @@ BEGIN
     hash := newHash
   END; (* WHILE *)
   
-  (* Clear bit 31 *)
-  IF hash.highBits >= pow2[15] THEN
-    hash.highBits := hash.highBits - pow2[15]
+  (* Clear highest bit in hash value *)
+  pow2max := pow2(CardBitwidth-1);
+  IF hash.highBits >= pow2max THEN
+    hash.highBits := hash.highBits - pow2max
   END; (* IF *)
   
   RETURN hash
@@ -117,8 +120,8 @@ BEGIN
   | 1 .. 15 :
       (* partially moves lowBits into highBits *)
       
-      (* bit at position 16-shiftFactor is pivotal *)
-      pivotalBit := 16 - shiftFactor;
+      (* bit at position CardBitwidth-shiftFactor is pivotal *)
+      pivotalBit := CardBitwidth - shiftFactor;
       
       (* remember bits that will be shifted out of lowBits *)
       carryBits := hash.lowBits DIV pivotalBit;
@@ -126,22 +129,22 @@ BEGIN
       (* shift lowBits *)
       
       (* clear bits including and above pivotal bit to avoid overflow *)
-      IF hash.lowBits >= pow2[pivotalBit] THEN
+      IF hash.lowBits >= pow2(pivotalBit) THEN
         ClearBitsInclAndAbove(hash.lowBits, pivotalBit)
       END; (* IF *)
       
       (* safely shift lowBits *)
-      hash.lowBits := hash.lowBits * pow2[shiftFactor];
+      hash.lowBits := hash.lowBits * pow2(shiftFactor);
       
       (* shift highBits *)
       
       (* clear bits including and above pivotal bit to avoid overflow *)
-      IF hash.highBits >= pow2[pivotalBit] THEN
+      IF hash.highBits >= pow2(pivotalBit) THEN
         ClearBitsInclAndAbove(hash.highBits, pivotalBit)
       END; (* IF *)
       
       (* safely shift highBits *)
-      hash.highBits := hash.highBits * pow2[shiftFactor];
+      hash.highBits := hash.highBits * pow2(shiftFactor);
       
       (* add the carry bits shifted out of lowBits *)
       hash.highBits := hash.highBits + carryBits
@@ -159,20 +162,20 @@ BEGIN
       hash.highBits := hash.lowBits;
       hash.lowBits := 0;
       
-      (* bit at position 32-shiftFactor is pivotal *)
-      pivotalBit := 32 - shiftFactor;
+      (* bit at position CardBitwidth-shiftFactor is pivotal *)
+      pivotalBit := CardBitwidth - shiftFactor;
 
       (* shift highBits *)
       
       (* clear bits including and above pivotal bit to avoid overflow *)
-      IF hash.highBits >= pow2[pivotalBit] THEN
+      IF hash.highBits >= pow2(pivotalBit) THEN
         ClearBitsInclAndAbove(hash.highBits, pivotalBit)
       END; (* IF *)
       
       (* safely shift highBits *)
-      hash.highBits := hash.highBits * pow2[(shiftFactor MOD 16)];
+      hash.highBits := hash.highBits * pow2[(shiftFactor MOD CardBitwidth)];
       
-  (* shifting by more than 31 ... *)
+  (* shifting by HashBitwidth or more ... *)
   ELSE
     (* produces all zeroes *)
     hash.lowBits := 0;
@@ -197,7 +200,7 @@ VAR
   
 BEGIN
   (* no point clearing bits we don't have *)
-  IF lowestBitToClear > 15 THEN
+  IF lowestBitToClear > CardBitwidth-1 THEN
     RETURN
   END; (* IF *)
   
@@ -291,38 +294,11 @@ BEGIN
 END Sub;
 
 
-(* ---------------------------------------------------------------------------
- * procedure: InitPow2Table
- * ---------------------------------------------------------------------------
- * Initialises data table with powers of 2.
- * ------------------------------------------------------------------------ *)
-
-PROCEDURE InitPow2Table;
-
-BEGIN
-  pow2[0] := 1;
-  pow2[1] := 2;
-  pow2[2] := 4;
-  pow2[3] := 8;
-  pow2[4] := 16;
-  pow2[5] := 32;
-  pow2[6] := 64;
-  pow2[7] := 128;
-  pow2[8] := 256;
-  pow2[9] := 512;
-  pow2[10] := 1024;
-  pow2[11] := 2048;
-  pow2[12] := 4096;
-  pow2[13] := 8192;
-  pow2[14] := 16384;
-  pow2[15] := 32768;
-END InitPow2Table;
-
-
 BEGIN (* Hash *)
   (* bail out if CARDINAL is not 16-bit wide *)
-  IF TSIZE(CARDINAL) # 16 THEN HALT END;
-  
-  (* Initialise data table *)
-  InitPow2Table
+  IF TSIZE(CARDINAL) # CardBitwidth THEN
+    Console.WriteChars("Library Hash requires 16-bit CARDINALs.");
+    Console.WriteLn;
+    HALT
+  END (* IF *)
 END Hash.
