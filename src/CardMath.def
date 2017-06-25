@@ -1,0 +1,26 @@
+(*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+
+IMPLEMENTATION MODULE CardMath;
+
+(* Cardinal Math library *)
+
+
+(* --------------------------------------------------------------------------
+ * function pow2(n)
+ * --------------------------------------------------------------------------
+ * Returns the power of 2 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE pow2 ( n : CARDINAL ) : CARDINAL;
+
+
+(* --------------------------------------------------------------------------
+ * function log2(n)
+ * --------------------------------------------------------------------------
+ * Returns the (truncated) logarithm of 2 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE log2 ( n : CARDINAL ) : CARDINAL;
+
+
+END CardMath.
