@@ -249,7 +249,6 @@ BEGIN
   (* print sign if negative *)
   IF value < 0 THEN
     Terminal.WriteChar("-");
-    WriteCard(
   END; (* IF *)
   
   (* print unsigned value *)
@@ -296,7 +295,7 @@ BEGIN
     m := m - 1
   END; (* WHILE *)
   
-  (* if negative, print sign *)
+  (* print sign if negative *)
   IF value <= 0 THEN
     Terminal.Write("-")
   END; (* IF *)
