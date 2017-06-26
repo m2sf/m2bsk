@@ -8,7 +8,8 @@ IMPORT ASCII, Terminal, String;
 
 FROM String IMPORT StringT; (* alias for String.String *)
 
-FROM CardMath IMPORT pow2, pow10, deg10;
+FROM CardMath IMPORT abs, pow2, pow10, deg10;
+FROM LongIntMath IMPORT longIntPow10;
 
 
 (* ---------------------------------------------------------------------------
@@ -169,7 +170,7 @@ VAR
 
 BEGIN
   (* skip any leading zeroes *)
-  m := MaxExponentBase10(TSIZE(CARDINAL));
+  m := maxExponentBase10(TSIZE(CARDINAL));
   WHILE value DIV pow10(m) = 0 DO
     m := m - 1
   END; (* WHILE *)
@@ -198,7 +199,7 @@ VAR
   
 BEGIN
   (* base-16 exponent of highest possible digit *)
-  m := MaxExponentBase16(TSIZE(CARDINAL));
+  m := maxExponentBase16(TSIZE(CARDINAL));
   
   (* print prefix *)
   WriteChars("0x");
@@ -266,8 +267,44 @@ END WriteIntX;
 
 PROCEDURE WriteLongInt ( value : LONGINT );
 
+VAR
+  m, n : CARDINAL;
+  weight, digit : LONGINT;
+
 BEGIN
-  (* TO DO *)
+  (* skip any leading zeroes *)
+  m := maxExponentBase10(TSIZE(LONGINT));
+  WHILE value DIV LongIntPow10(m) = 0 DO
+    m := m - 1
+  END; (* WHILE *)
+  
+  (* if negative, print sign *)
+  IF value <= 0 THEN
+    Terminal.Write("-")
+  END; (* IF *)
+  
+  weight := longIntPow10(m);
+  IF value # MAX(LONGINT) THEN
+    value := ABS(value)
+  ELSE (* MAX(LONGINT) *)
+    (* get absolute value, add one to prevent overflow *)
+    value := ABS(value + 1);
+    digit := value DIV weight;
+    (* print first digit *)
+    Terminal.WriteChar(CHR(digit + 48));
+    (* get remainder, add one for correction *)
+    value := value MOD weight + 1;
+    weight := weight DIV 10
+  END; (* IF *)
+    
+  (* print (remaining) digits *)
+  weight := longIntPow10(m);
+  FOR n := m TO 0 BY -1 DO
+    digit := value DIV weight;
+    Terminal.WriteChar(CHR(digit + 48));
+    value := value MOD weight;
+    weight := weight DIV 10
+  END (* IF *)
 END WriteLongInt;
 
 
@@ -289,28 +326,6 @@ END WriteLongIntX;
  * ************************************************************************ *)
 
 (* ---------------------------------------------------------------------------
- * function abs(i)
- * ---------------------------------------------------------------------------
- * Returns the CARDINAL value equivalent to the absolute value of i
- * ------------------------------------------------------------------------ *)
-
-PROCEDURE abs ( i : INTEGER ) : CARDINAL;
-
-BEGIN
-  IF i # MIN(INTEGER) THEN
-    (* get absolute value, convert and return *)
-    RETURN VAL(CARDINAL, ABS(i))
-  ELSE
-    (* reduce distance to zero by one to prevent overflow *)
-    i := i + 1;
-    (* get absolute value, convert to CARDINAL,
-       increase distance to zero by one to compensate and return *)
-    RETURN VAL(CARDINAL, ABS(i)) + 1
-  END (*IF *)
-END abs;
-
-
-(* ---------------------------------------------------------------------------
  * function pow16(n)
  * ---------------------------------------------------------------------------
  * Returns the power of 16 for argument n.
@@ -324,29 +339,29 @@ END pow16;
 
 
 (* ---------------------------------------------------------------------------
- * function MaxExponentBase10(bitwidth)
+ * function maxExponentBase10(bitwidth)
  * ---------------------------------------------------------------------------
  * Returns the largest base-10 exponent for an unsigned number of bitwidth
  * ------------------------------------------------------------------------ *)
 
-PROCEDURE MaxExponentBase10 ( bitwidth : CARDINAL ) : CARDINAL;
+PROCEDURE maxExponentBase10 ( bitwidth : CARDINAL ) : CARDINAL;
 
 BEGIN
   RETURN deg10(bitwidth DIV 8)
-END MaxExponentBase10;
+END maxExponentBase10;
 
 
 (* ---------------------------------------------------------------------------
- * function MaxExponentBase16(bitwidth)
+ * function maxExponentBase16(bitwidth)
  * ---------------------------------------------------------------------------
  * Returns the largest base-16 exponent for an unsigned number of bitwidth
  * ------------------------------------------------------------------------ *)
 
-PROCEDURE MaxExponentBase16 ( bitwidth : CARDINAL ) : CARDINAL;
+PROCEDURE maxExponentBase16 ( bitwidth : CARDINAL ) : CARDINAL;
 
 BEGIN
   RETURN bitwidth DIV 4
-END MaxExponentBase16;
+END maxExponentBase16;
 
 
 END Console.
