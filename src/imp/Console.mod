@@ -305,7 +305,7 @@ BEGIN
   (* print digits *)
   weight := longIntPow10(m);
   FOR n := m TO 0 BY -1 DO
-    (* ABS(value) will overflow on MAX(LONGINT) *)
+    (* ABS(value) would overflow on MAX(LONGINT) *)
     digit := ABS(value DIV weight);
     Terminal.Write(CHR(digit + 48));
     value := value MOD weight;
