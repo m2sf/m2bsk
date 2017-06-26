@@ -171,7 +171,7 @@ BEGIN
     END; (* IF *)
     value := value MOD weight;
     weight := weight DIV 16
-  END (* IF *)
+  END (* FOR *)
 END WriteCharU;
 
 
@@ -200,7 +200,7 @@ BEGIN
     Terminal.WriteChar(CHR(digit + 48));
     value := value MOD weight;
     weight := weight DIV 10
-  END (* IF *)
+  END (* FOR *)
 END WriteCard;
 
 
@@ -233,7 +233,7 @@ BEGIN
     END; (* IF *)
     value := value MOD weight;
     weight := weight DIV 16
-  END (* IF *)
+  END (* FOR *)
 END WriteCardX;
 
 
@@ -307,7 +307,7 @@ BEGIN
     Terminal.WriteChar(CHR(digit + 48));
     value := value MOD weight;
     weight := weight DIV 10
-  END (* IF *)
+  END (* FOR *)
 END WriteLongInt;
 
 
@@ -319,9 +319,64 @@ END WriteLongInt;
 
 PROCEDURE WriteLongIntX ( value : LONGINT );
 
+VAR
+  m, msb, digitIndex, bitIndex, bitWeight, digit : CARDINAL;
+  
 BEGIN
-  (* TO DO *)
-END WriteLongIntX;
+  (* print prefix *)  
+  Terminal.WriteString("0x");
+
+  (* base-16 exponent of highest possible digit *)
+  m := maxExponentBase16(TSIZE(LONGINT));
+    
+  (* process first digit *)
+  
+  (* test sign bit *)
+  IF value < 0 THEN
+    digit := 8
+  ELSE
+    digit := 0
+  END; (* IF *)
+  
+  msb := (m + 1) * 4 - 1; bitWeight := 4;
+  FOR bitIndex := msb-1 TO msb-3 BY -1 DO
+    (* test bit at position bitIndex *)
+    IF ODD(value DIV longIntPow2(bitIndex)) THEN
+      (* bit is set *)
+      digit := digit + bitWeight
+    END; (* IF *)
+    bitWeight := bitWeight DIV 2
+  END; (* FOR *)
+  
+  (* print this digit *)
+  IF digit < 10 THEN
+    Terminal.WriteChar(CHR(digit + 48))
+  ELSE (* A .. F *)
+    Terminal.WriteChar(CHR(digit + 55))
+  END (* IF *)
+
+  (* process remaining digits *)
+  
+  FOR digitIndex := m-1 TO 0 BY -1 DO
+    msb := (digitIndex + 1) * 4 - 1;
+    digit := 0; bitWeight := 8;
+    FOR bitIndex := msb TO msb-3 BY -1 DO
+      (* test bit at position bitIndex *)
+      IF ODD(value DIV longIntPow2(bitIndex)) THEN
+        (* bit is set *)
+        digit := digit + bitWeight
+      END; (* IF *)
+      bitWeight := bitWeight DIV 2
+    END; (* FOR *)
+    
+    (* print this digit *)
+    IF digit < 10 THEN
+      Terminal.WriteChar(CHR(digit + 48))
+    ELSE (* A .. F *)
+      Terminal.WriteChar(CHR(digit + 55))
+    END (* IF *)
+  END (* FOR *)
+END WriteIntX;
 
 
 (* ************************************************************************ *
