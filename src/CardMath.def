@@ -6,6 +6,24 @@ IMPLEMENTATION MODULE CardMath;
 
 
 (* --------------------------------------------------------------------------
+ * function abs(i)
+ * --------------------------------------------------------------------------
+ * Returns the absolute CARDINAL value of INTEGER i
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE abs ( i : INTEGER ) : CARDINAL;
+
+
+(* --------------------------------------------------------------------------
+ * function twosComplement(n)
+ * --------------------------------------------------------------------------
+ * Returns the two's complement of n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE twosComplement ( n : CARDINAL ) : CARDINAL;
+
+
+(* --------------------------------------------------------------------------
  * function pow2(n)
  * --------------------------------------------------------------------------
  * Returns the power of 2 for argument n
@@ -45,7 +63,7 @@ PROCEDURE log10 ( n : CARDINAL ) : CARDINAL;
  * function deg10(n)
  * --------------------------------------------------------------------------
  * Returns the degree of a polynomial whose value is the largest unsigned
- * number that can be encoded in base-2 with n octets of 8 bits for x = 10.
+ * integer that can be encoded in base-2 with n octets of 8 bits for x = 10.
  *
  *                   n              n-1                  1            0
  *   f(x) = digit * x  + digit   * x    + ... + digit * x  + digit * x
