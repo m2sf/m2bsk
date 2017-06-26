@@ -6,6 +6,8 @@
   FOLLOW.txt -- FOLLOW sets for all non-terminals
   README.md -- project brief
   m2bsk-grammar.gll -- Modula-2 LL(1) grammar in EBNF
+  m2fnxlat-grammar.gll -- filename translation file grammar in EBNF
+  m2libconfig-grammar.gll -- library configuration file grammar in EBNF
   resword-trie-analysis.txt -- Trie analysis for Modula-2 reserved words
 
 /src
