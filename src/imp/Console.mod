@@ -132,7 +132,7 @@ END WriteChar;
 PROCEDURE WriteCharU ( char : CHAR );
 
 VAR
-  value, n, weight : CARDINAL;
+  value, n, weight, digit : CARDINAL;
   
 BEGIN
   (* convert char *)
@@ -165,7 +165,7 @@ END WriteCharU;
 PROCEDURE WriteCard ( value : CARDINAL );
 
 VAR
-  m, n, weight : CARDINAL;
+  m, n, weight, digit : CARDINAL;
 
 BEGIN
   (* skip any leading zeroes *)
@@ -194,7 +194,7 @@ END WriteCard;
 PROCEDURE WriteCardX ( char : CHAR );
 
 VAR
-  m, n, weight : CARDINAL;
+  m, n, weight, digit : CARDINAL;
   
 BEGIN
   (* base-16 exponent of highest possible digit *)
