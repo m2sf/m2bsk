@@ -248,11 +248,11 @@ PROCEDURE WriteInt ( value : INTEGER );
 BEGIN
   (* print sign if negative *)
   IF value < 0 THEN
-    Terminal.WriteChar("-");
+    Terminal.WriteChar("-")
   END; (* IF *)
   
   (* print unsigned value *)
-  WriteCard(abs(value));
+  WriteCard(abs(value))
 END WriteInt;
 
 
@@ -300,24 +300,10 @@ BEGIN
     Terminal.Write("-")
   END; (* IF *)
   
+  (* print digits *)
   weight := longIntPow10(m);
-  IF value # MAX(LONGINT) THEN
-    value := ABS(value)
-  ELSE (* MAX(LONGINT) *)
-    (* get absolute value, add one to prevent overflow *)
-    value := ABS(value + 1);
-    digit := value DIV weight;
-    (* print first digit *)
-    Terminal.WriteChar(CHR(digit + 48));
-    (* get remainder, add one for correction *)
-    value := value MOD weight + 1;
-    weight := weight DIV 10;
-    m := m - 1
-  END; (* IF *)
-    
-  (* print (remaining) digits *)
   FOR n := m TO 0 BY -1 DO
-    digit := value DIV weight;
+    digit := ABS(value DIV weight);
     Terminal.WriteChar(CHR(digit + 48));
     value := value MOD weight;
     weight := weight DIV 10
