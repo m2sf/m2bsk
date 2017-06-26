@@ -9,7 +9,7 @@ IMPORT ASCII, Terminal, String;
 FROM String IMPORT StringT; (* alias for String.String *)
 
 FROM CardMath IMPORT abs, pow2, pow10, deg10;
-FROM LongIntMath IMPORT longIntPow10;
+FROM LongIntMath IMPORT longIntPow2, longIntPow10;
 
 
 (* ---------------------------------------------------------------------------
