@@ -41,4 +41,20 @@ PROCEDURE pow10 ( n : CARDINAL ) : CARDINAL;
 PROCEDURE log10 ( n : CARDINAL ) : CARDINAL;
 
 
+(* --------------------------------------------------------------------------
+ * function deg10(n)
+ * --------------------------------------------------------------------------
+ * Returns the degree of a polynomial whose value is the largest unsigned
+ * number that can be encoded in base-2 with n octets of 8 bits for x = 10.
+ *
+ *                   n              n-1                  1            0
+ *   f(x) = digit * x  + digit   * x    + ... + digit * x  + digit * x
+ *               n            n-1                    1            0
+ * ----------------------------------------------------------------------- *)
+
+TYPE Card1To8 = CARDINAL [1..8];
+
+PROCEDURE deg10 ( n : Card1To8 ) : CARDINAL;
+
+
 END CardMath.
