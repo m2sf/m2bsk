@@ -1,0 +1,55 @@
+/* M2BSK -- EBNF Grammar for Modula-2 R10 Bootstrap Kernel (subset).
+ *
+ * Copyright (c) 2016 The Modula-2 Software Foundation
+ *
+ * Author & Maintainer: Benjamin Kowarsch <org.m2sf>
+ *
+ * @synopsis
+ *
+ * Modula-2 BSK is a subset of Modula-2 R10 for bootstrapping a compiler.
+ *
+ * This document specifies the filename translation file grammar in EBNF.
+ *
+ * @repository
+ *
+ * https://github.com/m2sf/m2bsk
+ *
+ * @file
+ *
+ * m2libconfig-grammar.gll
+ *
+ * Grammar of filename translation file.
+ *
+ */
+
+grammar m2fnxlat;
+
+/* * *   N o n - T e r m i n a l   S y m b o l s   * * */
+
+dictionary :=
+  translation ( ',' translation )* ';'
+  ;
+
+translation :=
+  moduleIdent '=' actualBasename '.*'
+  ;
+
+alias moduleIdent = StdIdent ;
+
+actualBasename :=
+  StdIdent ( '-' Digit Digit )?
+  ;
+
+
+/* * *   T e r m i n a l   S y m b o l s   * * */
+
+StdIdent :=
+  Letter ( Letter | Digit )*
+  ;
+
+.Digit := '0' .. '9' ;
+
+.Letter := 'a' .. 'z' | 'A' .. 'Z' ;
+
+
+endg m2fnxlat.
