@@ -1,0 +1,60 @@
+(*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+
+IMPLEMENTATION MODULE LongIntMath;
+
+(* Long Integer Math library *)
+
+
+(* --------------------------------------------------------------------------
+ * function longIntPow2(n)
+ * --------------------------------------------------------------------------
+ * Returns the power of 2 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE longIntPow2 ( n : CARDINAL ) : LONGINT;
+
+
+(* --------------------------------------------------------------------------
+ * function longIntLog2(n)
+ * --------------------------------------------------------------------------
+ * Returns the integral part of the logarithm of 2 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE longIntLog2 ( n : CARDINAL ) : LONGINT;
+
+
+(* --------------------------------------------------------------------------
+ * function longIntPow10(n)
+ * --------------------------------------------------------------------------
+ * Returns the power of 10 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE longIntPow10 ( n : CARDINAL ) : INTEGER;
+
+
+(* --------------------------------------------------------------------------
+ * function longIntLog10(n)
+ * --------------------------------------------------------------------------
+ * Returns the integral part of the logarithm of 10 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE longIntLog10 ( n : CARDINAL ) : INTEGER;
+
+
+(* --------------------------------------------------------------------------
+ * function longIntDeg10(n)
+ * --------------------------------------------------------------------------
+ * Returns the degree of a polynomial whose value is the largest signed
+ * integer that can be encoded in base-2 with n octets of 8 bits for x = 10.
+ *
+ *                   n              n-1                  1            0
+ *   f(x) = digit * x  + digit   * x    + ... + digit * x  + digit * x
+ *               n            n-1                    1            0
+ * ----------------------------------------------------------------------- *)
+
+TYPE Card1To8 = CARDINAL [1..8];
+
+PROCEDURE deg10 ( i : Card1To8 ) : LONGINT;
+
+
+END LongIntMath.
