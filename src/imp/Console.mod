@@ -165,9 +165,9 @@ BEGIN
   FOR n := 1 TO 0 BY -1 DO
     digit := value DIV weight;
     IF digit <= 10 THEN
-      Terminal.WriteChar(CHR(digit + 48))
+      Terminal.Write(CHR(digit + 48))
     ELSE (* A .. F *)
-      Terminal.WriteChar(CHR(digit + 55))
+      Terminal.Write(CHR(digit + 55))
     END; (* IF *)
     value := value MOD weight;
     weight := weight DIV 16
@@ -187,8 +187,10 @@ VAR
   m, n, weight, digit : CARDINAL;
 
 BEGIN
-  (* skip any leading zeroes *)
+  (* base-10 exponent of highest possible digit *)
   m := maxExponentBase10(TSIZE(CARDINAL));
+  
+  (* skip any leading zeroes *)
   WHILE value DIV pow10(m) = 0 DO
     m := m - 1
   END; (* WHILE *)
@@ -205,12 +207,12 @@ END WriteCard;
 
 
 (* ---------------------------------------------------------------------------
- * procedure WriteCardX(chars)
+ * procedure WriteCardX(value)
  * ---------------------------------------------------------------------------
  * Prints the given cardinal value in 0x notation to the console.
  * ------------------------------------------------------------------------ *)
 
-PROCEDURE WriteCardX ( char : CHAR );
+PROCEDURE WriteCardX ( value : CARDINAL );
 
 VAR
   m, n, weight, digit : CARDINAL;
@@ -303,8 +305,9 @@ BEGIN
   (* print digits *)
   weight := longIntPow10(m);
   FOR n := m TO 0 BY -1 DO
+    (* ABS(value) may overflow -- use ABS(value DIV weight) instead *)
     digit := ABS(value DIV weight);
-    Terminal.WriteChar(CHR(digit + 48));
+    Terminal.Write(CHR(digit + 48));
     value := value MOD weight;
     weight := weight DIV 10
   END (* FOR *)
@@ -323,12 +326,12 @@ VAR
   m, msb, digitIndex, bitIndex, bitWeight, digit : CARDINAL;
   
 BEGIN
-  (* print prefix *)  
-  Terminal.WriteString("0x");
-
   (* base-16 exponent of highest possible digit *)
   m := maxExponentBase16(TSIZE(LONGINT));
     
+  (* print prefix *)  
+  Terminal.WriteString("0x");
+  
   (* process first digit *)
   
   (* test sign bit *)
@@ -338,6 +341,7 @@ BEGIN
     digit := 0
   END; (* IF *)
   
+  (* test next three bits *)
   msb := (m + 1) * 4 - 1; bitWeight := 4;
   FOR bitIndex := msb-1 TO msb-3 BY -1 DO
     (* test bit at position bitIndex *)
@@ -350,14 +354,15 @@ BEGIN
   
   (* print this digit *)
   IF digit < 10 THEN
-    Terminal.WriteChar(CHR(digit + 48))
+    Terminal.Write(CHR(digit + 48))
   ELSE (* A .. F *)
-    Terminal.WriteChar(CHR(digit + 55))
+    Terminal.Write(CHR(digit + 55))
   END (* IF *)
 
   (* process remaining digits *)
   
   FOR digitIndex := m-1 TO 0 BY -1 DO
+    (* test next 4-bit group *)
     msb := (digitIndex + 1) * 4 - 1;
     digit := 0; bitWeight := 8;
     FOR bitIndex := msb TO msb-3 BY -1 DO
@@ -371,9 +376,9 @@ BEGIN
     
     (* print this digit *)
     IF digit < 10 THEN
-      Terminal.WriteChar(CHR(digit + 48))
+      Terminal.Write(CHR(digit + 48))
     ELSE (* A .. F *)
-      Terminal.WriteChar(CHR(digit + 55))
+      Terminal.Write(CHR(digit + 55))
     END (* IF *)
   END (* FOR *)
 END WriteIntX;
