@@ -53,6 +53,16 @@ PROCEDURE WriteBool ( value : BOOLEAN );
 
 
 (* ---------------------------------------------------------------------------
+ * procedure WriteBoolCustom(value, trueStr, falseStr)
+ * ---------------------------------------------------------------------------
+ * Prints trueStr if value is TRUE, falseStr if value is FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteBoolCustom
+  ( value : BOOLEAN; VAR (* CONST *) trueStr, falseStr : ARRAY OF CHAR );
+
+
+(* ---------------------------------------------------------------------------
  * procedure WriteChar(chars)
  * ---------------------------------------------------------------------------
  * Prints the given character to the console.
