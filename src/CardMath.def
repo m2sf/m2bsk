@@ -23,4 +23,22 @@ PROCEDURE pow2 ( n : CARDINAL ) : CARDINAL;
 PROCEDURE log2 ( n : CARDINAL ) : CARDINAL;
 
 
+(* --------------------------------------------------------------------------
+ * function pow10(n)
+ * --------------------------------------------------------------------------
+ * Returns the power of 10 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE pow10 ( n : CARDINAL ) : CARDINAL;
+
+
+(* --------------------------------------------------------------------------
+ * function log10(n)
+ * --------------------------------------------------------------------------
+ * Returns the integral part of the logarithm of 10 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE log10 ( n : CARDINAL ) : CARDINAL;
+
+
 END CardMath.
