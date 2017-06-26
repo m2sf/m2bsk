@@ -294,11 +294,11 @@ BEGIN
     Terminal.WriteChar(CHR(digit + 48));
     (* get remainder, add one for correction *)
     value := value MOD weight + 1;
-    weight := weight DIV 10
+    weight := weight DIV 10;
+    m := m - 1
   END; (* IF *)
     
   (* print (remaining) digits *)
-  weight := longIntPow10(m);
   FOR n := m TO 0 BY -1 DO
     digit := value DIV weight;
     Terminal.WriteChar(CHR(digit + 48));
