@@ -1,6 +1,6 @@
 /* M2BSK -- EBNF Grammar for Modula-2 R10 Bootstrap Kernel (subset).
  *
- * Copyright (c) 2016 The Modula-2 Software Foundation
+ * Copyright (c) 2017 The Modula-2 Software Foundation
  *
  * Author & Maintainer: Benjamin Kowarsch <org.m2sf>
  *
@@ -16,7 +16,7 @@
  *
  * @file
  *
- * m2libconfig-grammar.gll
+ * m2fnxlat-grammar.gll
  *
  * Grammar of filename translation file.
  *
