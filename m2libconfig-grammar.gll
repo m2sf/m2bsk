@@ -1,0 +1,85 @@
+/* M2BSK -- EBNF Grammar for Modula-2 R10 Bootstrap Kernel (subset).
+ *
+ * Copyright (c) 2016 The Modula-2 Software Foundation
+ *
+ * Author & Maintainer: Benjamin Kowarsch <org.m2sf>
+ *
+ * @synopsis
+ *
+ * Modula-2 BSK is a subset of Modula-2 R10 for bootstrapping a compiler.
+ *
+ * This document specifies the library configuration file grammar in EBNF.
+ *
+ * @repository
+ *
+ * https://github.com/m2sf/m2bsk
+ *
+ * @file
+ *
+ * m2libconfig-grammar.gll
+ *
+ * Grammar of Modula-2 library configuration file.
+ *
+ */
+
+grammar m2libconfig;
+
+/* * *   R e s e r v e d   W o r d s   * * */
+
+reserved
+  STDLIB = 'stdlib', USRLIBS = 'usrlibs';
+
+
+/* * *   N o n - T e r m i n a l   S y m b o l s   * * */
+
+libConfig :=
+  stdlibConfig usrlibConfig
+  ;
+
+stdlibConfig :=
+  STDLIB '=' pathList ';'
+  ;
+  
+usrlibConfig :=
+  USRLIBS '=' pathList ';'
+  ;
+
+pathList :=
+  path ( ',' path )*
+  ;
+
+alias path = QuotedLiteral;
+
+
+/* * *   T e r m i n a l   S y m b o l s   * * */
+
+
+QuotedLiteral :=
+  SingleQuotedString | DoubleQuotedString
+  ;
+
+.SingleQuotedString :=
+  "'" ( QuotableCharacter | '"' )* "'"
+  ;
+
+.DoubleQuotedString :=
+  '"' ( QuotableCharacter | "'" )* '"'
+  ;
+
+.QuotableCharacter :=
+  Digit | Letter | Space | NonAlphanumQuotable
+  ;
+  
+.Digit := '0' .. '9' ;
+
+.Letter := 'a' .. 'z' | 'A' .. 'Z' ;
+
+.Space := 0u20 ;
+
+.NonAlphaNumQuotable :=
+  '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' | '+' | ',' |
+  '-' | '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' |
+  '[' | '\' | ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~'
+  ;
+
+endg m2libconfig.
