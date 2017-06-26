@@ -149,7 +149,7 @@ BEGIN
       Terminal.WriteChar(CHR(digit + 48))
     ELSE (* A .. F *)
       Terminal.WriteChar(CHR(digit + 55))
-    END;
+    END; (* IF *)
     value := value MOD weight;
     weight := weight DIV 16
   END (* IF *)
@@ -211,7 +211,7 @@ BEGIN
       Terminal.WriteChar(CHR(digit + 48))
     ELSE (* A .. F *)
       Terminal.WriteChar(CHR(digit + 55))
-    END;
+    END; (* IF *)
     value := value MOD weight;
     weight := weight DIV 16
   END (* IF *)
