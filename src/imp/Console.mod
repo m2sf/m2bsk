@@ -296,7 +296,7 @@ BEGIN
   END; (* WHILE *)
   
   (* print sign if negative *)
-  IF value <= 0 THEN
+  IF value < 0 THEN
     Terminal.Write("-")
   END; (* IF *)
   
