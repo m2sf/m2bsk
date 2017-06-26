@@ -11,14 +11,17 @@ FROM SYSTEM IMPORT TSIZE;
 
 CONST
   Bitwidth = 16;
+  MaxDecimalDigits = 5;
 
 
 (* --------------------------------------------------------------------------
- * Data table for powers of 2
+ * Data tables
  * ----------------------------------------------------------------------- *)
 
 VAR
   powerOf2 : ARRAY [0..Bitwidth-1] OF CARDINAL;
+  powerOf10 : ARRAY [0..MaxDecimalDigits-1] OF CARDINAL;
+  degreeForOctetWidth : ARRAY [1..8] OF CARDINAL;
 
 
 (* --------------------------------------------------------------------------
@@ -30,6 +33,10 @@ VAR
 PROCEDURE pow2 ( n : CARDINAL ) : CARDINAL;
 
 BEGIN
+  IF n > 15 THEN
+    HALT
+  END; (* IF *)
+  
   RETURN powerOf2[n]
 END pow2;
 
@@ -37,7 +44,7 @@ END pow2;
 (* --------------------------------------------------------------------------
  * function log2(n)
  * --------------------------------------------------------------------------
- * Returns the integral part of the logarithm of 2 for argument n
+ * Returns the integral part of the logarithm of 10 for argument n
  * ----------------------------------------------------------------------- *)
 
 PROCEDURE log2 ( n : CARDINAL ) : CARDINAL;
@@ -64,6 +71,61 @@ BEGIN
   | 32769..MAX(CARDINAL) : RETURN 16
   END (* CASE *)
 END log2;
+
+
+(* --------------------------------------------------------------------------
+ * function pow10(n)
+ * --------------------------------------------------------------------------
+ * Returns the power of 10 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE pow10 ( n : CARDINAL ) : CARDINAL;
+
+BEGIN
+  IF n > 4 THEN
+    HALT
+  END; (* IF *)
+  
+  RETURN powerOf10[n]
+END pow10;
+
+
+(* --------------------------------------------------------------------------
+ * function log10(n)
+ * --------------------------------------------------------------------------
+ * Returns the integral part of the logarithm of 10 for argument n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE log10 ( n : CARDINAL ) : CARDINAL;
+
+BEGIN
+  CASE n OF
+    0 : HALT
+  | 1..9 : RETURN 0
+  | 10..99 : RETURN 1
+  | 100..999 : RETURN 2
+  | 1000..9999 : RETURN 3
+  | 10000..MAX(CARDINAL) : RETURN 4
+  END (* CASE *)
+END log10;
+
+
+(* --------------------------------------------------------------------------
+ * function deg10(n)
+ * --------------------------------------------------------------------------
+ * Returns the degree of a polynomial whose value is the largest unsigned
+ * number that can be encoded in base-2 with n octets of 8 bits for x = 10.
+ *
+ *                   n              n-1                  1            0
+ *   f(x) = digit * x  + digit   * x    + ... + digit * x  + digit * x
+ *               n            n-1                    1            0
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE deg10 ( n : Card1To8 ) : CARDINAL;
+
+BEGIN  
+  RETURN degreeForOctetWidth[n]
+END deg10;
 
 
 (* ************************************************************************ *
@@ -98,6 +160,43 @@ BEGIN
 END InitPow2Table;
 
 
+(* --------------------------------------------------------------------------
+ * procedure: InitPow10Table
+ * --------------------------------------------------------------------------
+ * Initialises data table with powers of 10.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE InitPow10Table;
+
+BEGIN
+  powerOf10[0] := 1;
+  powerOf10[1] := 10;
+  powerOf10[2] := 100;
+  powerOf10[3] := 1000;
+  powerOf10[4] := 10000
+END InitPow10Table;
+
+
+(* --------------------------------------------------------------------------
+ * procedure: InitDeg10Table
+ * --------------------------------------------------------------------------
+ * Initialises data table with degrees by octet width.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE InitDeg10Table;
+
+BEGIN
+  degreeForOctetWidth[1] := 2;  (*  8 bits *)
+  degreeForOctetWidth[2] := 4;  (* 16 bits *)
+  degreeForOctetWidth[3] := 7;  (* 24 bits *)
+  degreeForOctetWidth[4] := 9;  (* 32 bits *)
+  degreeForOctetWidth[5] := 12; (* 40 bits *)
+  degreeForOctetWidth[6] := 14; (* 48 bits *)
+  degreeForOctetWidth[7] := 16; (* 56 bits *)
+  degreeForOctetWidth[8] := 19  (* 64 bits *)
+END InitDeg10Table;
+
+
 BEGIN (* CardMath *)
   (* bail out if CARDINAL is not 16-bit wide *)
   IF TSIZE(CARDINAL) # Bitwidth THEN
@@ -106,6 +205,8 @@ BEGIN (* CardMath *)
     HALT
   END; (* IF *)
   
-  (* Initialise data table *)
-  InitPow2Table
+  (* Initialise data tables *)
+  InitPow2Table;
+  InitPow10Table;
+  InitDeg10Table
 END CardMath.
