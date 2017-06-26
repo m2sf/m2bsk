@@ -110,6 +110,24 @@ END WriteBool;
 
 
 (* ---------------------------------------------------------------------------
+ * procedure WriteBoolCustom(value)
+ * ---------------------------------------------------------------------------
+ * Prints trueStr if value is TRUE, falseStr if value is FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteBoolCustom
+  ( value : BOOLEAN; VAR (* CONST *) trueStr, falseStr : ARRAY OF CHAR );
+
+BEGIN
+  IF value = TRUE THEN
+    Terminal.WriteString(trueStr)
+  ELSE
+    Terminal.WriteString(falseStr)
+  END (* IF *)
+END WriteBoolCustom;
+
+
+(* ---------------------------------------------------------------------------
  * procedure WriteChar(chars)
  * ---------------------------------------------------------------------------
  * Prints the given character to the console.
