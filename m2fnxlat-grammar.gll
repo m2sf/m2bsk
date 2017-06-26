@@ -31,20 +31,20 @@ dictionary :=
   ;
 
 translation :=
-  moduleIdent '=' actualBasename '.*'
+  moduleIdent '=' ActualBasename
   ;
 
 alias moduleIdent = StdIdent ;
-
-actualBasename :=
-  StdIdent ( '-' Digit Digit )?
-  ;
 
 
 /* * *   T e r m i n a l   S y m b o l s   * * */
 
 StdIdent :=
   Letter ( Letter | Digit )*
+  ;
+  
+ActualBasename :=
+  StdIdent ( '-' Digit Digit )? '.*'
   ;
 
 .Digit := '0' .. '9' ;
