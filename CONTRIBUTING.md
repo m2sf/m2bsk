@@ -14,7 +14,7 @@ These compilers support either PIM3 or PIM4 or ISO Modula-2, thereby meeting the
 
 ### Modula-2 Reference Manual ###
 
-Then get yourself a copy of Niklaus Wirth's "Programming in Modula-2",
+Then get yourself a copy of Niklaus Wirth's "Programming in Modula-2", the reference for classic Modula-2,
 available second hand at Amazon for a dollar or two, or thereabouts.
 
 * [Wirth, Programming in Modula-2](https://www.amazon.com/Programming-Modula-2-monographs-computer-science/dp/0387122060/ref=sr_1_1?s=books&ie=UTF8&qid=1498585891&sr=1-1&keywords=WIrth+Programming+in+Modula-2) (Amazon.com)
