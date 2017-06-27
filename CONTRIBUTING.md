@@ -2,12 +2,12 @@
 
 Get yourself a Modula-2 compiler. Some options are ...
 
+* [ADW Modula-2](https://www.modula2.org/adwm2/download.php) for Windows (freeware)
 * [Aglet Modula-2](http://aglet.web.runbox.net/) for AmigaOS (freeware)
 * [GNU Modula-2](nongnu.org/gm2/) for Unix systems (open source)
 * [GPM Modula-2](https://gpmclr.codeplex.com/) for .NET (open source)
 * [MOCKA Modula-2](https://boutell.com/lsm/lsmbyid.cgi/001220) for Linux (freeware)
 * [p1 Modula-2](http://modula2.awiedemann.de/) for MacOS (commercial)
-* [ADW Modula-2](https://www.modula2.org/adwm2/download.php) for Windows (freeware)
 * [XDS Modula-2](https://www.excelsior-usa.com/xds.html) for Windows (freeware)
 
 These compilers support either PIM3 or PIM4 or ISO Modula-2, thereby meeting the prerequisites for the project.
