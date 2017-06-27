@@ -459,7 +459,7 @@ END WithCharsInSliceDo;
  * Returns the number of interned strings.
  * ------------------------------------------------------------------------ *)
 
-PROCEDURE count : CARDINAL;
+PROCEDURE count () : CARDINAL;
 
 BEGIN
   RETURN strTable.count
