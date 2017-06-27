@@ -12,6 +12,11 @@ TYPE String; (* OPAQUE *)
 TYPE StringT = String; (* for unqualified use *)
 
 
+(* Maximum String Length *)
+
+CONST MaxStringLength = 4096;
+
+
 (* Procedure type for passing to procedure WithCharsDo *)
 
 TYPE CharArrayProc = PROCEDURE ( ARRAY OF CHAR );
@@ -32,20 +37,20 @@ PROCEDURE forArray ( VAR (* CONST *) array : ARRAY OF CHAR) : String;
 PROCEDURE forArraySlice
   ( VAR (* CONST *) array : ARRAY OF CHAR; start, end : CARDINAL) : String;
 (* Looks up the interned string for the given slice of the given character
-   array and returns it. Creates and returns a new interned string if no
-   matching entry for the slice is found. *)
+   array and returns it. Creates and returns a new interned string with the
+   slice if no matching entry is found. *)
 
 
 PROCEDURE forSlice ( string : String; start, end : CARDINAL ) : String;
 (* Looks up the interned string for the given slice of the given string
-   and returns it. Creates and returns a new interned string if no
-   matching entry for the slice is found. *)
+   and returns it. Creates and returns a new interned string with the
+   slice if no matching entry is found. *)
 
 
 PROCEDURE forConcatenation ( string1, string2 : String ) : String;
-(* Looks up the interned string for the concatenation of string1 and string2
-   and returns it. Creates and returns a new interned string if no
-   matching entry for the concatenation is found. *)
+(* Looks up the product of concatenating string1 and string2 and returns the
+   matching interned string if an entry exists. Creates and returns a new
+   interned string with the concatenation product if no match is found. *)
 
 
 PROCEDURE length ( string : String ) : CARDINAL;
