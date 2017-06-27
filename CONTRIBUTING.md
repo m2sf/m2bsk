@@ -7,7 +7,7 @@ Get yourself a Modula-2 compiler. Some options are ...
 * [GNU Modula-2](nongnu.org/gm2/) for Unix systems (open source)
 * [GPM Modula-2](https://gpmclr.codeplex.com/) for .NET (open source)
 * [MOCKA Modula-2](https://boutell.com/lsm/lsmbyid.cgi/001220) for Linux (freeware)
-* [p1 Modula-2](http://modula2.awiedemann.de/) for MacOS (commercial)
+* [p1 Modula-2](http://modula2.awiedemann.de/) for MacOS (commercial, free demo)
 * [XDS Modula-2](https://www.excelsior-usa.com/xds.html) for Linux and Windows (freeware)
 
 These compilers support either PIM3 or PIM4 or ISO Modula-2, thereby meeting the prerequisites for the project.
