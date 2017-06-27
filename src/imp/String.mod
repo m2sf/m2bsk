@@ -167,8 +167,8 @@ END forArray;
  * function forArraySlice(array, start, end)
  * ---------------------------------------------------------------------------
  * Looks up the interned string for the given slice of the given character
- * array and returns it. Creates and returns a new interned string if no
- * matching entry for the slice is found.
+ * array and returns it. Creates and returns a new interned string with the
+ * slice if no matching entry is found.
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE forArraySlice
@@ -183,8 +183,8 @@ END forArraySlice;
  * function forSlice(string, start, end)
  * ---------------------------------------------------------------------------
  * Looks up the interned string for the given slice of the given string
- * and returns it. Creates and returns a new interned string if no
- * matching entry for the slice is found.
+ * and returns it. Creates and returns a new interned string with the
+ * slice if no matching entry is found.
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE forSlice ( string : String; start, end : CARDINAL ) : String;
@@ -201,9 +201,9 @@ END forSlice;
 (* ---------------------------------------------------------------------------
  * function forConcatenation(string1, string2)
  * ---------------------------------------------------------------------------
- * Looks up the interned string for the concatenation of string1 and string2
- * and returns it. Creates and returns a new interned string if no
- * matching entry for the concatenation is found.
+ * Looks up the product of concatenating string1 and string2 and returns the
+ * matching interned string if an entry exists. Creates and returns a new
+ * interned string with the concatenation product if no match is found.
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE forConcatenation ( string1, string2 : String ) : String;
