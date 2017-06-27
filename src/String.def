@@ -107,7 +107,7 @@ PROCEDURE WithCharsInSliceDo
 
 (* Introspection *)
 
-PROCEDURE count : CARDINAL;
+PROCEDURE count () : CARDINAL;
 (* Returns the number of interned strings. *)
 
 
