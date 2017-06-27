@@ -1,0 +1,54 @@
+(*!m2iso*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE Terminal; (* ISO Modula-2 only *)
+
+(* Shim Library to adapt ISO Modula-2's STextIO to PIM Modula-2's Terminal *)
+
+
+(* ---------------------------------------------------------------------------
+ * procedure Read(ch)
+ * ---------------------------------------------------------------------------
+ * Blocking read operation. Reads a character from standard input.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Read ( VAR ch : CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure BusyRead(ch)
+ * ---------------------------------------------------------------------------
+ * Non-Blocking read operation. Reads a character from standard input,
+ * returns ASCII.NUL if no character was available.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE BusyRead ( VAR ch : CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure Write(ch)
+ * ---------------------------------------------------------------------------
+ * Writes the given character to standard output.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Write ( ch : CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteString(array)
+ * ---------------------------------------------------------------------------
+ * Writes the given character array to standard output.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteString ( VAR (* CONST *) array : ARRAY OF CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteLn
+ * ---------------------------------------------------------------------------
+ * Writes newline to standard output.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteLn;
+
+
+END Terminal.
