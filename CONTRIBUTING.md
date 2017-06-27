@@ -1,4 +1,4 @@
-### New to Modula-2? ###
+### Modula-2 Compilers ###
 
 Get yourself a Modula-2 compiler. Some options are ...
 
@@ -11,6 +11,8 @@ Get yourself a Modula-2 compiler. Some options are ...
 * [XDS Modula-2](https://www.excelsior-usa.com/xds.html) for Windows (freeware)
 
 These compilers support either PIM3 or PIM4 or ISO Modula-2, thereby meeting the prerequisites for the project.
+
+### Modula-2 Reference Manual ###
 
 Then get yourself a copy of Niklaus Wirth's "Programming in Modula-2",
 available second hand at Amazon for a dollar or two, or thereabouts.
