@@ -1,6 +1,6 @@
 (*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
 
-IMPLEMENTATION MODULE CardMath; (* 64-bit version *)
+IMPLEMENTATION MODULE CardMath;
 
 (* Cardinal Math library *)
 
