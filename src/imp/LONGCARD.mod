@@ -564,6 +564,18 @@ END SHR;
  * ************************************************************************ *)
 
 (* ---------------------------------------------------------------------------
+ * function pow2(n)
+ * ---------------------------------------------------------------------------
+ * Returns the power of 2 for argument n.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE pow2 ( n : CARDINAL ) : CARDINAL;
+
+BEGIN
+  RETURN powerOf2[n]
+END pow2;
+
+(* ---------------------------------------------------------------------------
  * function addOverflows(n, m)
  * ---------------------------------------------------------------------------
  * Returns TRUE if operation n + m would overflow, else FALSE.
@@ -611,13 +623,11 @@ BEGIN
 END ClearBitsInclAndAbove;
 
 
-VAR
-  powerOf2 : ARRAY [0..Bitwidth-1] OF CARDINAL;
-
-PROCEDURE pow2 ( n : CARDINAL ) : CARDINAL;
-BEGIN
-  RETURN powerOf2[n]
-END pow2;
+(* ---------------------------------------------------------------------------
+ * procedure InitPow2Table
+ * ---------------------------------------------------------------------------
+ * Initialises the powers of 2 table.
+ * ------------------------------------------------------------------------ *)
 
 PROCEDURE InitPow2Table;
 
@@ -626,10 +636,24 @@ VAR
 
 BEGIN
   powerOf2[0] := 1;
+  (* for any size of CARDINAL *)
   FOR index := 1 TO Bitwidth-1 DO
     powerOf2[index] := powerOf2[index-1] * 2
   END (* FOR *)
 END InitPow2Table;
+
+
+(* ---------------------------------------------------------------------------
+ * Powers of 2 table.
+ * ------------------------------------------------------------------------ *)
+
+VAR
+  powerOf2 : ARRAY [0..Bitwidth - 1] OF CARDINAL;
+
+
+(* ---------------------------------------------------------------------------
+ * Module initialisation.
+ * ------------------------------------------------------------------------ *)
 
 BEGIN (* LONGCARD *)
   InitPow2Table
