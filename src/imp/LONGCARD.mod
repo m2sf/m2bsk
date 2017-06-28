@@ -34,8 +34,6 @@ END fromCard;
  * Returns the LONGCARD value of non-negative INTEGER i.
  * ----------------------------------------------------------------------- *)
 
-TYPE Int0ToMaxInt = INTEGER [0..MAX(INTEGER)];
-
 PROCEDURE fromInt ( i : Int0ToMaxInt ) : LONGCARD;
 
 VAR
@@ -53,8 +51,6 @@ END fromInt;
  * --------------------------------------------------------------------------
  * Returns the LONGCARD value of non-negative LONGINT i.
  * ----------------------------------------------------------------------- *)
-
-TYPE LongInt0ToMaxLongInt = LONGINT [0..MAX(LONGINT)];
 
 PROCEDURE fromLongInt ( i : LongInt0ToMaxLongInt ) : LONGCARD;
 
@@ -85,7 +81,7 @@ VAR
 BEGIN
   longCard.highBits := MAX(CARDINAL);
   longCard.lowBits := MAX(CARDINAL);
-  return longCard
+  RETURN longCard
 END max;
 
 
@@ -103,7 +99,7 @@ VAR
 BEGIN
   longCard.highBits := 0;
   longCard.lowBits := 0;
-  return longCard
+  RETURN longCard
 END min;
 
 
@@ -113,7 +109,7 @@ END min;
  * Returns TRUE if n is odd, otherwise FALSE.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE odd ( n : LONGCARD ) : LONGCARD;
+PROCEDURE odd ( n : LONGCARD ) : BOOLEAN;
 
 BEGIN
   RETURN ODD(n.lowBits)
@@ -215,12 +211,12 @@ END lteq;
 PROCEDURE sum ( n, m : LONGCARD ) : LONGCARD;
 
 VAR
-  overflow : BOOLEAN;
+  overflow : CARDINAL;
   
 BEGIN
   ADD(n, m, overflow);
   
-  IF overflow THEN HALT END;
+  IF overflow > 0 THEN HALT END;
   
   RETURN n
 END sum;
@@ -260,7 +256,7 @@ VAR
   bitIndex : CARDINAL;
   
 BEGIN
-  FOR bitIndex := 0 TO BitWidth DO
+  FOR bitIndex := 0 TO Bitwidth DO
     (* test LSB of m and add n to prod if set *)
     IF odd(m) THEN
       prod := sum(prod, n)
@@ -370,7 +366,7 @@ BEGIN
   n.lowBits := n.lowBits + m.lowBits;
     
   (* determine if highBits addition causes overflow *)
-  highBitsOverflow := addOverflows(n.highBits, m.highBits);
+  highBitsOverflow1 := addOverflows(n.highBits, m.highBits);
   
   IF highBitsOverflow1 THEN
     (* clear highest bit in n.highBits, if set *)
@@ -401,7 +397,7 @@ BEGIN
   n.highBits := n.highBits + ORD(lowBitsOverflow);
 
   (* set carry if overflow occurred *)
-  carry := ORD(highBitsOverflow1 OR hightBitsOverflow2);
+  carry := ORD(highBitsOverflow1 OR highBitsOverflow2);
 END ADD;
 
 
@@ -503,6 +499,9 @@ END SHL;
 
 PROCEDURE SHR ( VAR n : LONGCARD; shiftFactor : CARDINAL );
 
+VAR
+  pivotalBit, carryBits : CARDINAL;
+  
 BEGIN
   (* shifting by 0 *) 
   IF shiftFactor = 0 THEN
@@ -530,7 +529,7 @@ BEGIN
     n.lowBits := n.lowBits DIV pow2(shiftFactor);
     
     (* shift highBits *)
-    n.highBits := n.hightBits DIV pow2(shiftFactor);
+    n.highBits := n.highBits DIV pow2(shiftFactor);
     
     (* add the bits shifted out of highBits to lowBits *)
     n.lowBits := n.lowBits + carryBits;
@@ -612,4 +611,26 @@ BEGIN
 END ClearBitsInclAndAbove;
 
 
+VAR
+  powerOf2 : ARRAY [0..Bitwidth-1] OF CARDINAL;
+
+PROCEDURE pow2 ( n : CARDINAL ) : CARDINAL;
+BEGIN
+  RETURN powerOf2[n]
+END pow2;
+
+PROCEDURE InitPow2Table;
+
+VAR
+  index : CARDINAL;
+
+BEGIN
+  powerOf2[0] := 1;
+  FOR index := 1 TO Bitwidth-1 DO
+    powerOf2[index] := powerOf2[index-1] * 2
+  END (* FOR *)
+END InitPow2Table;
+
+BEGIN (* LONGCARD *)
+  InitPow2Table
 END LONGCARD.
