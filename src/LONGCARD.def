@@ -77,7 +77,7 @@ PROCEDURE min ( ) : LONGCARD;
  * Returns TRUE if n is odd, otherwise FALSE.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE odd ( n : LONGCARD ) : LONGCARD;
+PROCEDURE odd ( n : LONGCARD ) : BOOLEAN;
 
 
 (* --------------------------------------------------------------------------
