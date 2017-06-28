@@ -5,6 +5,8 @@ IMPLEMENTATION MODULE CardMath;
 (* Cardinal Math library *)
 
 
+(* Math operations *)
+
 (* --------------------------------------------------------------------------
  * function abs(i)
  * --------------------------------------------------------------------------
@@ -12,15 +14,6 @@ IMPLEMENTATION MODULE CardMath;
  * ----------------------------------------------------------------------- *)
 
 PROCEDURE abs ( i : INTEGER ) : CARDINAL;
-
-
-(* --------------------------------------------------------------------------
- * function twosComplement(n)
- * --------------------------------------------------------------------------
- * Returns the two's complement of n
- * ----------------------------------------------------------------------- *)
-
-PROCEDURE twosComplement ( n : CARDINAL ) : CARDINAL;
 
 
 (* --------------------------------------------------------------------------
@@ -60,19 +53,89 @@ PROCEDURE log10 ( n : CARDINAL ) : CARDINAL;
 
 
 (* --------------------------------------------------------------------------
- * function deg10(n)
+ * function MaxDecimalDigits(n)
  * --------------------------------------------------------------------------
- * Returns the degree of a polynomial whose value is the largest unsigned
- * integer that can be encoded in base-2 with n octets of 8 bits for x = 10.
- *
- *                   n              n-1                  1            0
- *   f(x) = digit * x  + digit   * x    + ... + digit * x  + digit * x
- *               n            n-1                    1            0
+ * Returns the number of decimal digits of the largest unsigned integer that
+ * can be encoded in base-2 using n number of 8-bit octets for 1 <= n <= 32.
  * ----------------------------------------------------------------------- *)
 
-TYPE Card1To8 = CARDINAL [1..8];
+TYPE Card1To32 = CARDINAL [1..32]; (* max 256 bits *)
 
-PROCEDURE deg10 ( n : Card1To8 ) : CARDINAL;
+PROCEDURE MaxDecimalDigits ( bitwidth : Card1To32 ) : CARDINAL;
+
+
+(* --------------------------------------------------------------------------
+ * function twosComplement(n)
+ * --------------------------------------------------------------------------
+ * Returns the two's complement of n
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE twosComplement ( n : CARDINAL ) : CARDINAL;
+
+
+(* --------------------------------------------------------------------------
+ * function addOverflows(n, m)
+ * --------------------------------------------------------------------------
+ * Returns TRUE if operation n + m overflows, else FALSE.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE addOverflows ( n, m : CARDINAL ) : BOOLEAN;
+
+
+(* Bit operations *)
+
+(* --------------------------------------------------------------------------
+ * function shl(n, shiftFactor)
+ * --------------------------------------------------------------------------
+ * Returns the value of n, shifted left by shiftFactor.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE shl ( n, shiftFactor : CARDINAL ) : CARDINAL;
+
+
+(* --------------------------------------------------------------------------
+ * function shr(n, shiftFactor)
+ * --------------------------------------------------------------------------
+ * Returns the value of n, shifted right by shiftFactor.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE shr ( n, shiftFactor : CARDINAL ) : CARDINAL;
+
+
+(* --------------------------------------------------------------------------
+ * function MSB(n)
+ * --------------------------------------------------------------------------
+ * Returns TRUE if the most significant bit of n is set, else FALSE.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE MSB ( n : CARDINAL ) : BOOLEAN;
+
+
+(* --------------------------------------------------------------------------
+ * procedure SetMSB(n)
+ * --------------------------------------------------------------------------
+ * Sets the most significant bit of n.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE SetMSB ( VAR n : CARDINAL );
+
+
+(* --------------------------------------------------------------------------
+ * procedure ClearMSB(n)
+ * --------------------------------------------------------------------------
+ * Clears the most significant bit of n.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE ClearMSB ( VAR n : CARDINAL );
+
+
+(* --------------------------------------------------------------------------
+ * procedure ClearHighestNBits(value, n)
+ * --------------------------------------------------------------------------
+ * Clears bits [MSB..MSB-n] of value.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE ClearHighestNBits ( VAR value : CARDINAL; n : CARDINAL );
 
 
 END CardMath.
