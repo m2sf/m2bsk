@@ -9,7 +9,7 @@ FROM SYSTEM IMPORT TSIZE;
 
 (* Bitwidth of LONGCARD *)
 
-CONST Bitwidth = TSIZE(CARDINAL) * 2;
+CONST Bitwidth = TSIZE(CARDINAL) * 16;
 
 
 (* Type LONGCARD *)
