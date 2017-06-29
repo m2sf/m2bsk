@@ -1,14 +1,14 @@
 (*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
 
-IMPLEMENTATION MODULE LongIntMath;
+IMPLEMENTATION MODULE IntMath;
 
-(* Long Integer Math library *)
+(* Integer Math library *)
 
-FROM UnsignedInt IMPORT ULONGINT; (* 0..MAX(LONGINT) *)
+FROM UnsignedInt IMPORT UINTEGER; (* 0..MAX(INTEGER) *)
 
 
 (* --------------------------------------------------------------------------
- * Long Integer Division Operations
+ * Integer Division Operations
  * --------------------------------------------------------------------------
  * There are several different definitions for integer division all of which
  * produce different results when at least one of the operands is negative.
@@ -75,7 +75,7 @@ FROM UnsignedInt IMPORT ULONGINT; (* 0..MAX(LONGINT) *)
  * Returns the quotient q of euclidean division i by j.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE ediv ( i, j : LONGINT ) : LONGINT;
+PROCEDURE ediv ( i, j : INTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
@@ -84,7 +84,7 @@ PROCEDURE ediv ( i, j : LONGINT ) : LONGINT;
  * Returns the remainder r of euclidean division i by j.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE emod ( i, j : LONGINT ) : LONGINT;
+PROCEDURE emod ( i, j : INTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
@@ -93,7 +93,7 @@ PROCEDURE emod ( i, j : LONGINT ) : LONGINT;
  * Returns the quotient q of floored division i by j.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE fdiv ( i, j : LONGINT ) : LONGINT;
+PROCEDURE fdiv ( i, j : INTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
@@ -102,7 +102,7 @@ PROCEDURE fdiv ( i, j : LONGINT ) : LONGINT;
  * Returns the remainder r of euclidean division i by j.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE fmod ( i, j : LONGINT ) : LONGINT;
+PROCEDURE fmod ( i, j : INTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
@@ -111,7 +111,7 @@ PROCEDURE fmod ( i, j : LONGINT ) : LONGINT;
  * Returns the quotient q of truncated division i by j.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE tdiv ( i, j : LONGINT ) : LONGINT;
+PROCEDURE tdiv ( i, j : INTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
@@ -120,11 +120,11 @@ PROCEDURE tdiv ( i, j : LONGINT ) : LONGINT;
  * Returns the remainder r of truncated division i by j.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE tmod ( i, j : LONGINT ) : LONGINT;
+PROCEDURE tmod ( i, j : INTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
- * Long Integer Exponentiation and Logarithm Operations
+ * Integer Exponentiation and Logarithm Operations
  * ----------------------------------------------------------------------- *)
 
 (* --------------------------------------------------------------------------
@@ -133,7 +133,7 @@ PROCEDURE tmod ( i, j : LONGINT ) : LONGINT;
  * Returns the power of 2 for argument i
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE longIntPow2 ( i : ULONGINT ) : LONGINT;
+PROCEDURE intPow2 ( i : UINTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
@@ -142,7 +142,7 @@ PROCEDURE longIntPow2 ( i : ULONGINT ) : LONGINT;
  * Returns the integral part of the logarithm of 2 for argument i
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE longIntLog2 ( i : ULONGINT ) : LONGINT;
+PROCEDURE intLog2 ( i : UINTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
@@ -151,7 +151,7 @@ PROCEDURE longIntLog2 ( i : ULONGINT ) : LONGINT;
  * Returns the power of 10 for argument i
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE longIntPow10 ( i : ULONGINT ) : LONGINT;
+PROCEDURE intPow10 ( i : UINTEGER ) : INTEGER;
 
 
 (* --------------------------------------------------------------------------
@@ -160,7 +160,7 @@ PROCEDURE longIntPow10 ( i : ULONGINT ) : LONGINT;
  * Returns the integral part of the logarithm of 10 for argument i
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE longIntLog10 ( i : ULONGINT ) : LONGINT;
+PROCEDURE intLog10 ( i : UINTEGER ) : INTEGER;
 
 
 END IntMath.
