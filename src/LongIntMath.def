@@ -1,6 +1,6 @@
 (*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
 
-IMPLEMENTATION MODULE LongIntMath;
+DEFINITION MODULE LongIntMath;
 
 (* Long Integer Math library *)
 
