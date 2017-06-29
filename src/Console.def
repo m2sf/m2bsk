@@ -95,7 +95,7 @@ PROCEDURE WriteCard ( value : CARDINAL );
  * Prints the given cardinal value in 0x notation to the console.
  * ------------------------------------------------------------------------ *)
 
-PROCEDURE WriteCardX ( char : CHAR );
+PROCEDURE WriteCardX ( value : CARDINAL );
 
 
 (* ---------------------------------------------------------------------------
