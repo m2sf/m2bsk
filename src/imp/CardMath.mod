@@ -23,7 +23,7 @@ PROCEDURE abs ( i : INTEGER ) : CARDINAL;
 
 BEGIN
   IF i = MIN(INTEGER) THEN
-    RETURN pow2(Bitwidth-1)
+    RETURN powerOf2[Bitwidth-1]
   ELSE
     RETURN VAL(CARDINAL, ABS(i))
   END (* IF *)
@@ -288,7 +288,7 @@ BEGIN
   mask := value DIV (n + 1);
   
   (* shift them back, thereby clearing the low bits, obtaining a mask *)
-  mask := mask * pow2(n + 1);
+  mask := mask * powerOf2[n + 1];
   
   (* subtract the mask, thereby clearing the high bits *)
   value := value - mask
