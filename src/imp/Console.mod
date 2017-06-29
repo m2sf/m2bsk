@@ -8,8 +8,13 @@ IMPORT ASCII, Terminal, String;
 
 FROM String IMPORT StringT; (* alias for String.String *)
 
-FROM CardMath IMPORT abs, pow2, pow10, deg10;
+FROM CardMath IMPORT abs, pow2, pow10, maxDecimalDigits;
 FROM LongIntMath IMPORT longIntPow2, longIntPow10;
+FROM SYSTEM IMPORT CAST, TSIZE;
+
+
+(* temporar fix for ISO peculiarity *)
+CONST NilString = CAST(StringT, NIL);
 
 
 (* ---------------------------------------------------------------------------
@@ -22,6 +27,7 @@ PROCEDURE WriteChars ( chars : ARRAY OF CHAR );
 
 VAR
   ch : CHAR;
+  index : CARDINAL;
   
 BEGIN
   FOR index := 0 TO HIGH(chars) DO
@@ -29,9 +35,9 @@ BEGIN
     IF ch > ASCII.US THEN
       Terminal.Write(ch)
     ELSIF ch = ASCII.NUL THEN
-      EXIT
+      RETURN
     END (* IF *)
-  END (* FOR *)
+  END (* LOOP *)
 END WriteChars;
 
 
@@ -44,7 +50,7 @@ END WriteChars;
 PROCEDURE WriteStr ( s : StringT );
 
 BEGIN
-  IF (s # NIL) AND (String.length(s) > 0) THEN
+  IF (s # NilString) AND (String.length(s) > 0) THEN
     String.WithCharsDo(s, Terminal.WriteString)
   END (* IF *)
 END WriteStr;
@@ -60,20 +66,14 @@ PROCEDURE WriteCharsAndStr ( VAR chars : ARRAY OF CHAR; s : StringT );
 
 VAR
   ch : CHAR;
+  index : CARDINAL;
   
 BEGIN
   (* print chars *)
-  FOR index := 0 TO HIGH(chars) DO
-    ch := chars[index];
-    IF ch > ASCII.US THEN
-      Terminal.Write(ch)
-    ELSIF ch = ASCII.NUL THEN
-      EXIT
-    END (* IF *)
-  END; (* FOR *)
+  WriteChars(chars);
   
   (* print s *)
-  IF (s # NIL) AND (String.length(s) > 0) THEN
+  IF (s # NilString) AND (String.length(s) > 0) THEN
     String.WithCharsDo(s, Terminal.WriteString)
   END (* IF *)
 END WriteCharsAndStr;
@@ -199,7 +199,7 @@ BEGIN
   weight := pow10(m);
   FOR n := m TO 0 BY -1 DO
     digit := value DIV weight;
-    Terminal.WriteChar(CHR(digit + 48));
+    Terminal.Write(CHR(digit + 48));
     value := value MOD weight;
     weight := weight DIV 10
   END (* FOR *)
@@ -225,13 +225,13 @@ BEGIN
   WriteChars("0x");
   
   (* print digits, including any leading zeroes *)
-  weight := pow16(n);
+  weight := pow16(m);
   FOR n := m TO 0 BY -1 DO
     digit := value DIV weight;
     IF digit <= 10 THEN
-      Terminal.WriteChar(CHR(digit + 48))
+      Terminal.Write(CHR(digit + 48))
     ELSE (* A .. F *)
-      Terminal.WriteChar(CHR(digit + 55))
+      Terminal.Write(CHR(digit + 55))
     END; (* IF *)
     value := value MOD weight;
     weight := weight DIV 16
@@ -250,7 +250,7 @@ PROCEDURE WriteInt ( value : INTEGER );
 BEGIN
   (* print sign if negative *)
   IF value < 0 THEN
-    Terminal.WriteChar("-")
+    Terminal.Write("-")
   END; (* IF *)
   
   (* print unsigned value *)
@@ -273,7 +273,7 @@ BEGIN
     WriteCardX(abs(value))
   ELSE (* negative *)
     (* print two's complement of absolute value *)
-    WriteCardX(MAX(CARDINAL) - abs(value) + 1
+    WriteCardX(MAX(CARDINAL) - abs(value) + 1)
   END (* IF *)
 END WriteIntX;
 
@@ -293,7 +293,7 @@ VAR
 BEGIN
   (* skip any leading zeroes *)
   m := maxExponentBase10(TSIZE(LONGINT));
-  WHILE value DIV LongIntPow10(m) = 0 DO
+  WHILE value DIV longIntPow10(m) = 0 DO
     m := m - 1
   END; (* WHILE *)
   
@@ -357,7 +357,7 @@ BEGIN
     Terminal.Write(CHR(digit + 48))
   ELSE (* A .. F *)
     Terminal.Write(CHR(digit + 55))
-  END (* IF *)
+  END; (* IF *)
 
   (* process remaining digits *)
   
@@ -410,7 +410,7 @@ END pow16;
 PROCEDURE maxExponentBase10 ( bitwidth : CARDINAL ) : CARDINAL;
 
 BEGIN
-  RETURN deg10(bitwidth DIV 8)
+  RETURN maxDecimalDigits(bitwidth DIV 8)
 END maxExponentBase10;
 
 
