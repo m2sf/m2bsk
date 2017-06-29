@@ -162,8 +162,25 @@ END addOverflows;
 
 PROCEDURE shl ( n, shiftFactor : CARDINAL ) : CARDINAL;
 
+VAR
+  pivotalBit : CARDINAL;
+
 BEGIN
-  (* TO DO *)
+  (* shifting by Bitwidth and more produces all zeroes *)
+  IF shiftFactor > Bitwidth-1 THEN
+    RETURN 0
+  END; (* IF *)
+  
+  (* bit at position Bitwidth - shiftFactor is pivotal *)
+  pivotalBit := Bitwidth - shiftFactor;
+  
+  (* clear bits including and above pivotal bit to avoid overflow *)
+  IF n >= powerOf2[pivotalBit] THEN
+    ClearHighestNBits(n, pivotalBit)
+  END; (* IF *)
+  
+  (* shift left safely *)
+  RETURN n * powerOf2[shiftFactor]
 END shl;
 
 
@@ -176,7 +193,12 @@ END shl;
 PROCEDURE shr ( n, shiftFactor : CARDINAL ) : CARDINAL;
 
 BEGIN
-  (* TO DO *)
+  (* shifting by Bitwidth and more produces all zeroes *)
+  IF shiftFactor > Bitwidth-1 THEN
+    RETURN 0
+  END; (* IF *)
+  
+  RETURN n DIV (shiftFactor + 1)
 END shr;
 
 
