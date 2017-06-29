@@ -163,4 +163,4 @@ PROCEDURE longIntPow10 ( i : ULONGINT ) : LONGINT;
 PROCEDURE longIntLog10 ( i : ULONGINT ) : LONGINT;
 
 
-END IntMath.
+END LongIntMath.
