@@ -22,7 +22,7 @@ CONST
 PROCEDURE abs ( i : INTEGER ) : CARDINAL;
 
 BEGIN
-  IF i = MAX(INTEGER) THEN
+  IF i = MIN(INTEGER) THEN
     RETURN pow2(Bitwidth-1)
   ELSE
     RETURN VAL(CARDINAL, ABS(i))
@@ -73,7 +73,7 @@ BEGIN
     k := k DIV 2
   END; (* WHILE *)
   
-  return r
+  RETURN r
 END log2;
 
 
@@ -120,6 +120,10 @@ END log10;
  * ----------------------------------------------------------------------- *)
 
 PROCEDURE MaxDecimalDigits ( octets : Card1To16 ) : CARDINAL;
+
+BEGIN
+  RETURN maxDecDigits[octets]
+END MaxDecimalDigits;
 
 
 (* --------------------------------------------------------------------------
@@ -185,7 +189,7 @@ END shr;
 PROCEDURE MSB ( n : CARDINAL ) : BOOLEAN;
 
 BEGIN
-  (* TO DO *)
+  RETURN (n >= powerOf2[Bitwidth-1])
 END MSB;
 
 
@@ -197,8 +201,18 @@ END MSB;
 
 PROCEDURE SetMSB ( VAR n : CARDINAL );
 
+VAR
+  k : CARDINAL;
+  
 BEGIN
-  (* TO DO *)
+  (* mask value *)
+  k := powerOf2[Bitwidth-1];
+  
+  (* only if MSB is not already set *)
+  IF n < k THEN
+    (* adding mask sets MSB *)
+    n := n + k
+  END (* IF *)
 END SetMSB;
 
 
@@ -210,8 +224,18 @@ END SetMSB;
 
 PROCEDURE ClearMSB ( VAR n : CARDINAL );
 
+VAR
+  k : CARDINAL;
+  
 BEGIN
-  (* TO DO *)
+  (* mask value *)
+  k := powerOf2[Bitwidth-1];
+  
+  (* only if MSB is set *)
+  IF n >= k THEN
+    (* subtracting mask clears MSB *)
+    n := n + k
+  END (* IF *)
 END ClearMSB;
 
 
@@ -228,7 +252,7 @@ VAR
   
 BEGIN
   (* no point clearing bits we don't have *)
-  IF n > HalfBitwidth-1 THEN
+  IF n > Bitwidth-1 THEN
     RETURN
   END; (* IF *)
   
@@ -305,7 +329,7 @@ BEGIN
   powerOf10[0] := 1;
   
   (* any size of CARDINAL *)
-  FOR index := 1 TO MaxDecimalDigits(Bitwidth DIV 8) DO
+  FOR index := 1 TO maxDecDigits[Bitwidth DIV 8] DO
     powerOf10[index] := powerOf10[index-1] * 10
   END (* FOR *)
 END InitPow10Table;
