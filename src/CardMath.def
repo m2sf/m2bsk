@@ -53,7 +53,7 @@ PROCEDURE log10 ( n : CARDINAL ) : CARDINAL;
 
 
 (* --------------------------------------------------------------------------
- * function MaxDecimalDigits(n)
+ * function maxDecimalDigits(n)
  * --------------------------------------------------------------------------
  * Returns the number of decimal digits of the largest unsigned integer that
  * can be encoded in base-2 using n number of 8-bit octets for 1 <= n <= 16.
@@ -61,7 +61,7 @@ PROCEDURE log10 ( n : CARDINAL ) : CARDINAL;
 
 TYPE Card1To16 = CARDINAL [1..16]; (* max 128 bits *)
 
-PROCEDURE MaxDecimalDigits ( octets : Card1To16 ) : CARDINAL;
+PROCEDURE maxDecimalDigits ( octets : Card1To16 ) : CARDINAL;
 
 
 (* --------------------------------------------------------------------------
