@@ -99,7 +99,7 @@ PROCEDURE fdiv ( i, j : LONGINT ) : LONGINT;
 (* --------------------------------------------------------------------------
  * function fmod(i)
  * --------------------------------------------------------------------------
- * Returns the remainder r of euclidean division i by j.
+ * Returns the remainder r of floored division i by j.
  * ----------------------------------------------------------------------- *)
 
 PROCEDURE fmod ( i, j : LONGINT ) : LONGINT;
