@@ -119,11 +119,11 @@ END log10;
  * can be encoded in base-2 using n number of 8-bit octets for 1 <= n <= 16.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE MaxDecimalDigits ( octets : Card1To16 ) : CARDINAL;
+PROCEDURE maxDecimalDigits ( octets : Card1To16 ) : CARDINAL;
 
 BEGIN
   RETURN maxDecDigits[octets]
-END MaxDecimalDigits;
+END maxDecimalDigits;
 
 
 (* --------------------------------------------------------------------------
