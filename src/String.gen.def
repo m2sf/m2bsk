@@ -1,0 +1,121 @@
+(*!m2##ver##*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+
+DEFINITION MODULE String; (* ##VER## version *)
+
+(* Interned Strings *)
+
+(*?iso*)FROM SYSTEM IMPORT CAST;(*?;*)
+
+
+(* String Type *)
+
+TYPE String; (* OPAQUE *)
+
+TYPE StringT = String; (* for unqualified use *)
+
+
+(* NIL String *)
+
+CONST Nil = (*?pim*)NIL(*?iso*)CAST(StringT, NIL)(*?;*);
+
+
+(* Maximum String Length *)
+
+CONST MaxStringLength = 4096;
+
+
+(* Procedure type for passing to procedure WithCharsDo *)
+
+TYPE CharArrayProc = PROCEDURE ( ARRAY OF CHAR );
+
+
+(* Procedure type for passing to procedure WithCharsInSliceDo *)
+
+TYPE CharProc = PROCEDURE ( CHAR );
+
+
+(* Operations *)
+
+PROCEDURE forArray ( VAR (* CONST *) array : ARRAY OF CHAR) : StringT;
+(* Looks up the interned string for the given character array and returns it.
+   Creates and returns a new interned string if no matching entry is found. *)
+
+
+PROCEDURE forArraySlice
+  ( VAR (* CONST *) array : ARRAY OF CHAR; start, end : CARDINAL) : StringT;
+(* Looks up the interned string for the given slice of the given character
+   array and returns it. Creates and returns a new interned string with the
+   slice if no matching entry is found. *)
+
+
+PROCEDURE forSlice ( string : StringT; start, end : CARDINAL ) : StringT;
+(* Looks up the interned string for the given slice of the given string
+   and returns it. Creates and returns a new interned string with the
+   slice if no matching entry is found. *)
+
+
+PROCEDURE forConcatenation ( string1, string2 : StringT ) : StringT;
+(* Looks up the product of concatenating string1 and string2 and returns the
+   matching interned string if an entry exists. Creates and returns a new
+   interned string with the concatenation product if no match is found. *)
+
+
+PROCEDURE length ( string : StringT ) : CARDINAL;
+(* Returns the length of the given string.  Returns 0 if string is NIL. *)
+
+
+PROCEDURE charAtIndex ( string : StringT; index : CARDINAL ) : CHAR;
+(* Returns the character at the given index in the given string.
+   Returns ASCII.NUL if string is NIL or if index is out of range. *)
+
+
+PROCEDURE CopyToArray
+  ( string : StringT; VAR array : ARRAY OF CHAR; VAR charsCopied : CARDINAL );
+(* Copies the given string to the given array reference. Returns without copy-
+   ing if string is NIL or if the array size is insufficient to hold the
+   entire string. Passes the number of characters copied in charsCopied. *)
+
+
+PROCEDURE CopySliceToArray
+  ( string : StringT;
+    start, end : CARDINAL;
+    VAR array : ARRAY OF CHAR;
+    VAR charsCopied : CARDINAL );
+(* Copies the given slice of the given string to the given array.  Returns
+   without copying if string is NIL, if start and end do not specify a valid
+   slice within the string or if the array size is insufficient to hold the
+   entire slice. Passes the number of characters copied in charsCopied. *)
+
+
+PROCEDURE matchesArray
+  ( string : StringT; VAR (* CONST *) array : ARRAY OF CHAR ) : BOOLEAN;
+(* Returns TRUE if the given string matches the given array. Returns FALSE
+   if string is NIL or if string does not match the array. *)
+
+
+PROCEDURE matchesArraySlice
+  ( string : StringT;
+    VAR (* CONST *) array : ARRAY OF CHAR;
+    start, end : CARDINAL ) : BOOLEAN;
+(* Returns TRUE if the given string matches the given slice of the given
+   array. Returns FALSE if string is NIL or if start and end do not specify
+   a valid slice within the array. *)
+
+
+PROCEDURE WithCharsDo ( string : String; proc : CharArrayProc );
+(* Executes proc passing the character array of string. *)
+
+
+PROCEDURE WithCharsInSliceDo
+  ( string : StringT; start, end : CARDINAL; proc : CharProc );
+(* Executes proc for each character in the given slice of string
+   passing each character from start to end. *)
+
+
+(* Introspection *)
+
+PROCEDURE count () : CARDINAL;
+(* Returns the number of interned strings. *)
+
+
+END String.
