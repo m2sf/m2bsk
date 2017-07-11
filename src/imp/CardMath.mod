@@ -15,7 +15,7 @@ CONST
   MaxCardDivPow2Of56 = MaxCardDivPow2Of48 DIV 256;
   MaxCardDivPow2Of64 = MaxCardDivPow2Of56 DIV 256;
     
-  BW8 = MAX(CARDINAL) <= 255);
+  BW8 = MAX(CARDINAL) <= 255;
   BW16 = NOT BW8 AND (MaxCardDivPow2Of8 <= 255);
   BW24 = NOT BW16 AND (MaxCardDivPow2Of16 <= 255);
   BW32 = NOT BW24 AND (MaxCardDivPow2Of24 <= 255);
