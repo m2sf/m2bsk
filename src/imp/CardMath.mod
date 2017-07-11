@@ -4,11 +4,29 @@ IMPLEMENTATION MODULE CardMath;
 
 (* Cardinal Math library *)
 
-FROM SYSTEM IMPORT TSIZE;
-
 
 CONST
-  Bitwidth = TSIZE(CARDINAL) * 8;
+  MaxCardDivPow2Of8 = MAX(CARDINAL) DIV 256;
+  MaxCardDivPow2Of16 = MaxCardDivPow2Of8 DIV 256;
+  MaxCardDivPow2Of24 = MaxCardDivPow2Of16 DIV 256;
+  MaxCardDivPow2Of32 = MaxCardDivPow2Of24 DIV 256;
+  MaxCardDivPow2Of40 = MaxCardDivPow2Of32 DIV 256;
+  MaxCardDivPow2Of48 = MaxCardDivPow2Of40 DIV 256;
+  MaxCardDivPow2Of56 = MaxCardDivPow2Of48 DIV 256;
+  MaxCardDivPow2Of64 = MaxCardDivPow2Of56 DIV 256;
+    
+  BW8 = MAX(CARDINAL) <= 255);
+  BW16 = NOT BW8 AND (MaxCardDivPow2Of8 <= 255);
+  BW24 = NOT BW16 AND (MaxCardDivPow2Of16 <= 255);
+  BW32 = NOT BW24 AND (MaxCardDivPow2Of24 <= 255);
+  BW40 = NOT BW32 AND (MaxCardDivPow2Of32 <= 255);
+  BW48 = NOT BW40 AND (MaxCardDivPow2Of40 <= 255);
+  BW56 = NOT BW48 AND (MaxCardDivPow2Of48 <= 255);
+  BW64 = NOT BW56 AND (MaxCardDivPow2Of56 <= 255);
+  
+  Bitwidth =
+    8*ORD(BW8) + 16*ORD(BW16) + 24*ORD(BW24) + 32*ORD(BW32) +
+    40*ORD(BW40) + 48*ORD(BW48) + 56*ORD(BW56) + 64*ORD(BW64);
 
 
 (* Math operations *)
@@ -28,7 +46,6 @@ BEGIN
     RETURN VAL(CARDINAL, ABS(i))
   END (* IF *)
 END abs;
-
 
 
 (* --------------------------------------------------------------------------
@@ -113,7 +130,7 @@ END log10;
 
 
 (* --------------------------------------------------------------------------
- * function MaxDecimalDigits(n)
+ * function maxDecimalDigits(n)
  * --------------------------------------------------------------------------
  * Returns the number of decimal digits of the largest unsigned integer that
  * can be encoded in base-2 using n number of 8-bit octets for 1 <= n <= 16.
@@ -200,6 +217,31 @@ BEGIN
   
   RETURN n DIV (shiftFactor + 1)
 END shr;
+
+
+(* --------------------------------------------------------------------------
+ * function reqBits(n)
+ * --------------------------------------------------------------------------
+ * Returns the minimum number of bits required to represent n.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE reqBits ( n : CARDINAL ) : CARDINAL;
+
+VAR
+  bits, weight, maxWeight : CARDINAL;
+
+BEGIN
+  bits := 7;
+  weight := 128;
+  maxWeight := n DIV 2 + 1;
+  
+  WHILE (weight < maxWeight) DO
+    bits := bits + 8;
+    weight := weight * 256
+  END; (* WHILE *)
+  
+  RETURN bits + 1
+END reqBits;
 
 
 (* --------------------------------------------------------------------------
