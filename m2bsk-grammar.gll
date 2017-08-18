@@ -236,8 +236,8 @@ procedureType :=
 /* Formal Type */
 
 formalType :=
-  nonAttrFormalType | castingFormalType |
-  attributedFormalType | simpleVariadicFormalType
+  ( CONST | VAR )?
+    ( simpleFormalType | castingFormalType | variadicFormalType )
   ;
 
 /* Returned Type */
@@ -245,9 +245,9 @@ formalType :=
 alias returnedType = typeIdent ;
 
 
-/* Non-Attributed Formal Type */
+/* Simple Formal Type */
 
-nonAttrFormalType :=
+simpleFormalType :=
   ( ARRAY OF | '[]' OF )? typeIdent
   ;
 
@@ -259,17 +259,9 @@ castingFormalType :=
   ;
 
 
-/* Attributed Formal Type */
+/* Variadic Formal Type */
 
-attributedFormalType :=
-  ( CONST | VAR )
-    ( nonAttrFormalType | castingFormalType | simpleVariadicFormalType )
-  ;
-
-
-/* Simple Variadic Formal Type */
-
-simpleVariadicFormalType :=
+variadicFormalType :=
   ARGLIST OF ( formalCharArray | typeIdent )
   ;
 
@@ -291,25 +283,15 @@ procedureHeader :=
 /* Procedure Signature */
 
 procedureSignature :=
-  ident ( '(' formalParams ( ';' formalParams )* ')' )?
-  ( ':' returnedType )?
+  ident ( '(' formalParams ( ';' formalParams )* ')' )? ( ':' returnedType )?
   ;
 
 
 /* Formal Parameters */
 
 formalParams :=
-  identList ':'
-    ( nonAttrFormalType | castingFormalType | simpleVariadicFormalType ) |
-  attributedFormalParams
-  ;
-
-
-/* Attributed Formal Parameters */
-
-attributedFormalParams :=
-  ( CONST | VAR ) identList ':'
-    ( nonAttrFormalType | castingFormalType | simpleVariadicFormalType )
+  ( CONST | VAR )? identList ':'
+    ( simpleFormalType | castingFormalType | variadicFormalType )
   ;
 
 
