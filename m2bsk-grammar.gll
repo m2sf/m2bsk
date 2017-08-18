@@ -27,10 +27,10 @@ grammar m2bsk;
 /* * *   R e s e r v e d   W o r d s   * * */
 
 reserved
-  ALIAS, AND, ARGLIST, ARRAY, BARE, BEGIN, CASE, CONST, DEFINITION, DIV, DO,
-  ELSE, ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION, IMPORT, IN, LOOP, MOD,
-  MODULE, NEW, NOT, OF, OPAQUE, OR, POINTER, PROCEDURE, RECORD, RELEASE,
-  REPEAT, RETURN, SET, THEN, TO, TYPE, UNTIL, VAR, WHILE;
+  ALIAS, AND, ARGLIST, ARRAY, BEGIN, CASE, CONST, DEFINITION, DIV, DO, ELSE,
+  ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION, IMPORT, IN, LOOP, MOD, MODULE,
+  NEW, NOT, OF, OPAQUE, OR, POINTER, PROCEDURE, READ, RECORD, RELEASE,
+  REPEAT, RETURN, SET, THEN, TO, TYPE, UNTIL, VAR, WHILE, WRITE;
 
 
 /* * *   N o n - T e r m i n a l   S y m b o l s   * * */
@@ -247,20 +247,14 @@ alias returnedType = typeIdent ;
 /* Non-Attributed Formal Type */
 
 nonAttrFormalType :=
-  ( ARRAY ident? OF )? typeIdent | castingFormalType
+  ( ARRAY OF )? typeIdent | castingFormalType
   ;
 
 
 /* Casting Formal Type */
 
 castingFormalType :=
-  CAST ( BARE ARRAY OF OCTET | addressTypeIdent )
-  ;
-
-/* Address Type Identifier */
-
-addressTypeIdent :=
-  ( UNSAFE '.' )? ADDRESS
+  CAST ( '[]' OF OCTET | ADDRESS )
   ;
 
 
@@ -397,7 +391,7 @@ alias fieldDeclaration = varOrFieldDeclaration ;
 /* Indeterminate Field */
 
 indeterminateField :=
-  '+' ident ':' BARE ARRAY discriminantFieldIdent OF typeIdent 
+  '+' ident ':' '[' discriminantFieldIdent ']' OF typeIdent 
   ;
 
 /* Discriminant Field Identifier */
@@ -413,9 +407,8 @@ varOrFieldDeclaration :=
 
 /* Anonymous Type */
 
-  ARRAY valueCount OF typeIdent |
-  subrangeType |
-  procedureType
+anonType :=
+  ARRAY valueCount OF typeIdent | subrangeType | procedureType
   ;
 
 
@@ -571,16 +564,13 @@ forStatement :=
 /* FOR Loop Variants */
 
 forLoopVariants :=
-  accessor ascOrDesc? ( ',' value )?
+  indexOrSoleValue ascOrDesc? ( ',' value )?
   ;
 
-/* Accessor */
+/* Index and Value */
 
-alias accessor = ident ;
+alias indexOrSoleValue, value = ident ;
 
-/* Value */
-
-alias value = ident ;
 
 /* Ascender Or Descender */
 
@@ -612,28 +602,69 @@ alias lastValue = expression ;
 alias ordinalType = typeIdent ;
 
 
+
+/* READ Statement */
+
+readStmt :=
+  READ ( '@' chan ':' )?
+  NEW? designator ( ',' designator )*
+  ;
+
+/* channel */
+
+alias chan = designator ;
+
+
+/* WRITE Statement */
+
+writeStmt :=
+  WRITE ( '@' chan ':' )?
+  outputArgs ( ',' outputArgs )*
+  ;
+
+/* Output Arguments */
+
+outputArgs :=
+  formattedArgs | unformattedArgs
+  ;
+
+/* Formatted Arguments */
+
+formattedArgs :=
+  '[' fmtStr, unformattedArgs ']'
+  ;
+
+/* Unformatted Arguments */
+
+alias unformattedArgs = expressionList ;
+
+
 /* Designator */
 
 designator :=
-  qualident designatorTail?
+  ident designatorTail?
   ;
 
 /* Designator Tail */
 
 designatorTail :=
-  ( ( '[' exprOrSlice ']' | '^' ) ( '.' ident )* )+
+  ( deref | fieldSelector ) designatorTail? | subscriptOrSlice
   ;
 
-/* Expression Or Slice */
+/* Dereference */
 
-exprOrSlice :=
-  expression sliceTail?
+alias deref := '^' ;
+
+/* Field Selector */
+
+fieldSelector :=
+  '.' ident
   ;
 
-/* Slice Tail */
+/* Subscript Or Slice */
 
-sliceTail :=
-  '..' expression?
+subscriptOrSlice :=
+  '[' expression ( ']' designatorTail? | '..' expression? ']' )
   ;
 
 
@@ -653,7 +684,7 @@ expression :=
 /* Level-1 Operator */
 
 .OperL1 :=
-  '=' | '#' | '<' | '<=' | '>' | '>=' | IN
+  '=' | '#' | '<' | '<=' | '>' | '>=' | '==' | IN
   ;
 
 
