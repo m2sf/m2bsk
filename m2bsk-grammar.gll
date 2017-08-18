@@ -236,7 +236,8 @@ procedureType :=
 /* Formal Type */
 
 formalType :=
-  nonAttrFormalType | attributedFormalType
+  nonAttrFormalType | castingFormalType |
+  attributedFormalType | simpleVariadicFormalType
   ;
 
 /* Returned Type */
@@ -247,7 +248,7 @@ alias returnedType = typeIdent ;
 /* Non-Attributed Formal Type */
 
 nonAttrFormalType :=
-  ( ARRAY OF )? typeIdent | castingFormalType
+  ( ARRAY OF | '[]' OF )? typeIdent
   ;
 
 
@@ -261,14 +262,22 @@ castingFormalType :=
 /* Attributed Formal Type */
 
 attributedFormalType :=
-  ( CONST | VAR ) ( nonAttrFormalType | simpleVariadicFormalType )
+  ( CONST | VAR )
+    ( nonAttrFormalType | castingFormalType | simpleVariadicFormalType )
   ;
 
 
 /* Simple Variadic Formal Type */
 
 simpleVariadicFormalType :=
-  ARGLIST OF nonAttrFormalType
+  ARGLIST OF ( formalCharArray | typeIdent )
+  ;
+
+
+/* Formal Character Array */
+
+formalCharArray :=
+  ARRAY OF ( CHAR | UNICHAR )
   ;
 
 
@@ -290,7 +299,8 @@ procedureSignature :=
 /* Formal Parameters */
 
 formalParams :=
-  identList ':' ( nonAttrFormalType | simpleVariadicFormalType ) |
+  identList ':'
+    ( nonAttrFormalType | castingFormalType | simpleVariadicFormalType ) |
   attributedFormalParams
   ;
 
@@ -299,7 +309,7 @@ formalParams :=
 
 attributedFormalParams :=
   ( CONST | VAR ) identList ':'
-  ( nonAttrFormalType | simpleVariadicFormalType )
+    ( nonAttrFormalType | castingFormalType | simpleVariadicFormalType )
   ;
 
 
@@ -910,6 +920,7 @@ Whitespace :=
 LineComment :=
   '!' CommentCharacter* EndOfLine
   ;
+
 
 /* Block Comment */
 
