@@ -236,13 +236,19 @@ procedureType :=
 /* Formal Type */
 
 formalType :=
-  ( CONST | VAR )?
-    ( simpleFormalType | castingFormalType | variadicFormalType )
+  ( CONST | VAR )? nonAttrFormalType
   ;
 
 /* Returned Type */
 
 alias returnedType = typeIdent ;
+
+
+/* Non-Attributed Formal Type */
+
+nonAttrFormalType :=
+  simpleFormalType | castingFormalType | variadicFormalType
+  ;
 
 
 /* Simple Formal Type */
@@ -290,8 +296,7 @@ procedureSignature :=
 /* Formal Parameters */
 
 formalParams :=
-  ( CONST | VAR )? identList ':'
-    ( simpleFormalType | castingFormalType | variadicFormalType )
+  ( CONST | VAR )? identList ':' nonAttrFormalType
   ;
 
 
@@ -415,52 +420,14 @@ statementSequence :=
 
 statement :=
   emptyStatement | memMgtOperation | updateOrProcCall | returnStatement |
-  ifStatement | caseStatement | loopStatement | whileStatement |
-  repeatStatement | forStatement | EXIT
+  copyStatement | readStatement | writeStateent | ifStatement |
+  caseStatement | loopStatement | whileStatement | repeatStatement |
+  forStatement | EXIT
   ;
 
 /* Empty Statement */
 
 alias emptyStatement = toDoList ;
-
-
-/* TO DO List */
-
-toDoList :=
-  TO DO trackingRef? taskToDo ( ';' taskToDo )* END
-  ;
-
-/* Issue Tracking Reference */
-
-trackingRef :=
-  '(' issueId ',' weight ')'
-  ;
-
-/* Issue ID */
-
-alias issueId = wholeNumber ;
-
-/* Whole Number */
-
-alias wholeNumber = NumberLiteral ;
-
-/* TO DO Task */
-
-taskToDo :=
-  description ( ',' estimatedHours )?
-  ;
-
-/* Description */
-
-alias description = StringLiteral ;
-
-/* Weight */
-
-alias weight = constExpression ;
-
-/* Estimated Hours */
-
-alias estimatedHours = constExpression ;
 
 
 /* Memory Management Operation */
@@ -478,7 +445,7 @@ alias initSize = expression ;
 /* Update Or Procedure Call */
 
 updateOrProcCall :=
-  designator ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )?
+  designator ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )? |
   ;
 
 /* Increment Or Decrement Suffix */
@@ -491,6 +458,49 @@ updateOrProcCall :=
 returnStatement :=
   RETURN expression?
   ;
+
+
+/* COPY Statement */
+
+copyStatement :=
+  COPY designator ':=' expression
+  ;
+
+
+/* READ Statement */
+
+readStmt :=
+  READ ( '@' chan ':' )?
+  NEW? designator ( ',' designator )*
+  ;
+
+/* channel */
+
+alias chan = designator ;
+
+
+/* WRITE Statement */
+
+writeStmt :=
+  WRITE ( '@' chan ':' )?
+  outputArgs ( ',' outputArgs )*
+  ;
+
+/* Output Arguments */
+
+outputArgs :=
+  formattedArgs | unformattedArgs
+  ;
+
+/* Formatted Arguments */
+
+formattedArgs :=
+  '[' fmtStr, unformattedArgs ']'
+  ;
+
+/* Unformatted Arguments */
+
+alias unformattedArgs = expressionList ;
 
 
 /* IF Statement */
@@ -592,43 +602,6 @@ alias lastValue = expression ;
 /* Ordinal Type */
 
 alias ordinalType = typeIdent ;
-
-
-
-/* READ Statement */
-
-readStmt :=
-  READ ( '@' chan ':' )?
-  NEW? designator ( ',' designator )*
-  ;
-
-/* channel */
-
-alias chan = designator ;
-
-
-/* WRITE Statement */
-
-writeStmt :=
-  WRITE ( '@' chan ':' )?
-  outputArgs ( ',' outputArgs )*
-  ;
-
-/* Output Arguments */
-
-outputArgs :=
-  formattedArgs | unformattedArgs
-  ;
-
-/* Formatted Arguments */
-
-formattedArgs :=
-  '[' fmtStr, unformattedArgs ']'
-  ;
-
-/* Unformatted Arguments */
-
-alias unformattedArgs = expressionList ;
 
 
 /* Designator */
@@ -760,6 +733,45 @@ valueComponent :=
 /* Runtime Expression */
 
 alias runtimeExpression = expression ;
+
+
+/* TO DO List */
+
+toDoList :=
+  TO DO ( trackingRef? taskToDo ( ';' taskToDo )* END )?
+  ;
+
+/* Issue Tracking Reference */
+
+trackingRef :=
+  '(' issueId ',' weight ')'
+  ;
+
+/* Issue ID */
+
+alias issueId = wholeNumber ;
+
+/* Whole Number */
+
+alias wholeNumber = NumberLiteral ;
+
+/* TO DO Task */
+
+taskToDo :=
+  description ( ',' estimatedHours )?
+  ;
+
+/* Description */
+
+alias description = StringLiteral ;
+
+/* Weight */
+
+alias weight = constExpression ;
+
+/* Estimated Hours */
+
+alias estimatedHours = constExpression ;
 
 
 /* * *   T e r m i n a l   S y m b o l s   * * */
