@@ -254,21 +254,21 @@ nonAttrFormalType :=
 /* Simple Formal Type */
 
 simpleFormalType :=
-  ( ARRAY OF | '[]' OF )? typeIdent
+  ( ARRAY OF )? typeIdent
   ;
 
 
 /* Casting Formal Type */
 
 castingFormalType :=
-  CAST ( '[]' OF OCTET | ADDRESS )
+  CAST ( OCTETSEQ | ADDRESS )
   ;
 
 
 /* Variadic Formal Type */
 
 variadicFormalType :=
-  ARGLIST OF ( formalCharArray | typeIdent )
+  ARGLIST OF simpleFormalType
   ;
 
 
@@ -375,25 +375,18 @@ typeDeclaration :=
   ident '=' ( indeterminateType |  type )
   ;
 
+
 /* Indeterminate Type */
 
 indeterminateType :=
-  IN RECORD fieldDeclaration ( fieldDeclaration ';' ) indeterminateField END
+  IN RECORD ( fieldList ';' )* indeterminateField END
   ;
-
-/* Field Declaration */
-
-alias fieldDeclaration = varOrFieldDeclaration ;
 
 /* Indeterminate Field */
 
 indeterminateField :=
-  '+' ident ':' '[' discriminantFieldIdent ']' OF typeIdent 
+  '+' ident ':' ARRAY OF typeIdent 
   ;
-
-/* Discriminant Field Identifier */
-
-alias discriminantFieldIdent = ident ;
 
 
 /* Variable or Field Declaration */
@@ -424,6 +417,7 @@ statement :=
   caseStatement | loopStatement | whileStatement | repeatStatement |
   forStatement | EXIT
   ;
+
 
 /* Empty Statement */
 
