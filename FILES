@@ -1,4 +1,5 @@
 /
+  /id-support -- third party ide support
   /src  -- source directory
   /src/imp -- implementation directory
   FILES -- this file
@@ -9,6 +10,9 @@
   m2fnxlat-grammar.gll -- filename translation file grammar in EBNF
   m2libconfig-grammar.gll -- library configuration file grammar in EBNF
   resword-trie-analysis.txt -- Trie analysis for Modula-2 reserved words
+
+/ide-support
+  m2bsk.vim -- BSK syntax specification file for VIM
 
 /src
   AOC.def -- CHAR array type definitions for internal use
