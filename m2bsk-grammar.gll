@@ -12,7 +12,7 @@
  *
  * @repository
  *
- * https://github.com/m2sf/m2r10
+ * https://github.com/m2sf/m2bsk
  *
  * @file
  *
@@ -27,9 +27,9 @@ grammar m2bsk;
 /* * *   R e s e r v e d   W o r d s   * * */
 
 reserved
-  ALIAS, AND, ARGLIST, ARRAY, BEGIN, CASE, CONST, DEFINITION, DIV, DO, ELSE,
-  ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION, IMPORT, IN, LOOP, MOD, MODULE,
-  NEW, NOT, OF, OPAQUE, OR, POINTER, PROCEDURE, READ, RECORD, RELEASE,
+  ALIAS, AND, ARGLIST, ARRAY, BEGIN, CASE, CAST, CONST, COPY, DEFINITION, DIV,
+  DO, ELSE, ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION, IMPORT, IN, LOOP, MOD,
+  MODULE, NEW, NOT, OF, OPAQUE, OR, POINTER, PROCEDURE, READ, RECORD, RELEASE,
   REPEAT, RETURN, SET, THEN, TO, TYPE, UNTIL, VAR, WHILE, WRITE;
 
 
@@ -113,15 +113,9 @@ alias constExpression = expression ;
 /* Type Definition */
 
 typeDefinition :=
-  ident '=' ( OPAQUE | type )
-  ;
-
-
-/* Type */
-
-type :=
-  aliasType | derivedType | subrangeType | enumType | setType |
-  arrayType | recordType | pointerType | procedureType
+  ident '='
+    ( OPAQUE | aliasType | derivedType | subrangeType | enumType | setType |
+      arrayType | recordType | pointerType | procedureType )
   ;
 
 
@@ -144,7 +138,7 @@ alias derivedType = typeIdent ;
 /* Subrange Type */
 
 subrangeType :=
-  range OF ordinalType
+  range OF countableType
   ;
 
 /* Range */
@@ -162,9 +156,9 @@ alias lowerBound = constExpression ;
 
 alias upperBound = constExpression ;
 
-/* Ordinal Type */
+/* Countable Type */
 
-alias ordinalType = typeIdent ;
+alias countableType = typeIdent ;
 
 
 /* Enumeration Type */
@@ -239,16 +233,15 @@ formalType :=
   ( CONST | VAR )? nonAttrFormalType
   ;
 
-/* Returned Type */
-
-alias returnedType = typeIdent ;
-
-
 /* Non-Attributed Formal Type */
 
 nonAttrFormalType :=
   simpleFormalType | castingFormalType | variadicFormalType
   ;
+
+/* Returned Type */
+
+alias returnedType = typeIdent ;
 
 
 /* Simple Formal Type */
@@ -269,13 +262,6 @@ castingFormalType :=
 
 variadicFormalType :=
   ARGLIST OF simpleFormalType
-  ;
-
-
-/* Formal Character Array */
-
-formalCharArray :=
-  ARRAY OF ( CHAR | UNICHAR )
   ;
 
 
@@ -319,7 +305,7 @@ alias privateImport = import ;
 
 block :=
   declaration*
-  BEGIN statementSequence END
+  ( BEGIN statementSequence )? END
   ;
 
 
@@ -350,7 +336,7 @@ namedAliasDecl :=
 
 /* Alias Name */
 
-alias aliasName = StdIdent ;
+alias aliasName = ident ;
 
 /* Qualified Name */
 
@@ -372,14 +358,22 @@ wildcardAliasDecl :=
 /* Type Declaration */
 
 typeDeclaration :=
-  ident '=' ( indeterminateType |  type )
+  ident '='
+    ( aliasType | derivedType | subrangeType | enumType | setType |
+      arrayType | recordType | pointerOrIndeterminateType | procedureType )
   ;
 
 
-/* Indeterminate Type */
+/* Pointer Or Indeterminate Type */
 
-indeterminateType :=
-  IN RECORD ( fieldList ';' )* indeterminateField END
+pointerOrIndeterminateType :=
+  POINTER TO ( typeIdent | indeterminateTarget )
+  ;
+
+/* Indeterminate Target */
+
+indeterminateTarget :=
+  RECORD ( fieldList ';' )* indeterminateField END
   ;
 
 /* Indeterminate Field */
@@ -439,7 +433,7 @@ alias initSize = expression ;
 /* Update Or Procedure Call */
 
 updateOrProcCall :=
-  designator ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )? |
+  designator ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )?
   ;
 
 /* Increment Or Decrement Suffix */
@@ -491,6 +485,10 @@ outputArgs :=
 formattedArgs :=
   '[' fmtStr, unformattedArgs ']'
   ;
+
+/* Format String */
+
+alias fmtStr = expression ;
 
 /* Unformatted Arguments */
 
@@ -676,7 +674,7 @@ term :=
 
 /* Level-3 Operator */
 
-.OperL2 :=
+.OperL3 :=
   '*' | '/' | DIV | MOD | AND
   ;
 
