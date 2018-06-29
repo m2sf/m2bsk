@@ -38,7 +38,7 @@ reserved
 /* Compilation Unit */
 
 compilationUnit :=
-  definitionModule | implOrPrgmModule
+  definitionModule | implementationModule | programModule
   ;
 
 
@@ -288,10 +288,10 @@ formalParams :=
 
 /*** Implementation and Program Module Syntax ***/
 
-/* Implementation or Program Module */
+/* Program Module */
 
-implOrPrgmModule :=
-  IMPLEMENTATION MODULE moduleIdent ';'
+programModule :=
+  MODULE moduleIdent ';'
   privateImport* block moduleIdent '.'
   ;
 
@@ -304,6 +304,22 @@ alias privateImport = import ;
 /* Block */
 
 block :=
+  declaration*
+  BEGIN statementSequence END
+  ;
+
+
+/* Implementation Module */
+
+implementationModule :=
+  IMPLEMENTATION MODULE moduleIdent ';'
+  privateImport* possiblyEmptyBlock moduleIdent '.'
+  ;
+
+
+/* Possibly Empty Block */
+
+possiblyEmptyBlock :=
   declaration*
   ( BEGIN statementSequence )? END
   ;
@@ -674,7 +690,7 @@ term :=
 
 /* Level-3 Operator */
 
-.OperL3 :=
+.OperL3　 :=
   '*' | '/' | DIV | MOD | AND
   ;
 
