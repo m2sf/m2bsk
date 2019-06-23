@@ -1,6 +1,6 @@
 /* M2BSK -- EBNF Grammar for Modula-2 R10 Bootstrap Kernel (subset).
  *
- * Copyright (c) 2016 The Modula-2 Software Foundation
+ * Copyright (c) 2016, 2019 The Modula-2 Software Foundation
  *
  * Author & Maintainer: Benjamin Kowarsch <org.m2sf>
  *
@@ -27,10 +27,13 @@ grammar m2bsk;
 /* * *   R e s e r v e d   W o r d s   * * */
 
 reserved
-  ALIAS, AND, ARGLIST, ARRAY, BEGIN, CASE, CAST, CONST, COPY, DEFINITION, DIV,
-  DO, ELSE, ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION, IMPORT, IN, LOOP, MOD,
-  MODULE, NEW, NOT, OF, OPAQUE, OR, POINTER, PROCEDURE, READ, RECORD, RELEASE,
-  REPEAT, RETURN, SET, THEN, TO, TYPE, UNTIL, VAR, WHILE, WRITE;
+  ALIAS, AND, ARGLIST, ARRAY, BEGIN, CAPACITY, CASE, CAST, CONST, COPY,
+  DEFINITION, DIV, DO, ELSE, ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION,
+  IMPORT, IN, LOOP, MOD, MODULE, NEW, NOT, OF, OPAQUE, OR, POINTER,
+  PROCEDURE, READ, RECORD, RELEASE, REPEAT, RETURN, SET, THEN, TO,
+  TYPE, UNTIL, VAR, WHILE, WRITE;
+
+/* Note: CAPACITY and CAST are Schroedinger's Tokens */
 
 
 /* * *   N o n - T e r m i n a l   S y m b o l s   * * */
@@ -437,13 +440,9 @@ alias emptyStatement = toDoList ;
 /* Memory Management Operation */
 
 memMgtOperation :=
-  NEW designator ( OF initSize )? |
+  NEW designator ( CAPACITY expression )? |
   RELEASE designator
   ;
-
-/* Initialisation Size */
-
-alias initSize = expression ;
 
 
 /* Update Or Procedure Call */
