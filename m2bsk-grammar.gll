@@ -271,8 +271,20 @@ variadicFormalType :=
 /* Procedure Header */
 
 procedureHeader :=
-  PROCEDURE procedureSignature
+  PROCEDURE ( '[' entityToBindTo ']')? procedureSignature
   ;
+  
+/* Entity to Bind to */
+
+entityToBindTo :=
+  NEW | RELEASE | READ | WRITE ( formattedWriteFlag )?
+  ;
+  
+/* Formatted Write Flag */
+
+formattedWriteFlag :=
+  ':' '""'
+  ; 
 
 
 /* Procedure Signature */
