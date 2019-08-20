@@ -30,8 +30,8 @@ reserved
   ALIAS, AND, ARGLIST, ARRAY, BEGIN, CAPACITY, CASE, CAST, CONST, COPY,
   DEFINITION, DIV, DO, ELSE, ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION,
   IMPORT, IN, LOOP, MOD, MODULE, NEW, NOT, OF, OPAQUE, OR, POINTER,
-  PROCEDURE, READ, RECORD, RELEASE, REPEAT, RETURN, SET, THEN, TO,
-  TYPE, UNTIL, VAR, WHILE, WRITE;
+  PROCEDURE, READ, RECORD, RELEASE, REPEAT, RETAIN, RETURN, SET, THEN,
+  TO, TYPE, UNTIL, VAR, WHILE, WRITE;
 
 /* Note: CAPACITY and CAST are Schroedinger's Tokens */
 
@@ -62,12 +62,14 @@ alias moduleIdent = StdIdent ;
 /* Import */
 
 import :=
-  IMPORT libIdent ( ',' libIdent )* ';'
+  IMPORT libIdent reExport? ( ',' libIdent reExport? )* ';'
   ;
 
 /* Library Identifier */
 
 alias libIdent = StdIdent ;
+
+alias reExport = '+' ;
 
 
 /* Identifier */
@@ -277,29 +279,8 @@ procedureHeader :=
 /* Entity to Bind to */
 
 entityToBindTo :=
-  NEW ( ',' newQualifier )? |
-  RELEASE |
-  READ ( ',' readQualifier )? |
-  WRITE ( ',' writeQualifier )?
+  ( NEW | READ | WRITE ) ( '+' | '*' )? | RETAIN | RELEASE
   ;
-  
-/* NEW Binding Qualifier */
-
-newQualifier :=
-  CAPACITY | ARGLIST
-  ;
-
-/* READ Binding Qualifier */
-
-readQualifier :=
-  NEW | ARGLIST
-  ;
-  
-/* WRITE Binding Qualifier */
-
-writeQualifier :=
-  ARGLIST | FORMATTED
-  ; 
 
 
 /* Procedure Signature */
@@ -328,7 +309,9 @@ programModule :=
 
 /* Private Import */
 
-alias privateImport = import ;
+privateImport :=
+  IMPORT libIdent ( ',' libIdent )* ';'
+  ;
 
 
 /* Block */
@@ -452,22 +435,28 @@ statementSequence :=
 /* Statement */
 
 statement :=
-  emptyStatement | memMgtOperation | updateOrProcCall | returnStatement |
+  memMgtOperation | updateOrProcCall | returnStatement |
   copyStatement | readStatement | writeStateent | ifStatement |
   caseStatement | loopStatement | whileStatement | repeatStatement |
-  forStatement | EXIT
+  forStatement | toDoList | EXIT
   ;
-
-
-/* Empty Statement */
-
-alias emptyStatement = toDoList ;
 
 
 /* Memory Management Operation */
 
 memMgtOperation :=
-  NEW designator ( CAPACITY expression )? |
+  newStatement | retainStatement | releaseStatement
+  ;
+
+newStatement :=
+  NEW designator ( ':=' structuredValue | CAPACITY expression )?
+  ;
+
+retainStatement :=
+  RETAIN designator
+  ;
+
+releaseStatement :=
   RELEASE designator
   ;
 
@@ -605,7 +594,7 @@ forLoopVariants :=
 
 /* Index and Value */
 
-alias indexOrSoleValue, value = ident ;
+alias indexOrSoleValue, value = StdIdent ;
 
 
 /* Ascender Or Descender */
@@ -625,13 +614,9 @@ ordinalRange :=
   '[' firstValue '..' lastValue ']'
   ;
 
-/* First Value */
+/* First and Last Value */
 
-alias firstValue = expression ;
-
-/* Last Value */
-
-alias lastValue = expression ;
+alias firstValue, lastValue = expression ;
 
 /* Ordinal Type */
 
