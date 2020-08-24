@@ -56,7 +56,7 @@ PROCEDURE isOperL1 ( t : TokenT ) : BOOLEAN;
  (* Returns TRUE if t is a level-1 operator, otherwise FALSE. *)
 BEGIN
   RETURN
-    (t = TokenT.In) OR
+    (t = In) OR
     (t >= MIN(OperatorsL1) AND t <= MAX(OperatorsL1))
 END isOperL1;
 
