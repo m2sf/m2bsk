@@ -157,13 +157,13 @@ BEGIN
   IF Capabilities.isDisabled(Capabilities.PreserveComments) THEN
     
     (* skip any line comment *)
-    WHILE next = "!" DO
+    WHILE next = '!' DO
       MatchLex.LineComment(source);
       next := Source.lookahead(source)
     END; (* WHILE *)
     
     (* skip any block comment *)
-    WHILE next = "(" AND Source.la2Char(source) = "*" DO
+    WHILE next = '(' AND Source.la2Char(source) = '*' DO
       MatchLex.BlockComment(source);
       next := Source.lookahead(source)
     END (* WHILE *)
@@ -174,7 +174,7 @@ BEGIN
   Source.GetLineAndColumn(source, sym.line, sym.column);
   
   (* skip any disabled code section *)
-  WHILE next = "?" AND Source.la2Char() = "<" AND sym.column = 1 DO
+  WHILE next = '?' AND Source.la2Char() = '<' AND sym.column = 1 DO
     MatchLex.DisabledCodeBlock(source);
     next := Source.lookahead(source);
     Source.GetLineAndColumn(source, sym.line, sym.column)
@@ -189,7 +189,7 @@ BEGIN
   ELSE
     CASE next OF
     (* next symbol is line comment *)
-      "!" :
+      '!' :
         Source.MarkLexeme(source, sym.line, sym.column);
         MatchLex.LineComment(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
@@ -201,314 +201,322 @@ BEGIN
         MatchLex.QuotedLiteral(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
-    (* next symbol is "#" *)
-    | "#" :
-        (* consume "#" *)
+    (* next symbol is '#' *)
+    | '#' :
+        (* consume '#' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
         sym.token := TokenT.NotEqual;
-        sym.lexeme := Token.lexemeForToken(TokenT.NotEqual)
-    
-    (* next symbol is foreign identifier *)
-    | "$" :
-        Source.MarkLexeme(source, sym.line, sym.column);
-        MatchLex.ForeignIdent(source, sym.token);
-        Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
-    
-    (* next symbol is "&" *)
-    | "&" :
-        (* consume "&" *)
+        sym.lexeme := Token.lexemeForToken(Token.NotEqual)
+       
+    (* next symbol is '&' *)
+    | '&' :
+        (* consume '&' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.Concat;
-        sym.lexeme := Token.lexemeForToken(TokenT.Concat)
+        sym.token := Token.Concat;
+        sym.lexeme := Token.lexemeForToken(Token.Concat)
     
-    (* next symbol is "(" or block comment *)
-    | "(" :
-        IF Source.la2Char(source) = "*" THEN (* found block comment *)
+    (* next symbol is '(' or block comment *)
+    | '(' :
+        IF Source.la2Char(source) = '*' THEN (* found block comment *)
           Source.MarkLexeme(source, sym.line, sym.column);
           MatchLex.BlockComment(source, sym.token);
           Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
         
-        ELSE (* found "(" *)
-          (* consume "(" *)
+        ELSE (* found sole '(' *)
+          (* consume '(' *)
           next := Source.consumeChar(source);
           Source.GetLineAndColumn(source, sym.line, sym.column);
-          sym.token := TokenT.LParen;
-          sym.lexeme := Token.lexemeForToken(TokenT.LParen)
+          sym.token := Token.LParen;
+          sym.lexeme := Token.lexemeForToken(Token.LParen)
           
-        END (* "(" and block comment *)
+        END (* '(' and block comment *)
     
-    (* next symbol is ")" *)
-    | ")" :
-        (* consume ")" *)
+    (* next symbol is ')' *)
+    | ')' :
+        (* consume ')' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.value := TokenT.RParen;
-        sym.lexeme := Token.lexemeForToken(TokenT.RParen)
+        sym.value := Token.RParen;
+        sym.lexeme := Token.lexemeForToken(Token.RParen)
     
-    (* next symbol is "*" *)
-    | "*" :
-        (* consume "*" *)
+    (* next symbol is '*' *)
+    | '*' :
+        (* consume '*' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.Asterisk;
-        sym.lexeme := Token.lexemeForToken(TokenT.Asterisk)
+        sym.token := Token.Asterisk;
+        sym.lexeme := Token.lexemeForToken(Token.Asterisk)
     
-    (* next symbol is "+" or "++" *)
-    | "+" :
-        (* consume "+" *)
+    (* next symbol is '+' or '++' *)
+    | '+' :
+        (* consume '+' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
         
-        IF next = "+" THEN (* found "++" *)
-          (* consume second "+" *)
+        IF next = '+' THEN (* found '++' *)
+          (* consume second '+' *)
           next := Source.consumeChar(source);
-          sym.token := TokenT.PlusPlus;
-          sym.lexeme := Token.lexemeForToken(TokenT.PlusPlus)
+          sym.token := Token.PlusPlus;
+          sym.lexeme := Token.lexemeForToken(Token.PlusPlus)
         
-        ELSE (* found sole "+" *)
-          (* first "+" already consumed *)
-          sym.token := TokenT.Plus;
-          sym.lexeme := Token.lexemeForToken(TokenT.Plus)
+        ELSE (* found sole '+' *)
+          (* first '+' already consumed *)
+          sym.token := Token.Plus;
+          sym.lexeme := Token.lexemeForToken(Token.Plus)
         
-        END (* "+" and "++" *)
+        END (* '+' and '++' *)
       
-    (* next symbol is "," *)
-    | "," :
-        (* consume "," *)
+    (* next symbol is ',' *)
+    | ',' :
+        (* consume ',' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.Comma;
-        sym.lexeme := Token.lexemeForToken(TokenT.Comma)
+        sym.token := Token.Comma;
+        sym.lexeme := Token.lexemeForToken(Token.Comma)
     
-    (* next symbol is "-" or "--" *)
-    | "-" :
-        (* consume "-" *)
+    (* next symbol is '-' or '--' *)
+    | '-' :
+        (* consume '-' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
         
-        IF next = "-" THEN (* found "--" *)
-          (* consume second "-" *)
+        IF next = '-' THEN (* found '--' *)
+          (* consume second '-' *)
           next := Source.consumeChar(source);
-          sym.token := TokenT.MinusMinus;
-          sym.lexeme := Token.lexemeForToken(TokenT.MinusMinus)
+          sym.token := Token.MinusMinus;
+          sym.lexeme := Token.lexemeForToken(Token.MinusMinus)
         
-        ELSE (* found sole "-" *)
-          (* first "-" already consumed *)
-          sym.token := TokenT.Minus;
-          sym.lexeme := Token.lexemeForToken(TokenT.Minus)
+        ELSE (* found sole '-' *)
+          (* first '-' already consumed *)
+          sym.token := Token.Minus;
+          sym.lexeme := Token.lexemeForToken(Token.Minus)
         
-        END (* "-" or "--" *)
+        END (* '-' or '--' *)
     
-    (* next symbol is ".", ".." or ".*" *)
-    | "." :
-        (* consume "." *)
+    (* next symbol is '.', '..' or '.*' *)
+    | '.' :
+        (* consume '.' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
         
-        IF next = "." THEN (* found ".." *)
-          (* consume second "." *)
+        IF next = '.' THEN (* found '..' *)
+          (* consume second '.' *)
           next := Source.consumeChar(source);
-          sym.token := TokenT.DotDot;
-          sym.lexeme := Token.lexemeForToken(TokenT.DotDot)
+          sym.token := Token.DotDot;
+          sym.lexeme := Token.lexemeForToken(Token.DotDot)
         
-        ELSIF next = "*" THEN (* found ".*" *)
-          (* consume "*" *)
+        ELSIF next = '*' THEN (* found '.*' *)
+          (* consume '*' *)
           next := Source.consumeChar(source);
-          sym.token := TokenT.DotStar;
-          sym.lexeme := Token.lexemeForToken(TokenT.DotStar)
+          sym.token := Token.DotStar;
+          sym.lexeme := Token.lexemeForToken(Token.DotStar)
         
-        ELSE (* found sole "." *)
-          (* first "." already consumed *)
-          sym.token := TokenT.Dot;
-          sym.lexeme := Token.lexemeForToken(TokenT.Dot)
+        ELSE (* found sole '.' *)
+          (* first '.' already consumed *)
+          sym.token := Token.Dot;
+          sym.lexeme := Token.lexemeForToken(Token.Dot)
         
-        END (* ".", ".." and ".*" *)
+        END (* '.', '..' and '.*' *)
       
-    (* next symbol is "/" *)
-    | "/" :
-        (* consume "/" *)
+    (* next symbol is '/' *)
+    | '/' :
+        (* consume '/' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.RealDiv;
-        sym.lexeme := Token.lexemeForToken(TokenT.RealDiv)
+        sym.token := Token.RealDiv;
+        sym.lexeme := Token.lexemeForToken(Token.RealDiv)
     
     (* next symbol is numeric literal *)
-    | "0" .. "9" :
+    | '0' .. '9' :
         Source.MarkLexeme(source, sym.line, sym.column);
         MatchLex.NumericLiteral(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
-    (* next symbol is ":", ":=" or "::" *)
-    | ":" :
-        (* consume ":" *)
+    (* next symbol is ':', ':=' or '::' *)
+    | ':' :
+        (* consume ':' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
         
-        IF next = "=" THEN (* found ":=" *)
-          (* consume "=" *)
+        IF next = '=' THEN (* found ':=' *)
+          (* consume '=' *)
           next := Source.consumeChar(source);
-          sym.token := TokenT.Assign;
-          sym.lexeme := Token.lexemeForToken(TokenT.Assign)
+          sym.token := Token.Assign;
+          sym.lexeme := Token.lexemeForToken(Token.Assign)
         
-        ELSIF next = ":" THEN (* found "::" *)
-          (* consume second ":" *)
+        ELSIF next = ':' THEN (* found '::' *)
+          (* consume second ':' *)
           next := Source.consumeChar(source);
-          sym.token := TokenT.TypeConv;
-          sym.lexeme := Token.lexemeForToken(TokenT.TypeConv)
+          sym.token := Token.TypeConv;
+          sym.lexeme := Token.lexemeForToken(Token.TypeConv)
         
-        ELSE (* found sole ":" *)
-          (* first ":" already consumed *)
-          sym.token := TokenT.Colon;
-          sym.lexeme := Token.lexemeForToken(TokenT.Colon)
+        ELSE (* found sole ':' *)
+          (* first ':' already consumed *)
+          sym.token := Token.Colon;
+          sym.lexeme := Token.lexemeForToken(Token.Colon)
         
-        END (* ":", ":=" and "::" *)
+        END (* ':', ':=' and '::' *)
     
-    (* next symbol is ";" *)
-    | ";" :
-        (* consume ";" *)
+    (* next symbol is ';' *)
+    | ';' :
+        (* consume ';' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.Semicolon;
-        sym.lexeme := Token.lexemeForToken(TokenT.Semicolon)
+        sym.token := Token.Semicolon;
+        sym.lexeme := Token.lexemeForToken(Token.Semicolon)
     
-    (* next symbol is "<", "<=" or pragma *)
-    | "<" :
+    (* next symbol is '<', '<=' or pragma *)
+    | '<' :
         (* peek at second lookahead character *)
         la2 := Source.la2Char(source);
         
-        IF la2 = "*" THEN (* found "<*" *)
+        IF la2 = '*' THEN (* found '<*' *)
           Source.MarkLexeme(source, sym.line, sym.column);
           MatchLex.Pragma(source, sym.token);
           Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
           
-        ELSE (* "<" or "<=" *)
-          (* consume common "<" *)
+        ELSE (* '<' or '<=' *)
+          (* consume common '<' *)
           next := Source.consumeChar(source);
           Source.GetLineAndColumn(source, sym.line, sym.column);
                             
-          IF next = "=" THEN (* found "<=" *)
-            (* consume "=" *)
+          IF next = '=' THEN (* found '<=' *)
+            (* consume '=' *)
             next := Source.consumeChar(source);
-            sym.token := TokenT.LessEq;
-            sym.lexeme := Token.lexemeForToken(TokenT.LessEq)
+            sym.token := Token.LessEq;
+            sym.lexeme := Token.lexemeForToken(Token.LessEq)
             
-          ELSE (* found sole "<" *)
-            (* "<" already consumed *)
-            sym.token := TokenT.Less;
-            sym.lexeme := Token.lexemeForToken(TokenT.Less)
+          ELSE (* found sole '<' *)
+            (* '<' already consumed *)
+            sym.token := Token.Less;
+            sym.lexeme := Token.lexemeForToken(Token.Less)
           
-          END (* "<" or "<=" *)
+          END (* '<' or '<=' *)
           
-        END (* chevron text or pragma *)
+        END (* '<' or '<=' or pragma *)
     
-    (* next symbol is "=" *)
-    | "=" :
-        (* consume "=" *)
+    (* next symbol is '=' *)
+    | '=' :
+        (* consume '=' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.Equal;
-        sym.lexeme := Token.lexemeForToken(TokenT.Equal)
+        sym.token := Token.Equal;
+        sym.lexeme := Token.lexemeForToken(Token.Equal)
     
-    (* next symbol is ">" or ">=" *)
-    | ">" :
-        (* consume common ">" *)
+    (* next symbol is '>' or '>=' *)
+    | '>' :
+        (* consume common '>' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
         
-        IF next = "=" THEN (* found ">=" *)
-          (* consume "=" *)
+        IF next = '=' THEN (* found '>=' *)
+          (* consume '=' *)
           next := Source.consumeChar(source);
-          sym.token := TokenT.GreaterEq;
-          sym.lexeme := Token.lexemeForToken(TokenT.GreaterEq)
+          sym.token := Token.GreaterEq;
+          sym.lexeme := Token.lexemeForToken(Token.GreaterEq)
                   
-        ELSE (* found sole ">" *)
-          (* "<" already consumed *)
-          sym.token := TokenT.Greater;
-          sym.lexeme := Token.lexemeForToken(TokenT.Greater)
+        ELSE (* found sole '>' *)
+          (* '<' already consumed *)
+          sym.token := Token.Greater;
+          sym.lexeme := Token.lexemeForToken(Token.Greater)
         
-        END (* ">" or ">=" *)
+        END (* '>' or '>=' *)
     
+    (* next symbol is '@' *)
+    | '@' :
+        (* consume '@' *)
+        next := Source.consumeChar(source);
+        Source.GetLineAndColumn(source, sym.line, sym.column);
+        sym.token := Token.AtSign;
+        sym.lexeme := Token.lexemeForToken(Token.AtSign)
+
     (* next symbol is identifier or reserved word *)
-    | "A" .. "Z" :
+    | 'A' .. 'Z' :
         Source.MarkLexeme(source, sym.line, sym.column);
         MatchLex.IdentOrResword(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
-    (* next symbol is "[" *)
-    | "[" :
-        (* consume "[" *)
+    (* next symbol is '[' *)
+    | '[' :
+        (* consume '[' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.LBracket;
-        sym.lexeme := Token.lexemeForToken(TokenT.LBracket)
+        sym.token := Token.LBracket;
+        sym.lexeme := Token.lexemeForToken(Token.LBracket)
     
     (* next symbol is backslash *)
     | ASCII.BACKSLASH :
         (* consume backslash *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.SetDiff;
-        sym.lexeme := Token.lexemeForToken(TokenT.SetDiff)
+        sym.token := Token.SetDiff;
+        sym.lexeme := Token.lexemeForToken(Token.SetDiff)
     
-    (* next symbol is "]" *)
-    | "]" :
-        (* consume "]" *)
+    (* next symbol is ']' *)
+    | ']' :
+        (* consume ']' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.RBracket;
-        sym.lexeme := Token.lexemeForToken(TokenT.RBracket)
+        sym.token := Token.RBracket;
+        sym.lexeme := Token.lexemeForToken(Token.RBracket)
     
-    (* next symbol is "^" *)
-    | "^" :
-        (* consume "^" *)
+    (* next symbol is '^' *)
+    | '^' :
+        (* consume '^' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.Deref;
-        sym.lexeme := Token.lexemeForToken(TokenT.Deref)
+        sym.token := Token.Deref;
+        sym.lexeme := Token.lexemeForToken(Token.Deref)
+    
+    (* next symbol is primitive *)
+    | '_' :
+        Source.MarkLexeme(source, sym.line, sym.column);
+        MatchLex.Primitive(source, sym.token);
+        Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
     (* next symbol is identifier *)
-    | "a" .. "z" :
+    | 'a' .. 'z' :
         Source.MarkLexeme(source, sym.line, sym.column);
         MatchLex.Ident(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
-    (* next symbol is "{" *)
-    | "{" :
-        (* consume "{" *)
+    (* next symbol is '{' *)
+    | '{' :
+        (* consume '{' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.LBrace;
-        sym.lexeme := Token.lexemeForToken(TokenT.LBrace)
+        sym.token := Token.LBrace;
+        sym.lexeme := Token.lexemeForToken(Token.LBrace)
     
-    (* next symbol is "|" *)
-    | "|" :
-        (* consume "|" *)
+    (* next symbol is '|' *)
+    | '|' :
+        (* consume '|' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.VerticalBar;
-        sym.lexeme := Token.lexemeForToken(TokenT.VerticalBar)
+        sym.token := Token.VerticalBar;
+        sym.lexeme := Token.lexemeForToken(Token.VerticalBar)
     
-    (* next symbol is "}" *)
-    | "}" :
-        (* consume "}" *)
+    (* next symbol is '}' *)
+    | '}' :
+        (* consume '}' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.RBrace;
-        sym.lexeme := Token.lexemeForToken(TokenT.RBrace)
+        sym.token := Token.RBrace;
+        sym.lexeme := Token.lexemeForToken(Token.RBrace)
     
     (* next symbol is invalid *)
     ELSE
       Source.MarkLexeme(source, sym.line, sym.column);
       next := Source.consumeChar(source);
-      sym.token := TokenT.Invalid;
+      sym.token := Token.Invalid;
       Source.CopyLexeme(source, lexer^.dict, sym.lexeme);
       lexer^.errors++
       
-    END; (* CASE *)
+    END (* CASE *)
   
-  END (* IF *);
+  END (* IF *)
   
   (* store symbol for use by lookaheadSym *)
   lexer^.nextSymbol := sym;
