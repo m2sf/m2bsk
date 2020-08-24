@@ -182,7 +182,7 @@ BEGIN
   
   (* check for end-of-file *)
   IF Source.eof(source) THEN
-    sym.token := TokenT.EOF;
+    sym.token := Token.EOF;
     sym.lexeme := 0
       
   (* check for any other symbol *)
@@ -206,7 +206,7 @@ BEGIN
         (* consume '#' *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
-        sym.token := TokenT.NotEqual;
+        sym.token := Token.NotEqual;
         sym.lexeme := Token.lexemeForToken(Token.NotEqual)
        
     (* next symbol is '&' *)
