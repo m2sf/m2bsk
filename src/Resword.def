@@ -24,4 +24,3 @@ PROCEDURE lexemeForToken ( token : TokenT ) : StringT;
    lexeme is returned, otherwise NIL is returned. *)
 
 END Resword.
-
