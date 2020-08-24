@@ -417,7 +417,7 @@ BEGIN (* initialise lexemes *)
   and := String.forArray("AND");
   lexeme[TokenT.And] := and;
 
-  arglist        := String.forArray("ARGLIST");
+  arglist := String.forArray("ARGLIST");
   lexeme[TokenT.Arglist] := arglist;
 
   array := String.forArray("ARRAY");
