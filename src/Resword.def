@@ -16,7 +16,7 @@ VAR (* use read-only *)
 
 PROCEDURE tokenForLexeme ( lexeme : StringT ) : TokenT;
 (* If lexeme represents a reserved word, its corresponding reserved word's token
-   value is returned, otherwise token value TokenT.Unknown is returned. *)
+   value is returned, otherwise token value Token.Invalid is returned. *)
 
 
 PROCEDURE lexemeForToken ( token : TokenT ) : StringT;
