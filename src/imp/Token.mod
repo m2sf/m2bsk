@@ -5,31 +5,30 @@ IMPLEMENTATION MODULE Token;
 (* Token Subranges *)
 
 TYPE
-  ResWords = TokenT [Alias..While];
-  Identifiers = TokenT [Address..OtherIdent];
-  Numbers = TokenT [WholeNumber..RealNumber];
-  CharsAndStrings = TokenT [Character..QuotedString];
-  NonOpPunctuation = TokenT [Dot..Minus];
-  Operators = TokenT [Equal..TypeConv];
-  NonRWOperL1 = TokenT [Equal..LessOrEq];
+  Reswords = TokenT [Alias..Write];
+  Identifiers = TokenT [StdIdent..Primitive];
+  Numbers = TokenT [RealNumber..WholeNumber];
+  ConstExprLiterals = TokenT [WholeNumber..QuotedString];
+  CharsAndStrings = TokenT [CharCode..QuotedString];
+  NonRWOperL1 = TokenT [Equal..Identity];
   NonRWOperL2 = TokenT [Plus..SetDiff];
   NonRWOperL3 = TokenT [Asterisk..RealDiv];
   
   
 (* Functions To Determine Token Classification *)
 
-PROCEDURE isResWord ( t : TokenT ) : BOOLEAN;
+PROCEDURE isResword ( t : TokenT ) : BOOLEAN;
  (* Returns TRUE if t is a reserved word, otherwise FALSE. *)
 BEGIN
-  RETURN (t >= MIN(ResWords) AND t <= MAX(ResWords))
-END isResWord;
+  RETURN (t >= MIN(Reswords) AND t <= MAX(Reswords))
+END isResword;
 
 
 PROCEDURE isIdentifier ( t : TokenT ) : BOOLEAN;
  (* Returns TRUE if t is an identifier, otherwise FALSE. *)
 BEGIN
   RETURN (t >= MIN(Identifiers) AND t <= MAX(Identifiers))
-END isResWord;
+END isIdentifier;
 
 
 PROCEDURE isNumber ( t : TokenT ) : BOOLEAN;
@@ -43,16 +42,14 @@ PROCEDURE isCharOrString ( t : TokenT ) : BOOLEAN;
  (* Returns TRUE if t is a character or string, otherwise FALSE. *)
 BEGIN
   RETURN (t >= MIN(CharsAndStrings) AND t <= MAX(CharsAndStrings))
-END isResWord;
+END isCharOrString;
 
 
-PROCEDURE isPunctuation ( t : TokenT ) : BOOLEAN;
- (* Returns TRUE if t is a number literal, otherwise FALSE. *)
+PROCEDURE isConstExprLiteral ( t : TokenT ) : BOOLEAN;
+ (* Returns TRUE if t is a constant expression literal, otherwise FALSE. *)
 BEGIN
-  RETURN
-    (t >= MIN(NonOpPunctuation) AND t <= MAX(NonOpPunctuation)) OR
-    (t = TokenT.Aster) OR (t = TokenT.Plus) OR (t = TokenT.Minus)
-END isPunctuation;
+  RETURN (t >= MIN(ConstExprLiterals) AND t <= MAX(ConstExprLiterals))
+END isConstExprLiteral;
 
 
 PROCEDURE isOperL1 ( t : TokenT ) : BOOLEAN;
@@ -68,7 +65,7 @@ PROCEDURE isOperL2 ( t : TokenT ) : BOOLEAN;
  (* Returns TRUE if t is a level-2 operator, otherwise FALSE. *)
 BEGIN
   RETURN
-    (t = TokenT.Or) OR
+    (t = Or) OR
     (t >= MIN(NonRWOperL2) AND t <= MAX(NonRWOperL2))
 END isOperL2;
 
@@ -77,7 +74,7 @@ PROCEDURE isOperL3 ( t : TokenT ) : BOOLEAN;
  (* Returns TRUE if t is a level-3 operator, otherwise FALSE. *)
 BEGIN
   RETURN
-    (t = TokenT.And) OR (t = TokenT.Div) OR (t = TokenT.Mod) OR
+    (t = And) OR (t = Div) OR (t = Mod) OR
     (t >= MIN(NonRWOperL2) AND t <= MAX(NonRWOperL2))
 END isOperL3;
 
@@ -85,14 +82,14 @@ END isOperL3;
 PROCEDURE isComment ( t : TokenT ) : BOOLEAN;
  (* Returns TRUE if t is a comment, otherwise FALSE. *)
 BEGIN
-  RETURN (t = TokenT.Comment)
+  RETURN (t = BlockComment) OR (t = LineComment)
 END isComment;
 
 
 PROCEDURE isPragma ( t : TokenT ) : BOOLEAN;
  (* Returns TRUE if t is a pragma, otherwise FALSE. *)
 BEGIN
-  RETURN (t = TokenT.Pragma)
+  RETURN (t = Pragma)
 END isPragma;
 
 
