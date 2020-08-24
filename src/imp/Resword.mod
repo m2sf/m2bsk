@@ -8,16 +8,16 @@ FROM Token IMPORT TokenT;
 
 FROM String IMPORT StringT;
 
-VAR lexeme : ARRAY [TokenT.Alias .. TokenT.Write] OF StringT;
+VAR lexeme : ARRAY [Token.Alias .. Token.Write] OF StringT;
 
 
 PROCEDURE tokenForLexeme ( lexeme : StringT ) : TokenT;
 (* If lexeme represents a reserved word, its corresponding reserved word's token
-   value is returned, otherwise token value TokenT.Unknown is returned. *)
+   value is returned, otherwise token value Token.Invalid is returned. *)
 
 BEGIN
   IF lexeme = NIL THEN 
-    RETURN TokenT.Unknown
+    RETURN Token.Invalid
   END; (* IF *)
 
   CASE String.length(lexeme) OF
@@ -28,7 +28,7 @@ BEGIN
       (* 'DO' *)
 
       IF lexeme = do THEN
-        RETURN TokenT.Do
+        RETURN Token.Do
       END (* IF *)
 
     | 'I' :
@@ -36,12 +36,12 @@ BEGIN
       (* 'IF' *)
       
       IF lexeme = if THEN
-        RETURN TokenT.If
+        RETURN Token.If
       
       (* 'IN' *)
       
       ELSIF lexeme = in THEN
-        RETURN TokenT.In
+        RETURN Token.In
       END (* IF *)
     
     | 'O' :
@@ -49,12 +49,12 @@ BEGIN
       (* 'OF' *)
       
       IF lexeme = of THEN
-        RETURN TokenT.Of
+        RETURN Token.Of
       
       (* 'OR' *)
       
       ELSIF lexeme = or THEN
-        RETURN TokenT.Or
+        RETURN Token.Or
       END (* IF *)
     
     | 'T' :
@@ -62,7 +62,7 @@ BEGIN
       (* 'TO' *)
       
       IF lexeme = to THEN
-        RETURN TokenT.To
+        RETURN Token.To
       END (* IF *)
 
     END (* CASE *)
@@ -74,7 +74,7 @@ BEGIN
       (* 'AND' *)
       
       IF lexeme = and THEN
-        RETURN TokenT.And
+        RETURN Token.And
       END (* IF *)
 
     | 'D' :
@@ -82,7 +82,7 @@ BEGIN
       (* 'DIV' *)
       
       IF lexeme = div THEN
-        RETURN TokenT.Div
+        RETURN Token.Div
       END (* IF *)
 
     | 'E' :
@@ -90,7 +90,7 @@ BEGIN
       (* 'END' *)
       
       IF lexeme = end THEN
-        RETURN TokenT.End
+        RETURN Token.End
       END (* IF *)
       
     | 'F' :
@@ -98,7 +98,7 @@ BEGIN
       (* 'FOR' *)
       
       IF lexeme = for THEN
-        RETURN TokenT.For
+        RETURN Token.For
       END (* IF *)
 
     | 'M' :
@@ -106,7 +106,7 @@ BEGIN
       (* 'MOD' *)
       
       IF lexeme = mod THEN
-        RETURN TokenT.Mod
+        RETURN Token.Mod
       END (* IF *)
 
     | 'N' :
@@ -114,18 +114,18 @@ BEGIN
       (* 'NEW' *)
       
       IF lexeme = new THEN
-          RETURN TokenT.New
+          RETURN Token.New
         END (* IF *)
       
       (* 'NOP' *)
       
       ELSIF lexeme = nop THEN
-        RETURN TokenT.Nop
+        RETURN Token.Nop
 
       (* 'NOT' *)
       
       ELSIF lexeme = not THEN
-        RETURN TokenT.Not
+        RETURN Token.Not
       END (* IF *)
 
     | 'S' :
@@ -133,7 +133,7 @@ BEGIN
       (* 'SET' *)
       
       IF lexeme = set THEN
-        RETURN TokenT.Set
+        RETURN Token.Set
       END (* IF *)
 
     | 'V' :
@@ -141,7 +141,7 @@ BEGIN
       (* 'VAR' *)
       
       IF lexeme = var THEN
-        RETURN TokenT.Var
+        RETURN Token.Var
       END (* IF *)
     
     END (* CASE *)
@@ -153,7 +153,7 @@ BEGIN
       (* 'CASE' *)
       
       IF lexeme = case THEN
-        RETURN TokenT.Case
+        RETURN Token.Case
       END (* IF *)
 
     | 'E' :
@@ -161,7 +161,7 @@ BEGIN
       (* 'READ' *)
       
       IF lexeme = read THEN
-        RETURN TokenT.Read
+        RETURN Token.Read
       END (* IF *)
 
     | 'H' :
@@ -169,7 +169,7 @@ BEGIN
       (* 'THEN' *)
       
       IF lexeme = then THEN
-        RETURN TokenT.Then
+        RETURN Token.Then
       END (* IF *)
 
     | 'L' :
@@ -177,7 +177,7 @@ BEGIN
       (* 'ELSE' *)
       
       IF lexeme = else THEN
-        RETURN TokenT.Else
+        RETURN Token.Else
       END (* IF *)
 
     | 'O' :
@@ -185,12 +185,12 @@ BEGIN
       (* 'COPY' *)
       
       IF lexeme = copy THEN
-        RETURN TokenT.Copy
+        RETURN Token.Copy
 
       (* 'LOOP' *)
       
       ELSIF lexeme = loop THEN
-        RETURN TokenT.Loop
+        RETURN Token.Loop
       END (* IF *)
 
     | 'X' :
@@ -198,7 +198,7 @@ BEGIN
       (* 'EXIT' *)
       
       IF lexeme = exit THEN
-        RETURN TokenT.Exit
+        RETURN Token.Exit
       END (* IF *)
       
     | 'Y' :
@@ -206,7 +206,7 @@ BEGIN
       (* 'TYPE' *)
       
       IF lexeme = type THEN
-        RETURN TokenT.Type
+        RETURN Token.Type
       END (* IF *)
       
     END (* CASE *)
@@ -218,12 +218,12 @@ BEGIN
       (* 'WHILE' *)
       
       IF lexeme = while THEN
-        RETURN TokenT.While
+        RETURN Token.While
 
       (* WRITE *)
       
       ELSIF lexeme = write THEN
-        RETURN TokenT.Write
+        RETURN Token.Write
       END (* IF *)
 
     | 'F' :
@@ -231,7 +231,7 @@ BEGIN
       (* 'ELSIF' *)
       
       IF lexeme = elsif THEN
-        RETURN TokenT.Elsif
+        RETURN Token.Elsif
       END (* IF *)
     
     | 'L' :
@@ -239,7 +239,7 @@ BEGIN
       (* 'UNTIL' *)
       
       IF lexeme = until THEN
-        RETURN TokenT.Until
+        RETURN Token.Until
       END (* IF *)
     
     | 'N' :
@@ -247,7 +247,7 @@ BEGIN
       (* 'BEGIN' *)
       
       IF lexeme = begin THEN
-        RETURN TokenT.Begin
+        RETURN Token.Begin
       END (* IF *)
     
     | 'S' :
@@ -255,7 +255,7 @@ BEGIN
       (* 'ALIAS' *)
       
       IF lexeme = alias THEN
-        RETURN TokenT.Alias
+        RETURN Token.Alias
       END (* IF *)
     
     | 'T' :
@@ -263,7 +263,7 @@ BEGIN
       (* 'CONST' *)
       
       IF lexeme = const THEN
-        RETURN TokenT.Const
+        RETURN Token.Const
       END (* IF *)
     
     | 'Y' :
@@ -271,7 +271,7 @@ BEGIN
       (* 'ARRAY' *)
       
       IF lexeme = array THEN
-        RETURN TokenT.Array
+        RETURN Token.Array
       END (* IF *)
     
     END (* CASE *)
@@ -283,7 +283,7 @@ BEGIN
       (* 'OPAQUE' *)
       
       IF lexeme = opaque THEN
-        RETURN TokenT.Opaque
+        RETURN Token.Opaque
       END (* IF *)
 
     | 'C' :
@@ -291,14 +291,14 @@ BEGIN
       (* 'RECORD' *)
       
       IF lexeme = record THEN
-        RETURN TokenT.Record
+        RETURN Token.Record
       END (* IF *)
 
     | 'D' :
 
       (* 'MODULE' *)
       IF lexeme = module THEN
-        RETURN TokenT.Module
+        RETURN Token.Module
       END (* IF *)
 
     | 'P' :
@@ -306,13 +306,13 @@ BEGIN
       (* 'IMPORT' *)
       
       IF lexeme = import THEN
-        RETURN TokenT.Import
+        RETURN Token.Import
       END (* IF *)
 
       (* 'REPEAT' *)
       
       ELSIF lexeme = repeat THEN
-        RETURN TokenT.Repeat
+        RETURN Token.Repeat
       END (* IF *)
 
     | 'T' :
@@ -320,12 +320,12 @@ BEGIN
       (* 'RETAIN' *)
       
       IF lexeme = retain THEN
-        RETURN TokenT.Retain
+        RETURN Token.Retain
 
       (* 'RETURN' *)
       
       ELSIF lexeme = return THEN
-        RETURN TokenT.Return
+        RETURN Token.Return
       END (* IF *)
     
     END (* CASE *)
@@ -337,7 +337,7 @@ BEGIN
       (* 'ARGLIST' *)
       
       IF lexeme = arglist THEN
-        RETURN TokenT.Arglist
+        RETURN Token.Arglist
       END (* IF *)
       
     | 'P' :
@@ -345,7 +345,7 @@ BEGIN
       (* 'POINTER' *)
       
       IF lexeme = pointer THEN
-        RETURN TokenT.Pointer
+        RETURN Token.Pointer
       END (* IF *)
       
     | 'R' :
@@ -353,7 +353,7 @@ BEGIN
       (* 'RELEASE' *)
       
       IF lexeme = release THEN
-        RETURN TokenT.Release
+        RETURN Token.Release
       END (* IF *)
       
     END (* CASE *)
@@ -363,7 +363,7 @@ BEGIN
     (* 'OCTETSEQ' *)
     
     IF lexeme = octetseq THEN
-      RETURN TokenT.Octetseq
+      RETURN Token.Octetseq
     END (* IF *)
     
   | 9 :
@@ -371,7 +371,7 @@ BEGIN
     (* 'PROCEDURE' *)
     
     IF lexeme = procedure THEN
-      RETURN TokenT.Procedure
+      RETURN Token.Procedure
     END (* IF *)
     
   | 10 :
@@ -379,7 +379,7 @@ BEGIN
     (* 'DEFINITION' *)
     
     IF lexeme = definition THEN
-      RETURN TokenT.Definition
+      RETURN Token.Definition
     END (* IF *)
     
   | 14 :
@@ -387,13 +387,13 @@ BEGIN
     (* 'IMPLEMENTATION' *)
     
     IF lexeme = implementation THEN
-      RETURN TokenT.Implementation
+      RETURN Token.Implementation
     END (* IF *)
 
   END; (* CASE *)
 
   (* no match *)
-  RETURN TokenT.Unknown
+  RETURN Token.Invalid
 END tokenForLexeme;
 
 
@@ -412,140 +412,140 @@ END lexemeForToken;
 
 BEGIN (* initialise lexemes *)
   alias := String.forArray("ALIAS");
-  lexeme[TokenT.Alias] := alias;
+  lexeme[Token.Alias] := alias;
 
   and := String.forArray("AND");
-  lexeme[TokenT.And] := and;
+  lexeme[Token.And] := and;
 
   arglist := String.forArray("ARGLIST");
-  lexeme[TokenT.Arglist] := arglist;
+  lexeme[Token.Arglist] := arglist;
 
   array := String.forArray("ARRAY");
-  lexeme[TokenT.Array] := array;
+  lexeme[Token.Array] := array;
 
   begin := String.forArray("BEGIN");
-  lexeme[TokenT.Begin] := begin;
+  lexeme[Token.Begin] := begin;
 
   case := String.forArray("CASE");
-  lexeme[TokenT.Case] := case;
+  lexeme[Token.Case] := case;
 
   const := String.forArray("CONST");
-  lexeme[TokenT.Const] := const;
+  lexeme[Token.Const] := const;
 
   copy := String.forArray("COPY");
-  lexeme[TokenT.Copy] := copy;
+  lexeme[Token.Copy] := copy;
 
   definition := String.forArray("DEFINITION");
-  lexeme[TokenT.Definition] := definition;
+  lexeme[Token.Definition] := definition;
 
   div := String.forArray("DIV");
-  lexeme[TokenT.Div] := div;
+  lexeme[Token.Div] := div;
 
   do := String.forArray("DO");
-  lexeme[TokenT.Do] := do;
+  lexeme[Token.Do] := do;
 
   else := String.forArray("ELSE");
-  lexeme[TokenT.Else] := else;
+  lexeme[Token.Else] := else;
 
   elsif := String.forArray("ELSIF");
-  lexeme[TokenT.Elsif] := elsif;
+  lexeme[Token.Elsif] := elsif;
 
   end := String.forArray("END");
-  lexeme[TokenT.End] := end;
+  lexeme[Token.End] := end;
 
   exit := String.forArray("EXIT");
-  lexeme[TokenT.Exit] := exit;
+  lexeme[Token.Exit] := exit;
 
   for := String.forArray("FOR");
-  lexeme[TokenT.For] := for;
+  lexeme[Token.For] := for;
 
   if := String.forArray("IF");
-  lexeme[TokenT.If] := if;
+  lexeme[Token.If] := if;
 
   implementation := String.forArray("IMPLEMENTATION");
-  lexeme[TokenT.Implementation] := implementation;
+  lexeme[Token.Implementation] := implementation;
 
   import := String.forArray("IMPORT");
-  lexeme[TokenT.Import] := import;
+  lexeme[Token.Import] := import;
 
   in := String.forArray("IN");
-  lexeme[TokenT.In] := in;
+  lexeme[Token.In] := in;
 
   loop := String.forArray("LOOP");
-  lexeme[TokenT.Loop] := loop;
+  lexeme[Token.Loop] := loop;
 
   mod := String.forArray("MOD");
-  lexeme[TokenT.Mod] := mod;
+  lexeme[Token.Mod] := mod;
 
   module := String.forArray("MODULE");
-  lexeme[TokenT.Module] := module;
+  lexeme[Token.Module] := module;
 
   new := String.forArray("NEW");
-  lexeme[TokenT.New] := new;
+  lexeme[Token.New] := new;
 
   nop := String.forArray("NOP");
-  lexeme[TokenT.Nop] := nop;
+  lexeme[Token.Nop] := nop;
 
   not := String.forArray("NOT");
-  lexeme[TokenT.Not] := not;
+  lexeme[Token.Not] := not;
 
   octetseq := String.forArray("OCTETSEQ");
-  lexeme[TokenT.Octetseq] := octetseq;
+  lexeme[Token.Octetseq] := octetseq;
 
   of := String.forArray("OF");
-  lexeme[TokenT.Of] := of;
+  lexeme[Token.Of] := of;
 
   opaque := String.forArray("OPAQUE");
-  lexeme[TokenT.Opaque] := opaque;
+  lexeme[Token.Opaque] := opaque;
 
   or := String.forArray("OR");
-  lexeme[TokenT.Or] := or;
+  lexeme[Token.Or] := or;
 
   pointer := String.forArray("POINTER");
-  lexeme[TokenT.Pointer] := pointer;
+  lexeme[Token.Pointer] := pointer;
 
   procedure := String.forArray("PROCEDURE");
-  lexeme[TokenT.Procedure] := procedure;
+  lexeme[Token.Procedure] := procedure;
 
   read := String.forArray("READ");
-  lexeme[TokenT.Read] := read;
+  lexeme[Token.Read] := read;
 
   record := String.forArray("RECORD");
-  lexeme[TokenT.Record] := record;
+  lexeme[Token.Record] := record;
 
   release := String.forArray("RELEASE");
-  lexeme[TokenT.Release] := release;
+  lexeme[Token.Release] := release;
 
   repeat := String.forArray("REPEAT");
-  lexeme[TokenT.Repeat] := repeat;
+  lexeme[Token.Repeat] := repeat;
 
   retain := String.forArray("RETAIN");
-  lexeme[TokenT.Retain] := retain;
+  lexeme[Token.Retain] := retain;
 
   return := String.forArray("RETURN");
-  lexeme[TokenT.Return] := return;
+  lexeme[Token.Return] := return;
 
   set := String.forArray("SET");
-  lexeme[TokenT.Set] := set;
+  lexeme[Token.Set] := set;
 
   then := String.forArray("THEN");
-  lexeme[TokenT.Then] := then;
+  lexeme[Token.Then] := then;
 
   to := String.forArray("TO");
-  lexeme[TokenT.To] := to;
+  lexeme[Token.To] := to;
 
   type := String.forArray("TYPE");
-  lexeme[TokenT.Type] := type;
+  lexeme[Token.Type] := type;
 
   until := String.forArray("UNTIL");
-  lexeme[TokenT.Until] := until;
+  lexeme[Token.Until] := until;
 
   var := String.forArray("VAR");
-  lexeme[TokenT.Var] := var;
+  lexeme[Token.Var] := var;
 
   while := String.forArray("WHILE");
-  lexeme[TokenT.While] := while;
+  lexeme[Token.While] := while;
 
   write := String.forArray("WRITE");
-  lexeme[TokenT.Write] := write
+  lexeme[Token.Write] := write
 END Resword.
