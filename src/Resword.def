@@ -1,0 +1,27 @@
+(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+
+IMPLEMENTATION MODULE Resword;
+
+FROM Token IMPORT TokenT;
+
+FROM String IMPORT StringT;
+
+
+VAR (* use read-only *)
+  alias, and, arglist, array, begin, case, const, copy, definition, div, do, else,
+  elsif, end, exit, for, if, implementation, import, in, loop, mod, module, new,
+  nop, not, octetseq, of, opaque, or, pointer, procedure, read, record, release,
+  repeat, retain, return, set, then, to, type, until, var, while, write : StringT;
+
+
+PROCEDURE tokenForLexeme ( lexeme : StringT ) : TokenT;
+(* If lexeme represents a reserved word, its corresponding reserved word's token
+   value is returned, otherwise token value TokenT.Unknown is returned. *)
+
+
+PROCEDURE lexemeForToken ( token : TokenT ) : StringT;
+(* If token represents a reserved word, an interned string with its corresponding
+   lexeme is returned, otherwise NIL is returned. *)
+
+END Resword.
+
