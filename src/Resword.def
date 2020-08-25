@@ -14,9 +14,9 @@ VAR (* use read-only *)
   repeat, retain, return, set, then, to, type, until, var, while, write : StringT;
 
 
-PROCEDURE tokenForLexeme ( lexeme : StringT ) : TokenT;
+PROCEDURE tokenForLexeme ( lexeme : StringT; defaultToken : TokenT ) : TokenT;
 (* If lexeme represents a reserved word, its corresponding reserved word's token
-   value is returned, otherwise token value Token.Invalid is returned. *)
+   value is returned, otherwise the value of defaultToken is returned. *)
 
 
 PROCEDURE lexemeForToken ( token : TokenT ) : StringT;
