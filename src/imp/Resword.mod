@@ -5,19 +5,19 @@ IMPLEMENTATION MODULE Resword;
 IMPORT Token, String;
 
 FROM Token IMPORT TokenT;
-
 FROM String IMPORT StringT;
 
 VAR lexeme : ARRAY [Token.Alias .. Token.Write] OF StringT;
 
 
-PROCEDURE tokenForLexeme ( lexeme : StringT ) : TokenT;
+PROCEDURE tokenForLexeme ( lexeme : StringT; defaultToken : TokenT ) : TokenT;
 (* If lexeme represents a reserved word, its corresponding reserved word's token
-   value is returned, otherwise token value Token.Invalid is returned. *)
+   value is returned, otherwise the value of defaultToken is returned. *)
 
 BEGIN
-  IF lexeme = NIL THEN 
-    RETURN Token.Invalid
+  IF lexeme = NIL THEN
+    (* TO DO : error message *)
+    HALT
   END; (* IF *)
 
   CASE String.length(lexeme) OF
@@ -393,7 +393,7 @@ BEGIN
   END; (* CASE *)
 
   (* no match *)
-  RETURN Token.Invalid
+  RETURN defaultToken
 END tokenForLexeme;
 
 
