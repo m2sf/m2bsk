@@ -3,7 +3,6 @@
 IMPLEMENTATION MODULE Resword;
 
 FROM Token IMPORT TokenT;
-
 FROM String IMPORT StringT;
 
 
