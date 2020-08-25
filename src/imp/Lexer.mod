@@ -131,6 +131,7 @@ PROCEDURE consumeSym ( lexer : Lexer ) : SymbolT;
 
 VAR
   ch, next, la2 : CHAR;
+  allcaps : BOOLEAN;
   source : Source;
   sym : SymbolT;
 
@@ -229,8 +230,7 @@ BEGIN
           next := Source.consumeChar(source);
           Source.GetLineAndColumn(source, sym.line, sym.column);
           sym.token := Token.LParen;
-          sym.lexeme := Token.lexemeForToken(Token.LParen)
-          
+          sym.lexeme := Token.lexemeForToken(Token.LParen)  
         END (* '(' and block comment *)
     
     (* next symbol is ')' *)
@@ -435,8 +435,16 @@ BEGIN
     (* next symbol is identifier or reserved word *)
     | 'A' .. 'Z' :
         Source.MarkLexeme(source, sym.line, sym.column);
-        MatchLex.IdentOrResword(source, sym.token);
-        Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
+        MatchLex.IdentOrResword(source, allcaps);
+        Source.CopyLexeme(source, lexer^.dict, sym.lexeme);
+        
+        IF allcaps THEN (* possibly reserved word *)
+          token := Resword.tokenForLexeme(sym.lexeme, Token.StdIdent)
+
+        ELSE (* not reserved word *)
+          token := Token.StdIdent
+
+        END (* IF *)
     
     (* next symbol is '[' *)
     | '[' :
@@ -479,7 +487,8 @@ BEGIN
     (* next symbol is identifier *)
     | 'a' .. 'z' :
         Source.MarkLexeme(source, sym.line, sym.column);
-        MatchLex.Ident(source, sym.token);
+        MatchLex.StdIdent(source);
+        sym.token := Token.StdIdent;
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
     (* next symbol is '{' *)
