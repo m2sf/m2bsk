@@ -4,17 +4,13 @@ IMPLEMENTATION MODULE Console;
 
 (* Console output library *)
 
-IMPORT ASCII, Terminal, String;
+IMPORT ISO646, Terminal, String;
 
 FROM String IMPORT StringT; (* alias for String.String *)
 
 FROM CardMath IMPORT abs, pow2, pow10, maxDecimalDigits;
 FROM LongIntMath IMPORT longIntPow2, longIntPow10;
-FROM SYSTEM IMPORT CAST, TSIZE;
-
-
-(* temporar fix for ISO peculiarity *)
-CONST NilString = CAST(StringT, NIL);
+FROM SYSTEM IMPORT TSIZE;
 
 
 (* ---------------------------------------------------------------------------
@@ -32,9 +28,9 @@ VAR
 BEGIN
   FOR index := 0 TO HIGH(chars) DO
     ch := chars[index];
-    IF ch > ASCII.US THEN
+    IF ch > ISO646.US THEN
       Terminal.Write(ch)
-    ELSIF ch = ASCII.NUL THEN
+    ELSIF ch = ISO646.NUL THEN
       RETURN
     END (* IF *)
   END (* LOOP *)
@@ -50,7 +46,7 @@ END WriteChars;
 PROCEDURE WriteStr ( s : StringT );
 
 BEGIN
-  IF (s # NilString) AND (String.length(s) > 0) THEN
+  IF (s # String.Nil) AND (String.length(s) > 0) THEN
     String.WithCharsDo(s, Terminal.WriteString)
   END (* IF *)
 END WriteStr;
@@ -73,7 +69,7 @@ BEGIN
   WriteChars(chars);
   
   (* print s *)
-  IF (s # NilString) AND (String.length(s) > 0) THEN
+  IF (s # String.Nil) AND (String.length(s) > 0) THEN
     String.WithCharsDo(s, Terminal.WriteString)
   END (* IF *)
 END WriteCharsAndStr;
@@ -136,7 +132,7 @@ END WriteBoolCustom;
 PROCEDURE WriteChar ( char : CHAR );
 
 BEGIN
-  IF char > ASCII.US THEN
+  IF char > ISO646.US THEN
     Terminal.Write(char)
   END (* IF *)
 END WriteChar;
