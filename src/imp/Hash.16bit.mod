@@ -1,10 +1,10 @@
-(*!m2pim*) (* Copyright (c) 2017 B.Kowarsch. All rights reserved. *)
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation. *)
 
 IMPLEMENTATION MODULE Hash; (* requires 16-bit CARDINAL *)
 
 (* General Purpose 32-bit Hash Function *)
 
-IMPORT ASCII;
+IMPORT ISO646;
 
 FROM SYSTEM IMPORT TSIZE;
 FROM CardMath IMPORT log2;
@@ -71,7 +71,7 @@ BEGIN
   hash := initialValue;
   
   ch := array[index]
-  WHILE (ch # ASCII.NUL) AND (index < HIGH(array)) DO
+  WHILE (ch # ISO646.NUL) AND (index < HIGH(array)) DO
     (* hash := ORD(ch) + SHL(hash, 6) + SHL(hash, 16) - hash *)
     newHash.lowBits := ORD(ch); newHash.highBits := 0;
     Add(newHash, SHL(hash, 6);
