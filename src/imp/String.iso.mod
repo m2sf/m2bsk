@@ -1,10 +1,10 @@
-(*!m2iso*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+(*!m2iso*) (* Copyright (c) 2017 Modula-2 Software Foundation *)
 
 IMPLEMENTATION MODULE String; (* ISO Modula-2 version *)
 
 (* Interned Strings *)
 
-IMPORT ASCII, SYSTEM, AOC, Hash;
+IMPORT ISO646, SYSTEM, AOC, Hash;
 
 FROM SYSTEM IMPORT CAST;
 FROM Storage IMPORT ALLOCATE;
@@ -244,7 +244,7 @@ BEGIN
   IF (string # NIL) AND (index < string^.length) THEN
     RETURN string^.intern^[index]
   ELSE (* invalid or out of range *)
-    RETURN ASCII.NUL
+    RETURN ISO646.NUL
   END (* IF *)
 END charAtIndex;
 
@@ -321,7 +321,7 @@ BEGIN
   END; (* FOR *)
   
   (* terminate array *)
-  array[arrIndex] := ASCII.NUL;
+  array[arrIndex] := ISO646.NUL;
   
   (* arrIndex holds number of chars copied *)
   charsCopied := arrIndex
