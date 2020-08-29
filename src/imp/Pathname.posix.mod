@@ -1,14 +1,14 @@
-(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation. *)
 
 IMPLEMENTATION MODULE Pathname; (* POSIX version *)
 
 (* POSIX Pathname Parser for Modula-2 R10 Bootstrap Kernel *)
 
-IMPORT ASCII, Char, String, PathnamePolicy;
+IMPORT ISO646, Char, String, PathnamePolicy;
 
 IMPORT StringT; (* alias for String.String *)
 
-FROM STORAGE IMPORT ALLOCATE, DEALLOCATE;
+FROM Storage IMPORT ALLOCATE, DEALLOCATE;
 FROM SYSTEM IMPORT TSIZE;
 
 
@@ -53,7 +53,7 @@ VAR
   dirpath, filename, suffix : Result;
 
 BEGIN
-  IF (HIGH(osPath) = 0) OR osPath[0] = ASCII.NUL THEN
+  IF (HIGH(osPath) = 0) OR osPath[0] = ISO646.NUL THEN
     status := InvalidPath;
     RETURN
   END; (* IF *)
@@ -262,7 +262,7 @@ VAR
   index : CARDINAL;
   
 BEGIN
-  IF (HIGH(osPath) = 0) OR (osPath[0] = ASCII.NUL) THEN
+  IF (HIGH(osPath) = 0) OR (osPath[0] = ISO646.NUL) THEN
     RETURN FALSE
   END; (* IF *)
   
@@ -285,7 +285,7 @@ VAR
   index : CARDINAL;
   
 BEGIN
-  IF (HIGH(filename) = 0) OR (filename[0] = ASCII.NUL) THEN
+  IF (HIGH(filename) = 0) OR (filename[0] = ISO646.NUL) THEN
     RETURN FALSE
   END; (* IF *)
   
