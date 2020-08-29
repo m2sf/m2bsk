@@ -1,10 +1,10 @@
-(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation. *)
 
 IMPLEMENTATION MODULE String;
 
 (* Interned Strings *)
 
-IMPORT ASCII, SYSTEM, AOC, Hash;
+IMPORT ISO646, SYSTEM, AOC, Hash;
 
 FROM Storage IMPORT ALLOCATE;
 
@@ -243,7 +243,7 @@ BEGIN
   IF (string # NIL) AND (index < string^.length) THEN
     RETURN string^.intern^[index]
   ELSE (* invalid or out of range *)
-    RETURN ASCII.NUL
+    RETURN ISO646.NUL
   END (* IF *)
 END charAtIndex;
 
@@ -320,7 +320,7 @@ BEGIN
   END; (* FOR *)
   
   (* terminate array *)
-  array[arrIndex] := ASCII.NUL;
+  array[arrIndex] := ISO646.NUL;
   
   (* arrIndex holds number of chars copied *)
   charsCopied := arrIndex
@@ -628,7 +628,7 @@ VAR
 BEGIN
   (* get actual size of array payload *)
   size := 0;
-  WHILE (size <= HIGH(array)) AND (array[size] # ASCII.NUL) DO
+  WHILE (size <= HIGH(array)) AND (array[size] # ISO646.NUL) DO
     size := size + 1
   END; (* WHILE *)
   
