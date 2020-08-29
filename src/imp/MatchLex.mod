@@ -1,10 +1,10 @@
-(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation *)
 
 IMPLEMENTATION MODULE MatchLex;
 
 (* Lexer Support Library for Modula-2 R10 Bootstrap Kernel *)
 
-IMPORT ASCII, Capabilities, Source, Token;
+IMPORT ISO646, Char, Capabilities, Source, Token;
 
 FROM Source IMPORT SourceT;
 FROM Token IMPORT TokenT;
@@ -13,14 +13,13 @@ FROM Token IMPORT TokenT;
 (* Semantic Symbols *)
 
 (* ---------------------------------------------------------------------------
- * procedure Ident ( source, token )
+ * procedure StdIdent ( source )
  *  matches the input in s to an identifier
  * ---------------------------------------------------------------------------
  * EBNF
  *
- * Ident :=
- *   Letter LetterOrDigit* ( ( '_' | '$' ) LetterOrDigit+ )*
- *   ;
+ * StdIdent :=
+ *   Letter ( Letter | Digit )*  ;
  *
  * pre-conditions:
  *  (1) s is the current input source and it must not be NIL.
@@ -33,48 +32,36 @@ FROM Token IMPORT TokenT;
  *  (2) token value identifier is passed back in token.
  *
  * error-conditions:
- *  (1) identifier consists entirely of non-alphanumeric characters
- *       TO DO
- *  (2) maximum length exceeded
- *       TO DO
+ *  (1) maximum length exceeded
+ *      TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE Ident
-  ( source : SourceT; token : TokenT; VAR diag : Diagnostic );
-
+PROCEDURE StdIdent ( source : SourceT; VAR diag : Diagnostic );
+  
 VAR
   next : CHAR;
-  isIdentChar, lowlinePermitted, dollarPermitted : BOOLEAN;
   
 BEGIN
-  
-  lowlinePermitted := Capabilities.lowlineIdentifiers();
-  dollarPermitted := Capabilities.dollarIdentifiers();
-    
-  REPEAT
-    next := Source.consumeChar(source);
-        
-    isIdentChar :=
-      ASCII.isAlphanum(next) OR
-      (lowlinePermitted AND
-       next = '_' AND ASCII.isAlphanum(Source.la2Char(source))) OR
-      (dollarPermitted AND
-       next = '$' AND ASCII.isAlphanum(Source.la2Char(source)));
-      
-  UNTIL NOT isIdentChar
-      
-END Ident;
+  (* collect all letters and digits *)
+  next := Source.lookaheadChar(source);
+  WHILE (next >= 'a') AND (next <= 'z')
+    OR (next >= 'A') AND (next <= 'Z')
+    OR (next >= '0') AND (next <= '9') DO
+    next := Source.consumeChar(source)
+  END (* WHILE *)
+END StdIdent;
 
 
 (* ---------------------------------------------------------------------------
- * procedure IdentOrResword ( source, token )
+ * procedure IdentOrResword ( source, allcaps )
  *  matches the input in s to an identifier or reserved word
  * ---------------------------------------------------------------------------
  * EBNF
  *
- * Ident :=
- *   Letter LetterOrDigit* ( ( '_' | '$' ) LetterOrDigit+ )*
+ * IdentOrResword :=
+ *   Letter ( Letter | Digit )*
  *   ;
+ *
  *
  * pre-conditions:
  *  (1) s is the current input source and it must not be NIL.
@@ -84,65 +71,43 @@ END Ident;
  *  (1) lookahead of s is the character immediately following the last
  *      character of the identifier or RW whose first character was the
  *      lookahead of s upon entry into the procedure.
- *  (2) if the input represents a reserved word or dual-use identifier,
- *       its token value is passed back in token.
- *      if the input represents any other identifier,
- *       token value identifier is passed back in token.
+ *  (2) if the input consists exclusively of uppercase letters then
+ *      TRUE is passed back in parameter allcaps otherwise FALSE is passed
  *
  * error-conditions:
- *  (1) identifier consists entirely of non-alphanumeric characters
- *       TO DO
- *  (2) maximum length exceeded
+ *  (1) maximum length exceeded
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
 PROCEDURE IdentOrResword
-  ( source : SourceT; token : TokenT; VAR diag : Diagnostic );
+  ( source : SourceT; VAR allcaps : BOOLEAN; VAR diag : Diagnostic );
 
 VAR
   next : CHAR;
-  allChars, upperChars : CARDINAL;
-  isIdentChar, isUpperChar, lowlinePermitted, dollarPermitted : BOOLEAN;
-  
+ 
 BEGIN
-  
-  allChars := 0;
-  upperChars := 0;
-  lowlinePermitted := Capabilities.lowlineIdentifiers();
-  dollarPermitted := Capabilities.dollarIdentifiers();
-  
+  (* collect all uppercase letters *)
   next := Source.lookaheadChar(source);
-  isUpperChar := (next >= 'A' AND next <= 'Z');
+  WHILE (next >= 'A') AND (next <= 'Z') DO
+    next := Source.consumeChar(source)
+  END; (* WHILE *)
   
-  REPEAT
-        
+  (* check if followed by lowercase letter or digit *)
+  IF (next >= 'a') AND (next <= 'z') OR (next >= '0') AND (next <= '9') THEN
+    allcaps := FALSE;
     next := Source.consumeChar(source);
-    allChars++;
     
-    IF isUpperChar THEN
-      upperChars++
-    END;
+    (* collect any remaining letters and digits *)
+    WHILE (next >= 'a') AND (next <= 'z')
+      OR (next >= 'A') AND (next <= 'Z')
+      OR (next >= '0') AND (next <= '9') DO
+      next := Source.consumeChar(source)
+    END (* WHILE *)
 
-    isUpperChar := (next >= 'A' AND next <= 'Z');
-    
-    isIdentChar :=
-      isUpperChar OR
-      (next >= 'a' AND next <= 'z') OR
-      (next >= '0' AND next <= '9') OR
-      (lowlinePermitted AND
-       next = '_' AND ASCII.isAlphanum(Source.la2Char(source))) OR
-      (dollarPermitted AND
-       next = '$' AND ASCII.isAlphanum(Source.la2Char(source)));
-      
-  UNTIL NOT isIdentChar;
-  
-  IF allChars = upperChars THEN (* possibly reserved word found *)
-    (* TO DO check for reserved word match *)
-    
-  ELSE (* not a reserved word *)
-    token := TokenT.Identifier
-  END
-  
+  ELSE (* only uppercase letters found *)
+    allcaps := TRUE
+  END (* IF *)
+ 
 END IdentOrResword;
 
 
@@ -280,9 +245,9 @@ BEGIN
   WHILE next # delimiter DO
     
     (* check for control characters *)
-    IF ASCII.isControl(next) THEN
+    IF Char.isControl(next) THEN
       
-      IF next = ASCII.NEWLINE THEN
+      IF next = ISO646.NEWLINE THEN
         
         (* error: new line in string literal *)
         
@@ -298,11 +263,11 @@ BEGIN
     END (* IF *)
     
     (* check for escape sequence *)
-    IF next = ASCII.BACKSLASH THEN
+    IF next = ISO646.BACKSLASH THEN
       
       next := Source.consumeChar(source);
       
-      IF next # 'n' AND # = 't' AND next # ASCII.BACKSLASH THEN
+      IF (next # 'n') AND (next # = 't') AND (next # ISO646.BACKSLASH) THEN
         
         (* error: invalid escape sequence *)
         
@@ -425,7 +390,7 @@ BEGIN
 
   REPEAT
     next := Source.consumeChar(source);
-  UNTIL source.eof() OR (next = ASCII.NEWLINE)
+  UNTIL source.eof() OR (next = ISO646.NEWLINE)
     
 END LineComment;
 
@@ -476,11 +441,11 @@ BEGIN
     
     IF (ch = '*') AND (next = ')') THEN
       Source.ConsumeChar(source);
-      nestLevel--
+      nestLevel := nextLevel - 1
     
     ELSIF (ch = '(') AND (next = '*') THEN
       Source.ConsumeChar(source);
-      nestLevel++
+      nestLevel := nestLevel + 1
       
     END;
     
