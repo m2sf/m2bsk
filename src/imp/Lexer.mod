@@ -4,7 +4,7 @@ IMPLEMENTATION MODULE Lexer;
 
 (* Lexer for Modula-2 R10 Bootstrap Kernel *)
 
-IMPORT ISO646, Capabilities, String, Source, Token, Symbol, MatchLex;
+IMPORT ISO646, Capabilities, Storage, String, Source, Token, Symbol, MatchLex;
 
 FROM String IMPORT StringT;
 FROM Source IMPORT SourceT;
@@ -63,7 +63,7 @@ BEGIN
   END; (* IF *)
   
   (* allocate a lexer instance *)
-  NEW newLexer;
+  Storage.ALLOCATE(newLexer, TSIZE(LexerDescriptor));
   IF newLexer = NIL THEN
     s := Status.UnableToAllocate;
     RELEASE source;
@@ -651,7 +651,7 @@ BEGIN
   
   (* release source and lexer *)
   Source.Release(lexer^.source);
-  RELEASE lexer
+  Storage.DEALLOCATE(lexer, TSIZE(LexerDescriptor));
 END Release;
 
 
