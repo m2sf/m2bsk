@@ -1,10 +1,10 @@
-(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation *)
 
 IMPLEMENTATION MODULE Char;
 
 (* Character tests and conversions *)
 
-IMPORT ASCII;
+IMPORT ISO646;
 
 
 (* Tests *)
@@ -13,7 +13,7 @@ PROCEDURE isControl ( ch : CHAR ) : BOOLEAN;
 (* Returns TRUE if ch is a control code, otherwise FALSE. *)
 
 BEGIN
-  RETURN (ch <= US) OR (ch = DEL)
+  RETURN (ch <= ISO646.US) OR (ch = ISO646.DEL)
 END isControl;
 
 
@@ -72,7 +72,7 @@ PROCEDURE isPrintable ( ch : CHAR ) : BOOLEAN;
 (* Returns TRUE if ch is printable, otherwise FALSE. *)
 
 BEGIN
-  RETURN (ch >= ASCII.SP) AND (ch <= '~')
+  RETURN (ch >= ISO646.SP) AND (ch <= '~')
 END isPrintable;
 
 
@@ -81,7 +81,7 @@ PROCEDURE isQuotable ( ch : CHAR ) : BOOLEAN;
 
 BEGIN
   RETURN
-    (ch = ASCII.SP) OR
+    (ch = ISO646.SP) OR
     ((ch >= '(') AND (ch <= '[')) OR
     ((ch >= ']') AND (ch <= '~')) OR
     ((ch >= 'a') AND (ch <= 'z')) OR
@@ -93,7 +93,7 @@ PROCEDURE isEscapable ( ch : CHAR ) : BOOLEAN;
 (* Returns TRUE if ch is escapable, otherwise FALSE. *)
 
 BEGIN
-  RETURN (ch = ASCII.BACKSLASH) OR (ch = 'n') OR (ch = 't')
+  RETURN (ch = ISO646.BACKSLASH) OR (ch = 'n') OR (ch = 't')
 END isEscapable;
 
 
