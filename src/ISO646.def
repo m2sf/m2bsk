@@ -1,0 +1,105 @@
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation *)
+
+DEFINITION MODULE ISO646;
+
+(* Mnemonics for 7-bit ISO-646 code points *)
+
+
+(* Control Codes *)
+
+CONST
+  NUL = CHR(0);   (* 0u0 *)
+  SOH = CHR(1);   (* 0u01 *)
+  STX = CHR(2);   (* 0u02 *)
+  ETX = CHR(3);   (* 0u03 *)
+  EOT = CHR(4);   (* 0u04 *)
+  ENQ = CHR(5);   (* 0u05 *)
+  ACK = CHR(6);   (* 0u06 *)
+  BEL = CHR(7);   (* 0u07 *)
+  BS  = CHR(8);   (* 0u08 *)
+  HT  = CHR(9);   (* 0u09 *)
+  LF  = CHR(10);  (* 0u0A *)
+  VT  = CHR(11);  (* 0u0B *)
+  FF  = CHR(12);  (* 0u0C *)
+  CR  = CHR(13);  (* 0u0D *)
+  SO  = CHR(14);  (* 0u0E *)
+  SI  = CHR(15);  (* 0u0F *)
+  DLE = CHR(16);  (* 0u10 *)
+  DC1 = CHR(17);  (* 0u11 *)
+  DC2 = CHR(18);  (* 0u12 *)
+  DC3 = CHR(19);  (* 0u13 *)
+  DC4 = CHR(20);  (* 0u14 *)
+  NAK = CHR(21);  (* 0u15 *)
+  SYN = CHR(22);  (* 0u16 *)
+  ETB = CHR(23);  (* 0u17 *)
+  CAN = CHR(24);  (* 0u18 *)
+  EM  = CHR(25);  (* 0u19 *)
+  SUB = CHR(26);  (* 0u1A *)
+  ESC = CHR(27);  (* 0u1B *)
+  FS  = CHR(28);  (* 0u1C *)
+  GS  = CHR(29);  (* 0u1D *)
+  RS  = CHR(30);  (* 0u1E *)
+  US  = CHR(31);  (* 0u1F *)
+  DEL = CHR(127); (* 0u7F *)
+
+
+(* Whitespace *)
+
+  SP = CHR(32);  (* 0u20 *)
+
+
+(* Non-Alphanumeric *)
+  
+  EXCLAMATION  = CHR(33);  (* ! *)
+  DOUBLEQUOTE  = CHR(34);  (* " *)
+  OCTOTHORPE   = CHR(35);  (* # *)
+  DOLLAR       = CHR(36);  (*_$_*)
+  PERCENT      = CHR(37);  (* % *)
+  AMPERSAND    = CHR(38);  (* & *)
+  SINGLEQUOTE  = CHR(39);  (* ' *)
+  LEFTPAREN    = CHR(40);  (* ( *)
+  RIGHTPAREN   = CHR(41);  (* ) *)
+  ASTERISK     = CHR(42);  (* * *)
+  PLUS         = CHR(43);  (* + *)
+  COMMA        = CHR(44);  (* , *)
+  MINUS        = CHR(45);  (* - *)
+  FULLSTOP     = CHR(46);  (* . *)
+  SOLIDUS      = CHR(47);  (* / *)
+  COLON        = CHR(58);  (* : *)
+  SEMICOLON    = CHR(59);  (* ; *)
+  LESS         = CHR(60);  (* < *)
+  EQUAL        = CHR(61);  (* = *)
+  GREATER      = CHR(62);  (* > *)
+  QUESTIONMARK = CHR(63);  (* ? *)
+  ATSIGN       = CHR(64);  (* @ *)
+  LEFTBRACKET  = CHR(91);  (* [ *)
+  BACKSLASH    = CHR(92);  (* \ *)
+  RIGHTBRACKET = CHR(93);  (* ] *)
+  CARET        = CHR(94);  (* ^ *)
+  LOWLINE      = CHR(95);  (* _ *)
+  BACKQUOTE    = CHR(96);  (* ` *)
+  LEFTBRACE    = CHR(123); (* { *)
+  VERTICALBAR  = CHR(124); (* | *)
+  RIGHTBRACE   = CHR(125); (* } *)
+  TILDE        = CHR(126); (* ~ *)
+
+
+(* Aliases *)
+
+  NEWLINE    = LF;
+  TAB        = HT;
+  TABULATOR  = HT;
+  SPACE      = SP;
+  APOSTROPHE = SINGLEQUOTE;
+  PERIOD     = FULLSTOP;
+  SLASH      = SOLIDUS;
+  EQUALS     = EQUAL;
+  LPAREN     = LEFTPAREN;
+  RPAREN     = RIGHTPAREN;
+  LBRACKET   = LEFTBRACKET;
+  RBRACKET   = RIGHTBRACKET;
+  LBRACE     = LEFTBRACE;
+  RBRACE     = RIGHTBRACE;
+
+
+END ISO646.
