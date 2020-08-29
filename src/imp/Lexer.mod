@@ -1,10 +1,10 @@
-(*!m2pim*) (* Copyright (c) 2015 B.Kowarsch. All rights reserved. *)
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation. *)
 
 IMPLEMENTATION MODULE Lexer;
 
 (* Lexer for Modula-2 R10 Bootstrap Kernel *)
 
-IMPORT ASCII, Capabilities, String, Source, Token, Symbol, MatchLex;
+IMPORT ISO646, Capabilities, String, Source, Token, Symbol, MatchLex;
 
 FROM String IMPORT StringT;
 FROM Source IMPORT SourceT;
@@ -53,14 +53,14 @@ BEGIN
   IF newLexer # NIL THEN
     status := Status.AlreadyInitialised;
     RETURN
-  END;
+  END; (* IF *)
   
   (* allocate and initialise source *)
   Source.New(source, filename, sourceStatus);
   IF sourceStatus # Source.Status.Success THEN
     s := Status.UnableToAllocate;
     RETURN
-  END;
+  END; (* IF *)
   
   (* allocate a lexer instance *)
   NEW newLexer;
@@ -68,7 +68,7 @@ BEGIN
     s := Status.UnableToAllocate;
     RELEASE source;
     RETURN
-  END;
+  END; (* IF *)
   
   (* initialise lexer *)
   newLexer^.source := source;
@@ -140,7 +140,7 @@ BEGIN
   IF lexer = NIL THEN
   (* TO DO: report and handle error *)
     RETURN Symbol.NilSymbol
-  END;
+  END; (* IF *)
   
   (* shorthand *)
   source := lexer^.source;
@@ -150,7 +150,7 @@ BEGIN
   
   (* skip any whitespace, tab and new line *)
   WHILE NOT Source.eof(source) AND
-    (next = ASCII.SPACE OR next = ASCII.TAB OR next = ASCII.NEWLINE) DO
+    (next = ISO646.SPACE OR next = ISO646.TAB OR next = ISO646.NEWLINE) DO
     next := Source.consumeChar(source)
   END; (* WHILE *)
   
@@ -196,8 +196,8 @@ BEGIN
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
     
     (* next symbol is quoted literal *)
-    | ASCII.SINGLEQUOTE,
-      ASCII.DOUBLEQUOTE :
+    | ISO646.SINGLEQUOTE,
+      ISO646.DOUBLEQUOTE :
         Source.MarkLexeme(source, sym.line, sym.column);
         MatchLex.QuotedLiteral(source, sym.token);
         Source.CopyLexeme(source, lexer^.dict, sym.lexeme)
@@ -455,7 +455,7 @@ BEGIN
         sym.lexeme := Token.lexemeForToken(Token.LBracket)
     
     (* next symbol is backslash *)
-    | ASCII.BACKSLASH :
+    | ISO646.BACKSLASH :
         (* consume backslash *)
         next := Source.consumeChar(source);
         Source.GetLineAndColumn(source, sym.line, sym.column);
@@ -524,7 +524,6 @@ BEGIN
       lexer^.errors++
       
     END (* CASE *)
-  
   END (* IF *)
   
   (* store symbol for use by lookaheadSym *)
