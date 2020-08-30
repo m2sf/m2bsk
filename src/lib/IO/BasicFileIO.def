@@ -1,0 +1,248 @@
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE BasicFileIO;
+
+(* Basic File IO library for M2PP and M2BSK *)
+
+
+TYPE File; (* OPAQUE *)
+
+
+TYPE Mode = ( Read, Write, Append );
+
+
+TYPE Status =
+  ( Success,          (* operation completed successfully *)
+    Unknown,          (* subsystem does not support status *)
+    InvalidFileRef,   (* invalid File reference passed *)
+    FileNotFound,     (* requested file not found at path *)
+    AccessDenied,     (* access to requested file denied *)
+    InsertBufferFull, (* file's insert buffer is full *)
+    IllegalOperation, (* operation not permitted *)
+    AllocationFailed, (* memory allocation failed *)
+    ReadBeyondEOF,    (* attempt to read past EOF *)
+    IOError,          (* read or write error *)
+    Failure );        (* any other failure *)
+
+
+TYPE Octet = CARDINAL [0..255];
+
+
+(* Operations *)
+
+(* -----------------------------------------------------------------------
+ * Support for an operation depends on the mode in which the file has
+ * been opened. For details, see the table below.
+ *
+ * operation         | supported in file mode | sets
+ *                   | Read    Write   Append | status
+ * ------------------+------------------------+-------
+ * Open              | yes     yes     yes    | yes
+ * Close             | yes     yes     yes    | n/a
+ * ------------------+------------------------+-------
+ * GetMode           | yes     yes     yes    | no
+ * status            | yes     yes     yes    | no
+ * insertBufferFull  | yes     no*     no*    | no
+ * eof               | yes     no*     no*    | no
+ * ------------------+------------------------+-------
+ * ReadChar          | yes     no      no     | yes
+ * InsertChar        | yes     no      no     | yes
+ * ReadChars         | yes     no      no     | yes
+ * ReadOctet         | yes     no      no     | yes
+ * InsertOctet       | yes     no      no     | yes
+ * ReadOctets        | yes     no      no     | yes
+ * ------------------+------------------------+-------
+ * WriteChar         | no      yes     yes    | yes
+ * WriteChars        | no      yes     yes    | yes
+ * WriteOctet        | no      yes     yes    | yes
+ * WriteOctets       | no      yes     yes    | yes
+ * ------------------+------------------------+-------
+ * key: trailing * = always returns FALSE, result is meaningless.
+ * ----------------------------------------------------------------------- *)
+
+(* Open and close *)
+
+(* ---------------------------------------------------------------------------
+ * procedure Open(file, path, mode, status)
+ * ---------------------------------------------------------------------------
+ * Opens the file at path in the given mode. Passes a new file object in file
+ * and the status in status.  If the file does not exist, it will be created
+ * when opened in write mode, otherwise FileNotFound is passed back in status.
+ * When opening an already existing file in write mode, all of its current
+ * contents will be overwritten.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Open
+  ( VAR file : File; path : ARRAY OF CHAR; mode : Mode; VAR status : Status );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure Close(file, status)
+ * ---------------------------------------------------------------------------
+ * Closes file. Passes status in status.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Close ( VAR file : File; VAR status : Status );
+
+
+(* Introspection *)
+
+(* ---------------------------------------------------------------------------
+ * procedure GetMode(file, mode)
+ * ---------------------------------------------------------------------------
+ * Passes the mode of file in mode.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE GetMode ( file : File; VAR mode : Mode );
+
+
+(* ---------------------------------------------------------------------------
+ * function status(file)
+ * ---------------------------------------------------------------------------
+ * Returns the status of the last operation on file in status.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE status ( file : File ) : Status;
+
+
+(* ---------------------------------------------------------------------------
+ * function insertBufferFull(file)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if the internal insert buffer of file is full, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE insertBufferFull ( file : File ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function eof(file)
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if the end of file has been reached, otherwise FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE eof ( file : File ) : BOOLEAN;
+
+
+(* Read and unread operations *)
+
+(* ---------------------------------------------------------------------------
+ * procedure ReadChar(file, ch)
+ * ---------------------------------------------------------------------------
+ * If the internal insert buffer of file is not empty, removes the first
+ * character from the buffer and returns it in out-parameter ch. Otherwise,
+ * if the internal insert buffer of file is empty, reads one character at
+ * the current reading position of file and passes it in ch, or ASCII EOT
+ * if the end of file had already been reached upon entry into ReadChar.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ReadChar ( file : File; VAR ch : CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure InsertChar(file, ch)
+ * ---------------------------------------------------------------------------
+ * Inserts character ch into the internal insert buffer of file unless
+ * the insert buffer is full. Sets file's status to InsertBufferFull if full.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE InsertChar ( file : File; ch : CHAR ); (* Unread *)
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ReadChars(file, buffer, charsRead)
+ * ---------------------------------------------------------------------------
+ * If the internal insert buffer of file is not empty, removes as many
+ * characters from the insert buffer as will fit into out-parameter buffer
+ * and copies them to out-parameter buffer.  If and once the internal insert
+ * buffer is empty, reads contents starting at the current reading position
+ * of file into out-parameter buffer until either the pen-ultimate index of
+ * buffer is written or eof is reached. Out-parameter buffer is then termi-
+ * nated with ASCII NUL. The number of chars copied is passed in charsRead.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ReadChars
+  ( file : File; VAR buffer : ARRAY OF CHAR; VAR charsRead : CARDINAL );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ReadOctet(file, octet)
+ * ---------------------------------------------------------------------------
+ * If the internal insert buffer of file is not empty, removes the first
+ * octet from the buffer and returns it in out-parameter octet. Otherwise,
+ * if the internal insert buffer of file is empty, reads one octet at the
+ * current reading position of file and passes it in octet unless the end
+ * of file has been reached upon entry into ReadOctet.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ReadOctet ( file : File; VAR octet : Octet );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure InsertOctet(file, octet)
+ * ---------------------------------------------------------------------------
+ * Inserts octet into the internal insert buffer of file unless
+ * the insert buffer is full. Sets file's status to InsertBufferFull if full.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE InsertOctet ( file : File; octet : Octet ); (* Unread *)
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ReadOctets(file, buffer, octetsRead)
+ * ---------------------------------------------------------------------------
+ * If the internal insert buffer of file is not empty, removes as many octets
+ * from the insert buffer as will fit into out-parameter buffer and copies
+ * them to out-parameter buffer.  If and once the internal insert buffer is
+ * empty, reads contents starting at the current reading position of file into
+ * out-parameter buffer until either the ultimate index of buffer is written
+ * or eof is reached. The number of octets copied is passed in octetsRead.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ReadOctets
+  ( file : File; VAR buffer : ARRAY OF Octet; VAR octetsRead : CARDINAL );
+
+
+(* Write operations *)
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteChar(file, ch)
+ * ---------------------------------------------------------------------------
+ * Writes character ch to file at the current writing position.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteChar ( file : File; ch : CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteChars(file, buffer, charsWritten)
+ * ---------------------------------------------------------------------------
+ * Writes the contents of buffer up to and excluding the first ASCII NUL
+ * character code to file at the current writing position. The number of
+ * characters actually written is passed in charsWritten.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteChars
+  ( file : File; buffer : ARRAY OF CHAR; VAR charsWritten : CARDINAL );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteOctet(file, octet)
+ * ---------------------------------------------------------------------------
+ * Writes one octet to file at the current writing position.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteOctet ( file : File; octet : Octet );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteOctets(file, buffer, octetsWritten)
+ * ---------------------------------------------------------------------------
+ * Writes the contents of buffer to file at the current writing position. The
+ * number of octets actually written is passed in octetsWritten.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteOctets
+  ( file : File; buffer : ARRAY OF Octet; VAR octetsWritten : CARDINAL );
+
+
+END BasicFileIO.
