@@ -1,0 +1,145 @@
+(*!m2iso*) (* Copyright (c) 2017 Modula-2 Software Foundation *)
+
+DEFINITION MODULE Outfile; (* ISO version *)
+
+(* I/O library for writing text files with tab expansion *)
+
+IMPORT SYSTEM, BasicFileIO, Newline;
+
+FROM String IMPORT StringT; (* alias for String.String *)
+
+
+(* ---------------------------------------------------------------------------
+ * File type for reading
+ * ------------------------------------------------------------------------ *)
+
+TYPE Outfile; (* OPAQUE *)
+
+TYPE OutfileT = Outfile; (* for unqualified use *)
+
+
+(* ---------------------------------------------------------------------------
+ * Invalid file sentinel
+ * ------------------------------------------------------------------------ *)
+
+CONST Nil = SYSTEM.CAST(Outfile, NIL); (* ISO specific *)
+
+
+(* ---------------------------------------------------------------------------
+ * procedure Open(outfile, path, status )
+ * ---------------------------------------------------------------------------
+ * Opens the file at path and passes a newly allocated and initialised outfile
+ * object back in out-parameter outfile. Passes NilOutfile on failure.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Open
+ ( VAR (* NEW *) outfile : Outfile;
+   VAR (* CONST *) path  : ARRAY OF CHAR;
+   VAR            status : BasicFileIO.Status );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure Close(outfile)
+ * ---------------------------------------------------------------------------
+ * Closes the file associated with outfile and passes NilOutfile in outfile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Close ( VAR outfile : Outfile );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure SetTabWidth(outfile, value)
+ * ---------------------------------------------------------------------------
+ * Sets the tab width for outfile. The default value is two.
+ * Operation only permitted prior to first write operation to outfile.
+ * ------------------------------------------------------------------------ *)
+
+TYPE TabWidth = CARDINAL [0..8];
+
+PROCEDURE SetTabWidth ( outfile : Outfile; value : TabWidth );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure SetNewlineMode(outfile, mode)
+ * ---------------------------------------------------------------------------
+ * Sets the newline mode for outfile. The default is Newline.mode().
+ * Operation only permitted prior to first write operation to outfile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetNewlineMode ( outfile : Outfile; mode : Newline.Mode );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteChar(outfile, ch)
+ * ---------------------------------------------------------------------------
+ * Writes character ch to outfile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteChar ( outfile : Outfile; ch : CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteChars(outfile, array)
+ * ---------------------------------------------------------------------------
+ * Writes characters in array to outfile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteChars
+  ( outfile : Outfile; VAR (* CONST *) array : ARRAY OF CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteString(outfile, string)
+ * ---------------------------------------------------------------------------
+ * Writes string to outfile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteString ( outfile : Outfile; string : StringT );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteTab(outfile)
+ * ---------------------------------------------------------------------------
+ * Writes tab to outfile. Expands tabs to spaces if tabwidth > 0.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteTab ( outfile : Outfile );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure WriteLn(outfile)
+ * ---------------------------------------------------------------------------
+ * Writes newline to outfile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE WriteLn ( outfile : Outfile );
+
+
+(* ---------------------------------------------------------------------------
+ * function status(outfile)
+ * ---------------------------------------------------------------------------
+ * Returns status of last operation.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE status ( outfile : Outfile ) : BasicFileIO.Status;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure line(outfile)
+ * ---------------------------------------------------------------------------
+ * Returns the line number of the current writing position of outfile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE line ( outfile : Outfile ) : CARDINAL;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure column(outfile)
+ * ---------------------------------------------------------------------------
+ * Returns the column number of the current writing position of outfile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE column ( outfile : Outfile ) : CARDINAL;
+
+
+END Outfile.
