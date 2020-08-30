@@ -1,0 +1,140 @@
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation *)
+
+DEFINITION MODULE Infile; (* PIM version *)
+
+(* I/O library for reading text files with line and column counters *)
+
+IMPORT BuildParams, BasicFileIO;
+
+FROM String IMPORT StringT; (* alias for String.String *)
+
+
+(* ---------------------------------------------------------------------------
+ * Maximum line length
+ * ------------------------------------------------------------------------ *)
+
+CONST MaxLineLength = BuildParams.InfileMaxLineLength;
+
+
+(* ---------------------------------------------------------------------------
+ * File type for reading
+ * ------------------------------------------------------------------------ *)
+
+TYPE Infile; (* OPAQUE *)
+
+TYPE InfileT = Infile; (* for unqualified use *)
+
+
+(* ---------------------------------------------------------------------------
+ * Invalid file sentinel
+ * ------------------------------------------------------------------------ *)
+
+CONST Nil = Infile(NIL); (* PIM specific *)
+
+
+(* ---------------------------------------------------------------------------
+ * procedure Open(infile, path, status )
+ * ---------------------------------------------------------------------------
+ * Opens the file at path and passes a newly allocated and initialised infile
+ * object back in out-parameter infile. Passes Infile.Nil on failure.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Open
+ ( VAR (* NEW *) infile : Infile;
+   VAR (* CONST *) path : ARRAY OF CHAR;
+   VAR           status : BasicFileIO.Status );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure Close(infile)
+ * ---------------------------------------------------------------------------
+ * Closes the file associated with infile and passes Infile.Nil in infile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Close ( VAR infile : Infile );
+
+
+(* ---------------------------------------------------------------------------
+ * function consumeChar(infile)
+ * ---------------------------------------------------------------------------
+ * Consumes the current lookahead character in infile. Returns the resulting
+ * new lookahead character without consuming it.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE consumeChar ( infile : Infile ) : CHAR;
+
+
+(* ---------------------------------------------------------------------------
+ * function lookaheadChar(infile)
+ * ---------------------------------------------------------------------------
+ * Returns the current lookahead char in infile without consuming any char.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE lookaheadChar ( infile : Infile ) : CHAR;
+
+
+(* ---------------------------------------------------------------------------
+ * function la2Char(infile)
+ * ---------------------------------------------------------------------------
+ * Returns the 2nd lookahead char in infile without consuming any character.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE la2Char ( infile : Infile ) : CHAR;
+
+
+(* ---------------------------------------------------------------------------
+ * function status()
+ * ---------------------------------------------------------------------------
+ * Returns status of last operation.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE status ( infile : Infile ) : BasicFileIO.Status;
+
+
+(* ---------------------------------------------------------------------------
+ * function eof()
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if infile has reached the end of the file, else FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE eof( infile : Infile ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * function line(infile)
+ * ---------------------------------------------------------------------------
+ * Returns the line number of the current reading position of infile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE line ( infile : Infile ) : CARDINAL;
+
+
+(* ---------------------------------------------------------------------------
+ * function column(infile)
+ * ---------------------------------------------------------------------------
+ * Returns the column number of the current reading position of infile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE column ( infile : Infile ) : CARDINAL;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure MarkLexeme(infile)
+ * ---------------------------------------------------------------------------
+ * Marks the current lookahead character as the start of a lexeme.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE MarkLexeme ( infile : Infile );
+
+
+(* ---------------------------------------------------------------------------
+ * function lexeme(infile ch)
+ * ---------------------------------------------------------------------------
+ * Returns the current lexeme.  Returns NIL if no lexeme has been marked, or
+ * if no characters have been consumed since MarkLexeme() has been called.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE lexeme ( infile : Infile ) : StringT;
+
+
+END Infile.
