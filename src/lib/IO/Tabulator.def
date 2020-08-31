@@ -1,0 +1,22 @@
+(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation *)
+
+DEFINITION MODULE Tabulator;
+
+(* Tabulator management *)
+
+CONST
+  Default = 0;
+  MaxTabWidth = 8;
+
+TYPE TabWidth = CARDINAL [0..MaxTabWidth];
+
+
+PROCEDURE SetTabWidth ( value : TabWidth );
+(* Sets the tab width. Zero leaves tabs in place. *)
+
+
+PROCEDURE tabWidth ( ) : TabWidth;
+(* Returns the tab width. *)
+
+
+END Tabulator.
