@@ -4,7 +4,7 @@ DEFINITION MODULE Outfile; (* PIM version *)
 
 (* I/O library for writing text files with tab expansion *)
 
-IMPORT BasicFileIO, Newline;
+IMPORT BasicFileIO, Tabulator, Newline;
 
 FROM String IMPORT StringT; (* alias for String.String *)
 
@@ -54,9 +54,7 @@ PROCEDURE Close ( VAR outfile : Outfile );
  * Operation only permitted prior to first write operation to outfile.
  * ------------------------------------------------------------------------ *)
 
-TYPE TabWidth = CARDINAL [0..8];
-
-PROCEDURE SetTabWidth ( outfile : Outfile; value : TabWidth );
+PROCEDURE SetTabWidth ( outfile : Outfile; value : Tabulator.TabWidth );
 
 
 (* ---------------------------------------------------------------------------
