@@ -19,7 +19,7 @@ PROCEDURE tabWidth ( ) : TabWidth;
 (* Returns the tab width. *)
 
 BEGIN
-  RETURN defaultTabWidth;
+  RETURN defaultTabWidth
 END tabWidth;
 
 

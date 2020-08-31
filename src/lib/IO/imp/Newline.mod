@@ -19,7 +19,7 @@ PROCEDURE mode ( ) : Mode;
 (* Returns the newline mode. *)
 
 BEGIN
-  RETURN defaultMode;
+  RETURN defaultMode
 END mode;
 
 
