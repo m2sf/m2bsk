@@ -353,7 +353,7 @@ BEGIN
 
 (* ---------------------------------------------------------------------------
  * procedure LineComment ( infile )
- *  matches the input in source to a line comment
+ *  matches the input in infile to a line comment
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -396,7 +396,7 @@ END LineComment;
 
 (* ---------------------------------------------------------------------------
  * procedure BlockComment ( infile )
- *  matches the input in source to a block comment
+ *  matches the input in infile to a block comment
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -458,8 +458,8 @@ END BlockComment;
 (* Disabled Code Sections *)
 
 (* ---------------------------------------------------------------------------
- * procedure DisabledCode ( source, diag )
- *  matches the input in source to a disabled code block
+ * procedure DisabledCode ( infile )
+ *  matches the input in infile to a disabled code block
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -470,46 +470,47 @@ END BlockComment;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is the opening '?' of a disabled code block.
+ *  (1) infile is the current input source and it must not be NIL.
+ *  (2) lookahead of infile is the opening '?' of a disabled code block.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the closing
- *      '?' that closes the disabled code block whose opening '?'
- *      was the lookahead of s upon entry into the procedure.
+ *  (1) lookahead of inflie is the character immediately following the
+ *      closing '?' that closes the disabled code block whose opening '?'
+ *      was the lookahead of infile upon entry into the procedure.
  *
  * error-conditions:
  *  (1) illegal character encountered
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE DisabledCode ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE DisabledCode ( infile : InfileT );
 
 VAR
   next : CHAR;
   delimiterFound : BOOLEAN;
+
 BEGIN
 
   delimiterFound := FALSE;
   
   (* consume opening '?' and '<' *)
-  next := Source.consumeChar(source);
-  next := Source.consumeChar(source);
+  next := Infile.consumeChar(infile);
+  next := Infile.consumeChar(infile);
     
-  WHILE NOT delimiterFound AND NOT Source.eof(source) DO
+  WHILE NOT delimiterFound AND NOT Infile.eof(infile) DO
     
     (* check for closing delimiter *)
     IF next = '>' AND
-      Source.la2Char(source) = '?' AND Source.currentCol(source) = 1 THEN
+      (Infile.column(infile) = 1) AND (Infile.la2Char(infile) = '?') THEN
       delimiterFound := TRUE;
       
       (* consume closing '>' and '?' *)
-      next := Source.consumeChar(source);
-      next := Source.consumeChar(source)
+      next := Infile.consumeChar(infile);
+      next := Infile.consumeChar(infile);
       
     ELSE (* not closing delimiter *)
       (* consume this character *)
-      next := Source.consumeChar(source)
+      next := Infile.consumeChar(infile)
       
       (* TO DO check for illegal chars, report diagnostics *)
       
@@ -523,8 +524,8 @@ END DisabledCode;
 (* Private Procedures *)
 
 (* ---------------------------------------------------------------------------
- * procedure matchDecimalNumberTail ( source, diag )
- *  matches the input in source to a decimal number tail
+ * function matchDecimalNumberTail ( infile )
+ *  matches the input in infile to a decimal number tail, returns lookahead
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -535,20 +536,20 @@ END DisabledCode;
  * alias DigitSep = "'" ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is a digit between 1 and 9 or a decimal point.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is a digit between 1 and 9 or a decimal point.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the last digit
- *      of the literal whose first digit was the lookahead of s upon entry
- *      into the procedure.
+ *  (1) lookahead of infile is the character immediately following the last
+ *      digit of the literal whose first digit was the lookahead of infile
+ *      upon entry into the procedure.
  *
  * error-conditions:
  *  (1) illegal character encountered
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE matchDecimalNumberTail ( source : SourceT ) : CHAR;
+PROCEDURE matchDecimalNumberTail ( infile : InfileT ) : CHAR;
 
 VAR
   next : CHAR;
@@ -557,12 +558,13 @@ BEGIN
   
   (* TO DO *)
   
+  RETURN next
 END matchDecimalNumberTail;
 
 
 (* ---------------------------------------------------------------------------
- * procedure matchRealNumberTail ( source, diag )
- *  matches the input in source to a real number tail
+ * function matchRealNumberTail ( infile )
+ *  matches the input in infile to a real number tail, returns lookahead
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -571,20 +573,20 @@ END matchDecimalNumberTail;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is a decimal point.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is a decimal point.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the last digit
- *      of the literal whose decimal point was the lookahead of s upon entry
- *      into the procedure.
+ *  (1) lookahead of infile is the character immediately following the last
+ *      digit of the literal whose decimal point was the lookahead of infile
+ *      upon entry into the procedure.
  *
  * error-conditions:
  *  (1) illegal character encountered
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE matchRealNumberTail ( source : SourceT ) : CHAR;
+PROCEDURE matchRealNumberTail ( infile : InfileT ) : CHAR;
 
 VAR
   next : CHAR;
@@ -593,12 +595,13 @@ BEGIN
   
   (* TO DO *)
   
+  RETURN next
 END matchRealNumberTail;
 
 
 (* ---------------------------------------------------------------------------
- * procedure matchDigitSeq ( source, diag )
- *  matches the input in source to a base-2 digit sequence
+ * function matchDigitSeq ( infile )
+ *  matches the input in infile to a base-2 digit sequence, returns lookahead
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -620,7 +623,7 @@ END matchRealNumberTail;
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE matchDigitSeq ( source : SourceT ) : CHAR;
+PROCEDURE matchDigitSeq ( infile : InfileT );
 
 VAR
   next : CHAR;
@@ -629,12 +632,13 @@ BEGIN
   
   (* TO DO *)
   
+  RETURN next
 END matchDigitSeq;
 
 
 (* ---------------------------------------------------------------------------
- * procedure matchBase2DigitSeq ( source, diag )
- *  matches the input in source to a base-2 digit sequence
+ * function matchBase2DigitSeq ( infile )
+ *  matches the input in infile to a base-2 digit sequence, returns lookahead
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -643,20 +647,20 @@ END matchDigitSeq;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is a base-2 digit.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is a base-2 digit.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the last digit
- *      of the literal whose first digit was the lookahead of s upon entry
- *      into the procedure.
+ *  (1) lookahead of infile is the character immediately following the last
+ *      digit of the literal whose first digit was the lookahead of infile
+ *      upon entry into the procedure.
  *
  * error-conditions:
  *  (1) illegal character encountered
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE matchBase2DigitSeq ( source : SourceT ) : CHAR;
+PROCEDURE matchBase2DigitSeq ( infile : InfileT ) : CHAR;
 
 VAR
   next : CHAR;
@@ -665,12 +669,13 @@ BEGIN
   
   (* TO DO *)
   
+  RETURN next
 END matchBase2DigitSeq;
 
 
 (* ---------------------------------------------------------------------------
- * procedure matchBase16DigitSeq ( source, diag )
- *  matches the input in source to a base-16 digit sequence
+ * function matchBase16DigitSeq ( infile )
+ *  matches the input in infile to a base-16 digit sequence, returns lookahead
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -679,20 +684,20 @@ END matchBase2DigitSeq;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is a base-16 digit.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is a base-16 digit.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the last digit
- *      of the literal whose first digit was the lookahead of s upon entry
- *      into the procedure.
+ *  (1) lookahead of infule is the character immediately following the last
+ *      digit of the literal whose first digit was the lookahead of infile
+ *      upon entry into the procedure.
  *
  * error-conditions:
  *  (1) illegal character encountered
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE matchBase16DigitSeq ( source : SourceT ) : CHAR;
+PROCEDURE matchBase16DigitSeq ( infile : InfileT ) : CHAR;
 
 VAR
   next : CHAR;
@@ -701,6 +706,7 @@ BEGIN
   
   (* TO DO *)
   
+  RETURN next
 END matchBase16DigitSeq;
 
 
