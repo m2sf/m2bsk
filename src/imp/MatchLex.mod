@@ -389,7 +389,7 @@ BEGIN
 
   REPEAT
     next := Infile.consumeChar(infile);
-  UNTIL Infile.eof(infile) OR (next = ISO646.NEWLINE)
+  UNTIL (next = ISO646.NEWLINE) OR Infile.eof(infile)
     
 END LineComment;
 
@@ -435,7 +435,7 @@ BEGIN
   nestLevel := 1;
   ch := Infile.lookaheadChar(infile);
   
-  WHILE NOT Infile.eof(infile) AND (nestLevel > 0) DO
+  WHILE (nestLevel > 0) AND NOT Infile.eof(infile) DO
     next := Infile.consumeChar(infile);
      
     IF (ch = '*') AND (next = ')') THEN
