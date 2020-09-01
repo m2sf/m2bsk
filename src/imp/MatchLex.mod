@@ -4,17 +4,17 @@ IMPLEMENTATION MODULE MatchLex;
 
 (* Lexer Support Library for Modula-2 R10 Bootstrap Kernel *)
 
-IMPORT ISO646, Char, Capabilities, Source, Token;
+IMPORT ISO646, Char, Capabilities, Infile, Token;
 
-FROM Source IMPORT SourceT;
 FROM Token IMPORT TokenT;
+FROM Infile IMPORT InfileT;
 
 
 (* Semantic Symbols *)
 
 (* ---------------------------------------------------------------------------
- * procedure StdIdent ( source )
- *  matches the input in s to an identifier
+ * procedure StdIdent ( infile )
+ *  matches the input in infile to an identifier
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -22,39 +22,38 @@ FROM Token IMPORT TokenT;
  *   Letter ( Letter | Digit )*  ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is the first character of the identifier.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is the first character of the identifier.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the last
+ *  (1) lookahead of infile is the character immediately following the last
  *      character of the identifier whose first character was the
- *      lookahead of s upon entry into the procedure.
- *  (2) token value identifier is passed back in token.
+ *      lookahead of infile upon entry into the procedure.
  *
  * error-conditions:
  *  (1) maximum length exceeded
  *      TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE StdIdent ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE StdIdent ( infile : InfileT );
   
 VAR
   next : CHAR;
   
 BEGIN
   (* collect all letters and digits *)
-  next := Source.lookaheadChar(source);
+  next := Infile.lookaheadChar(infile);
   WHILE (next >= 'a') AND (next <= 'z')
     OR (next >= 'A') AND (next <= 'Z')
     OR (next >= '0') AND (next <= '9') DO
-    next := Source.consumeChar(source)
+    next := Infile.consumeChar(infile)
   END (* WHILE *)
 END StdIdent;
 
 
 (* ---------------------------------------------------------------------------
- * procedure IdentOrResword ( source, allcaps )
- *  matches the input in s to an identifier or reserved word
+ * procedure IdentOrResword ( infile, allcaps )
+ *  matches the input in infile to an identifier or reserved word
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -64,13 +63,13 @@ END StdIdent;
  *
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is the first character of the identifier or RW.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is the first character of the identifier or RW.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the last
+ *  (1) lookahead of infile is the character immediately following the last
  *      character of the identifier or RW whose first character was the
- *      lookahead of s upon entry into the procedure.
+ *      lookahead of infile upon entry into the procedure.
  *  (2) if the input consists exclusively of uppercase letters then
  *      TRUE is passed back in parameter allcaps otherwise FALSE is passed
  *
@@ -79,29 +78,28 @@ END StdIdent;
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE IdentOrResword
-  ( source : SourceT; VAR allcaps : BOOLEAN; VAR diag : Diagnostic );
+PROCEDURE IdentOrResword ( infile : InfileT; VAR allcaps : BOOLEAN );
 
 VAR
   next : CHAR;
  
 BEGIN
   (* collect all uppercase letters *)
-  next := Source.lookaheadChar(source);
+  next := Infile.lookaheadChar(infile);
   WHILE (next >= 'A') AND (next <= 'Z') DO
-    next := Source.consumeChar(source)
+    next := Infile.consumeChar(infile)
   END; (* WHILE *)
   
   (* check if followed by lowercase letter or digit *)
   IF (next >= 'a') AND (next <= 'z') OR (next >= '0') AND (next <= '9') THEN
     allcaps := FALSE;
-    next := Source.consumeChar(source);
+    next := Infile.consumeChar(infile);
     
     (* collect any remaining letters and digits *)
     WHILE (next >= 'a') AND (next <= 'z')
       OR (next >= 'A') AND (next <= 'Z')
       OR (next >= '0') AND (next <= '9') DO
-      next := Source.consumeChar(source)
+      next := Infile.consumeChar(infile)
     END (* WHILE *)
 
   ELSE (* only uppercase letters found *)
@@ -112,8 +110,8 @@ END IdentOrResword;
 
 
 (* ---------------------------------------------------------------------------
- * procedure NumericLiteral ( source, token )
- *  matches the input in s to a numeric literal
+ * procedure NumericLiteral ( infile, token )
+ *  matches the input in infile to a numeric literal
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -127,13 +125,13 @@ END IdentOrResword;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is the first digit of the literal.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is the first digit of the literal.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the last digit
- *      of the literal whose first digit was the lookahead of s upon entry
- *      into the procedure.
+ *  (1) lookahead of infile is the character immediately following the last
+ *      digit of the literal whose first digit was the lookahead of infile
+ *      upon entry into the procedure.
  *  (2) if the numeric literal represents a whole number,
  *       token value WholeNumber is passed back in token.
  *      if the numeric literal represents a character code,
@@ -152,47 +150,47 @@ END IdentOrResword;
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE NumericLiteral
-  ( source : SourceT; token : TokenT; VAR diag : Diagnostic );
+PROCEDURE NumericLiteral ( infile : InfileT; VAR token : TokenT );
 
 VAR
   ch, next : CHAR;
 
 BEGIN
   
-  Source.GetChar(source, ch, next);
+  ch := Infile.lookaheadChar(infile);
+  next := Infile.consumeChar(infile);
   
   IF ch = '0' THEN
         
     CASE next OF
       '.' : (* sole '0' or real number *)
-      IF Source.la2Char(source) # '.' THEN
+      IF Infile.la2Char(infile) # '.' THEN
         (* real number found *)
-        next := matchRealNumberTail(source)        
+        next := matchRealNumberTail(infile)        
       END (* IF *)
       
     | 'b' : (* base-2 integer *)
-      next := matchBase2DigitSeq(source)
+      next := matchBase2DigitSeq(infile)
       
     | 'u' : (* character code *)
-      next := matchBase16DigitSeq(source)
+      next := matchBase16DigitSeq(infile)
       
     | 'x' : (* base-16 integer *)
-      next := matchBase16DigitSeq(source)
+      next := matchBase16DigitSeq(infile)
       
     END (* CASE *)
        
   ELSIF ch >= '1' AND ch <= '9' THEN
     (* decimal integer or real number *)
-    next := matchDecimalNumberTail(source)    
+    next := matchDecimalNumberTail(infile)    
   END (* IF *)
   
 END NumericLiteral;
 
 
 (* ---------------------------------------------------------------------------
- * procedure QuotedLiteral ( source, token )
- *  matches the input in s to a quoted literal
+ * procedure QuotedLiteral ( infile, token )
+ *  matches the input in infile to a quoted literal
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -209,13 +207,13 @@ END NumericLiteral;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is the opening quotation mark of the literal.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is the opening quotation mark of the literal.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the closing
+ *  (1) lookahead of infile is the character immediately following the closing
  *      quotation mark that closes the literal whose opening quotation mark
- *      was the lookahead of s upon entry into the procedure.
+ *      was the lookahead of infile upon entry into the procedure.
  *  (2) if the quoted literal represents the empty string or a single
  *      character, token value quotedChar is passed back in token.
  *      Otherwise, token value quotedString is passed back in token.
@@ -231,8 +229,7 @@ END NumericLiteral;
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE QuotedLiteral
-  ( source : SourceT; token : TokenT; VAR diag : Diagnostic );
+PROCEDURE QuotedLiteral ( infile : InfileT; token : TokenT );
 
 VAR
   next, delimiter : CHAR;
@@ -240,7 +237,9 @@ VAR
 BEGIN
   
   (* consume string delimiter *)
-  Source.GetChar(source, delimiter, next);
+  delimiter := Infile.lookaheadChar(infile);
+  next := Infile.consumeChar(infile);
+ 
   
   WHILE next # delimiter DO
     
@@ -251,7 +250,7 @@ BEGIN
         
         (* error: new line in string literal *)
         
-      ELSIF Source.eof(source) THEN
+      ELSIF Infile.eof(infile) THEN
         
         (* error: EOF in string literal *)
         
@@ -265,7 +264,7 @@ BEGIN
     (* check for escape sequence *)
     IF next = ISO646.BACKSLASH THEN
       
-      next := Source.consumeChar(source);
+      next := Infile.consumeChar(infile);
       
       IF (next # 'n') AND (next # = 't') AND (next # ISO646.BACKSLASH) THEN
         
@@ -274,12 +273,12 @@ BEGIN
       END (* IF *)
     END (* IF *)
     
-    next := Source.consumeChar(source)
+    next := Infile.consumeChar(infile)
   END (* WHILE *)
   
   (* consume closing delimiter *)
   IF next = delimiter THEN
-    next := Source.consumeChar(source)
+    next := Infile.consumeChar(infile)
   END (* IF *)
   
 END QuotedLiteral;
@@ -288,8 +287,8 @@ END QuotedLiteral;
 (* Non-Semantic Symbols *)
 
 (* ---------------------------------------------------------------------------
- * procedure Pragma ( source, diag )
- *  matches the input in source to a pragma
+ * procedure Pragma ( infile )
+ *  matches the input in infile to a pragma
  * ---------------------------------------------------------------------------
  * EBNF
  *
@@ -298,14 +297,15 @@ END QuotedLiteral;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is the first character of the opening pragma delimiter.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is the first character of the opening pragma
+ *      delimiter.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the last
+ *  (1) lookahead of infile is the character immediately following the last
  *      character of the closing delimiter that closes the pragma whose
- *      opening delimiter was the lookahead of s upon entry into the procedure.
- *  (2) token value pragma is passed back in token
+ *      opening delimiter was the lookahead of infile upon entry into the
+ *      procedure.
  *
  * error-conditions:
  *  (1) eof reached
@@ -316,7 +316,7 @@ END QuotedLiteral;
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE Pragma ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE Pragma ( infile : InfileT );
 
 VAR
   next : CHAR;
@@ -327,21 +327,21 @@ BEGIN
   delimiterFound := FALSE;
   
   (* consume opening '<' and '*' *)
-  next := Source.consumeChar(source);
-  next := Source.consumeChar(source);
+  next := Infile.consumeChar(infile);
+  next := Infile.consumeChar(infile);
   
   WHILE NOT delimiterFound DO
   
-    IF next = '*' AND Source.la2Char(source) = '>' THEN
+    IF next = '*' AND Infile.la2Char(infile) = '>' THEN
       delimiterFound := TRUE;
       
       (* consume closing '*' and '>' *)
-      next := Source.consumeChar(source);
-      next := Source.consumeChar(source)
+      next := Infile.consumeChar(infile);
+      next := Infile.consumeChar(infile);
     ELSE (* not closing delimiter *)
     
       (* consume this character *)
-      next := Source.consumeChar(source)
+      next := Infile.consumeChar(infile)
       
       (* TO DO check for eof, illegal chars, report diagnostics *)
       
@@ -352,7 +352,7 @@ BEGIN
 
 
 (* ---------------------------------------------------------------------------
- * procedure LineComment ( source, diag )
+ * procedure LineComment ( infile )
  *  matches the input in source to a line comment
  * ---------------------------------------------------------------------------
  * EBNF
@@ -362,17 +362,16 @@ BEGIN
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is the opening exclamation point of a line comment.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is the opening exclamation point of the comment.
  *
  * post-conditions:
  *  (1) if the comment is terminated by end-of-line:
- *       lookahead of s is the new-line character that closes the line comment
- *       whose opening exclamation point was the lookahead of s upon entry
- *       into the procedure, or
+ *       lookahead of infile is the new-line character that closes the
+ *       comment whose opening exclamation point was the lookahead of infile
+ *       upon entry into the procedure, or
  *      if the comment is terminated by end-of-file:
- *       the last character in input s has been consumed.
- *  (2) token value lineComment is passed back in token
+ *       the last character in the input file has been consumed.
  *
  * error-conditions:
  *  (1) illegal character encountered
@@ -381,7 +380,7 @@ BEGIN
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE LineComment ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE LineComment ( infile : InfileT );
 
 VAR
   next : CHAR;
@@ -389,14 +388,14 @@ VAR
 BEGIN
 
   REPEAT
-    next := Source.consumeChar(source);
-  UNTIL source.eof() OR (next = ISO646.NEWLINE)
+    next := Infile.consumeChar(infile);
+  UNTIL Infile.eof(infile) OR (next = ISO646.NEWLINE)
     
 END LineComment;
 
 
 (* ---------------------------------------------------------------------------
- * procedure BlockComment ( source, diag )
+ * procedure BlockComment ( infile )
  *  matches the input in source to a block comment
  * ---------------------------------------------------------------------------
  * EBNF
@@ -406,14 +405,13 @@ END LineComment;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is the opening parenthesis of a block comment.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is the opening parenthesis of a block comment.
  *
  * post-conditions:
- *  (1) lookahead of s is the character immediately following the closing
+ *  (1) lookahead of infile is the character immediately following the closing
  *      parenthesis that closes the block comment whose opening parenthesis
- *      was the lookahead of s upon entry into the procedure.
- *  (2) token value blockComment is passed back in token
+ *      was the lookahead of infile upon entry into the procedure.
  *
  * error-conditions:
  *  (1) eof reached
@@ -426,7 +424,7 @@ END LineComment;
  *       TO DO
  * ---------------------------------------------------------------------------
  *)
-PROCEDURE BlockComment ( source : SourceT; VAR diag : Diagnostic );
+PROCEDURE BlockComment ( infile : InfileT );
 
 VAR
   ch, next : CHAR;
@@ -435,23 +433,22 @@ VAR
 BEGIN
   
   nestLevel := 1;
+  ch := Infile.lookaheadChar(infile);
   
-  WHILE NOT Source.eof(source) AND (nestLevel > 0) DO
-    Source.GetChar(source, ch, next);
-    
+  WHILE NOT Infile.eof(infile) AND (nestLevel > 0) DO
+    next := Infile.consumeChar(infile);
+     
     IF (ch = '*') AND (next = ')') THEN
-      Source.ConsumeChar(source);
+      ch := next; next := Infile.consumeChar(infile);
       nestLevel := nextLevel - 1
     
     ELSIF (ch = '(') AND (next = '*') THEN
-      Source.ConsumeChar(source);
+      ch := next; next := Infile.consumeChar(infile);
       nestLevel := nestLevel + 1
       
-    END;
-    
-    Source.ConsumeChar(source)
-    
-  END; (* WHILE *)
+    END (* IF *)
+     
+  END (* WHILE *)
   
   (* TO DO : diagnostics *)
 
