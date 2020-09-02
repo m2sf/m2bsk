@@ -447,7 +447,7 @@ BEGIN
       nestLevel := nestLevel + 1
       
     END (* IF *)
-     
+    
   END (* WHILE *)
   
   (* TO DO : diagnostics *)
@@ -556,7 +556,27 @@ VAR
   
 BEGIN
   
-  (* TO DO *)
+  next := Infile.consumeChar(infile);
+  
+  (* DigitSep? *)
+  IF next = DigitSeparator THEN
+    next := Infile.consumeChar(infile);
+  END; (* IF *)
+  
+  (* DigitSep *)
+  IF Char.isDigit(next) THEN
+    next := DigitSeq(infile)
+    
+  ELSE (* error: lookahead is not a decimal digit *)
+    
+    (* TO DO *)
+    
+  END; (* IF *)
+  
+  (* RealNumberTail? *)
+  IF next = DecimalPoint THEN
+    next := RealNumberTail(infile)
+  END; (* IF *)
   
   RETURN next
 END matchDecimalNumberTail;
@@ -593,7 +613,40 @@ VAR
   
 BEGIN
   
-  (* TO DO *)
+  (* '.' *)
+  next := Infile.consumeChar(infile);
+  
+  (* DigitSeq *)
+  IF Char.isDigit(next) THEN
+    next := DigitSeq(infile)
+    
+  ELSE (* error: lookahead is not a decimal digit *)
+    
+    (* TO DO *)
+    
+  END; (* IF *)
+  
+  (* exponent? *)
+  IF next = 'e' THEN
+    (* consume 'e' *)
+    next := Infile.consumeChar(infile);
+    
+    (* ( '+' | '-' )?  *)
+    IF (next = '+') OR (next = '-') THEN
+      (* consume sign *)
+      next := Infile.consumeChar(infile)
+    END; (* IF *)
+    
+    (* DigitSeq *)
+    IF Char.isDigit(next) THEN
+      next := DigitSeq(infile)
+      
+    ELSE (* error: lookahead is not a decimal digit *)
+      
+      (* TO DO *)
+
+    END (* IF *)
+  END; (* IF *)
   
   RETURN next
 END matchRealNumberTail;
