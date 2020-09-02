@@ -1,0 +1,17 @@
+(*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation *)
+
+IMPLEMENTATION MODULE Primitive;
+
+FROM String IMPORT StringT;
+
+
+VAR (* use read-only *)
+  alloc, atinsert, atremove, atstore, atvalue, dealloc, kvalue, kvstore,
+  stdin, stdout : StringT;
+
+
+PROCEDURE isPrimitive ( lexeme : StringT ) : BOOLEAN;
+(* Returns TRUE if lexeme represents a primitive identifier, else FALSE. *)
+
+
+END Primitive.
