@@ -9,7 +9,9 @@ IMPORT ISO646, Char, Capabilities, Infile, Token;
 FROM Token IMPORT TokenT;
 FROM Infile IMPORT InfileT;
 
-CONST DigitSeparator = "'";
+CONST
+  DecimalPoint = ISO646.PERIOD;
+  DigitSeparator = ISO646.APOSTROPHE;
 
 
 (* Semantic Symbols *)
@@ -665,8 +667,8 @@ END matchRealNumberTail;
  *   ;
  *
  * pre-conditions:
- *  (1) s is the current input source and it must not be NIL.
- *  (2) lookahead of s is a base-2 digit.
+ *  (1) infile is the current input file and it must not be NIL.
+ *  (2) lookahead of infile is a base-2 digit.
  *
  * post-conditions:
  *  (1) lookahead of s is the character immediately following the last digit
@@ -685,7 +687,33 @@ VAR
   
 BEGIN
   
-  (* TO DO *)
+  (* Digit *)
+  next := Infile.consumeChar(infile);
+  
+  (* Digit* *)
+  WHILE Char.isDigit(next) DO
+    next := Infile.consumeChar(infile)
+  END; (* WHILE *)
+  
+  (* ( DigitSep Digit+ )? *)
+  IF next = DigitSeparator THEN
+    next := Infile.consumeChar(infile);
+    
+    (* Digit *)
+    IF Char.isDigit(next) DO
+      next := Infile.consumeChar(infile);
+      
+      (* Digit* *)
+      WHILE Char.isDigit(next) DO
+        next := Infile.consumeChar(infile)
+      END (* WHILE *)
+
+    ELSE (* error : lookahead not a decimal digit *)
+      
+      (* TO DO *)
+      
+    END (* IF *)
+  END; (* IF *)
   
   RETURN next
 END matchDigitSeq;
@@ -722,7 +750,33 @@ VAR
   
 BEGIN
   
-  (* TO DO *)
+  (* Base2Digit *)
+  next := Infile.consumeChar(infile);
+  
+  (* Base2Digit* *)
+  WHILE (next = '0') OR (next = '1') DO
+    next := Infile.consumeChar(infile)
+  END; (* WHILE *)
+  
+  (* ( DigitSep Base2Digit+ )? *)
+  IF next = DigitSeparator THEN
+    next := Infile.consumeChar(infile);
+    
+    (* Base2Digit *)
+    IF (next = '0') OR (next = '1') DO
+      next := Infile.consumeChar(infile);
+      
+      (* Base2Digit* *)
+      WHILE (next = '0') OR (next = '1') DO
+        next := Infile.consumeChar(infile)
+      END (* WHILE *)
+
+    ELSE (* error : lookahead not a base-2 digit *)
+      
+      (* TO DO *)
+      
+    END (* IF *)
+  END; (* IF *)
   
   RETURN next
 END matchBase2DigitSeq;
@@ -759,7 +813,33 @@ VAR
   
 BEGIN
   
-  (* TO DO *)
+  (* Base16Digit *)
+  next := Infile.consumeChar(infile);
+  
+  (* Base16Digit* *)
+  WHILE Char.isDigit(next) OR ((next >= 'A') AND (next <= 'F')) DO
+    next := Infile.consumeChar(infile)
+  END; (* WHILE *)
+  
+  (* ( DigitSep Base16Digit+ )? *)
+  IF next = DigitSeparator THEN
+    next := Infile.consumeChar(infile);
+    
+    (* Base16Digit *)
+    IF Char.isDigit(next) OR ((next >= 'A') AND (next <= 'F')) DO
+      next := Infile.consumeChar(infile);
+      
+      (* Base16Digit* *)
+      WHILE Char.isDigit(next) OR ((next >= 'A') AND (next <= 'F')) DO
+        next := Infile.consumeChar(infile)
+      END (* WHILE *)
+
+    ELSE (* error : lookahead not a base-16 digit *)
+      
+      (* TO DO *)
+      
+    END (* IF *)
+  END; (* IF *)
   
   RETURN next
 END matchBase16DigitSeq;
