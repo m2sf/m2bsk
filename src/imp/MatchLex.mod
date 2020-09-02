@@ -9,6 +9,8 @@ IMPORT ISO646, Char, Capabilities, Infile, Token;
 FROM Token IMPORT TokenT;
 FROM Infile IMPORT InfileT;
 
+CONST DigitSeparator = "'";
+
 
 (* Semantic Symbols *)
 
@@ -565,7 +567,7 @@ BEGIN
   
   (* DigitSep *)
   IF Char.isDigit(next) THEN
-    next := DigitSeq(infile)
+    next := matchDigitSeq(infile)
     
   ELSE (* error: lookahead is not a decimal digit *)
     
@@ -575,7 +577,7 @@ BEGIN
   
   (* RealNumberTail? *)
   IF next = DecimalPoint THEN
-    next := RealNumberTail(infile)
+    next := matchRealNumberTail(infile)
   END; (* IF *)
   
   RETURN next
@@ -618,7 +620,7 @@ BEGIN
   
   (* DigitSeq *)
   IF Char.isDigit(next) THEN
-    next := DigitSeq(infile)
+    next := matchDigitSeq(infile)
     
   ELSE (* error: lookahead is not a decimal digit *)
     
@@ -639,7 +641,7 @@ BEGIN
     
     (* DigitSeq *)
     IF Char.isDigit(next) THEN
-      next := DigitSeq(infile)
+      next := matchDigitSeq(infile)
       
     ELSE (* error: lookahead is not a decimal digit *)
       
