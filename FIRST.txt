@@ -10,136 +10,131 @@ definitionModule =
   
 import =
   { IMPORT };
-
-ident =
-  { StdIdent,
-    ForeignIdent };
   
-qualident =
-  { StdIdent,
-    ForeignIdent };
-
-identList =
-  { StdIdent,
-    ForeignIdent };
-
 definition =
   { CONST,
     TYPE,
     VAR,
     PROCEDURE,
     TO };
-
+  
 constDefinition =
-  { StdIdent,
-    ForeignIdent };
-
+  { LeftBracket,
+    StdIdent };
+  
+ident =
+  { StdIdent };
+  
 typeDefinition =
-  { StdIdent,
-    ForeignIdent };
-
-type =
-  { ALIAS,
-    StdIdent,
-    ForeignIdent,
-    LeftBracket,
-    LeftParen,
-    SET,
-    ARRAY,
-    RECORD,
-    POINTER,
-    PROCEDURE };
-
+  { StdIdent };
+  
 aliasType =
   { ALIAS };
-
-derivedType =
-  { StdIdent,
-    ForeignIdent };
-
+  
+qualident =
+  { StdIdent };
+  
 subrangeType =
   { LeftBracket };
-
+  
 range =
   { LeftBracket };
-
+  
 enumType =
   { LeftParen };
-
+  
+identList =
+  { StdIdent };
+  
 setType =
   { SET };
-
+  
 arrayType =
   { ARRAY };
-
+  
 recordType =
   { RECORD };
-
+  
+fieldList =
+  { StdIdent };
+  
 recTypeToExtend =
   { StdIdent,
-    ForeignIdent,
     NIL };
-
-fieldList =
-  { StdIdent,
-    ForeignIdent };
-
+  
 pointerType =
   { POINTER };
-
+  
 procedureType =
   { PROCEDURE };
-
+  
 formalType =
-  { ARRAY,
-    StdIdent,
-    ForeignIdent,
+  { ARGLIST
+    ARRAY,
     CAST,
     CONST,
-    VAR };
-
-nonAttrFormalType =
-  { ARRAY,
     StdIdent,
-    ForeignIdent,
-    CAST };
-
+    VAR };
+  
+nonAttrFormalType =
+  { ARGLIST
+    ARRAY,
+    CAST,
+    StdIdent };
+  
+simpleFormalType =
+  { ARRAY,
+    StdIdent };
+  
 castingFormalType =
   { CAST };
-
-addressTypeIdent =
-  { UNSAFE,
-    ADDRESS };
-
-attributedFormalType =
-  { CONST,
-    VAR };
-
-simpleVariadicFormalType =
+  
+variadicFormalType =
   { ARGLIST };
-
+  
 procedureHeader =
   { PROCEDURE };
-
+  
+bindingSpecifier =
+  { NEW,
+    RETAIN,
+    RELEASE,
+    READ,
+    WRITE,
+    StdIdent,
+    Primitive };
+  
+bindableIdent =
+  { StdIdent,
+    Primitive };
+  
 procedureSignature =
-  { StdIdent,
-    ForeignIdent };
-
-formalParameters =
-  { StdIdent,
-    ForeignIdent,
-    CONST,
-    VAR };
-
-attributedFormalParams =
+  { StdIdent };
+  
+formalParams =
   { CONST,
-    VAR };
-
-implOrPrgmModule =
-  { IMPLEMENTATION,
-    MODULE };
-
+    VAR,
+    StdIdent };
+  
+programModule =
+  { MODULE };
+  
+privateImport =
+  { IMPORT };
+  
 block =
+  { ALIAS,
+    CONST,
+    TYPE,
+    VAR,
+    PROCEDURE,
+    TO,
+    BEGIN };
+  
+implementationModule =
+  { IMPLEMENTATION };
+  
+possiblyEmptyBlock =
   { ALIAS,
     CONST,
     TYPE,
@@ -148,7 +143,7 @@ block =
     TO,
     BEGIN,
     END };
-
+  
 declaration =
   { ALIAS,
     CONST,
@@ -156,47 +151,43 @@ declaration =
     VAR,
     PROCEDURE,
     TO };
-
+  
 aliasDeclaration =
   { StdIdent,
-    ForeignIdent,
     Asterisk };
   
 namedAliasDecl =
-  { StdIdent,
-    ForeignIdent };
+  { StdIdent };
   
 qualifiedWildcard =
-  { StdIdent,
-    ForeignIdent };
+  { StdIdent };
   
 wildcardAliasDecl =
   { Asterisk };
   
 typeDeclaration =
-  { StdIdent,
-    ForeignIdent };
+  { StdIdent };
   
-indeterminateType =
-  { IN };
+pointerOrIndeterminateType =
+  { POINTER };
+  
+indeterminateTarget =
+  { RECORD };
   
 indeterminateField =
   { Plus };
   
-varOrFieldDeclaration =
-  { StdIdent,
-    ForeignIdent };
-  
-anonType =
-  { ARRAY,
-    LeftBracket,
-    PROCEDURE };
-  
+varDeclaration =
+  { StdIdent };
+    
 statementSequence =
   { NEW,
+    RETAIN,
     RELEASE,
     StdIdent,
-    ForeignIdent,
+    COPY,
+    READ,
+    WRITE,
     IF,
     CASE,
     LOOP,
@@ -204,13 +195,18 @@ statementSequence =
     REPEAT,
     FOR,
     RETURN,
-    EXIT };
-
+    EXIT,
+    NOP,
+    TO };
+  
 statement =
   { NEW,
+    RETAIN,
     RELEASE,
     StdIdent,
-    ForeignIdent,
+    COPY,
+    READ,
+    WRITE,
     IF,
     CASE,
     LOOP,
@@ -218,27 +214,43 @@ statement =
     REPEAT,
     FOR,
     RETURN,
-    EXIT };
-
-toDoList =
-  { TO };
-  
-trackingRef =
-  { LeftParen };
-  
-taskToDo =
-  { StringLiteral };
+    EXIT,
+    NOP,
+    TO };
   
 memMgtOperation =
   { NEW,
+    RETAIN,
     RELEASE };
-
+  
 updateOrProcCall =
-  { StdIdent,
-    ForeignIdent };
+  { StdIdent };
   
 returnStatement =
   { RETURN };
+  
+copyStatement =
+  { COPY };
+  
+readStatement =
+  { READ };
+  
+writeStatement =
+  { WRITE };
+  
+inputArg =
+  { NEW,
+    StdIdent };
+  
+outputArgs =
+  { Octothorpe,
+    Minus,
+    NOT,
+    NumberLiteral,
+    StringLiteral,
+    LeftBrace,
+    StdIdent,
+    LeftParen };
   
 ifStatement =
   { IF };
@@ -252,7 +264,6 @@ case =
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
     LeftParen,
     Minus };
   
@@ -262,7 +273,6 @@ caseLabels =
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
     LeftParen,
     Minus };
   
@@ -279,35 +289,37 @@ forStatement =
   { FOR };
   
 forLoopVariants =
-  { StdIdent,
-    ForeignIdent };
+  { StdIdent };
   
 iterableExpr =
   { LeftBracket,
-    StdIdent,
-    ForeignIdent };
+    StdIdent };
   
 ordinalRange =
   { LeftBracket };
   
 designator =
-  { StdIdent,
-    ForeignIdent };
+  { StdIdent };
   
 designatorTail =
   { LeftBracket,
+    Period,
     Caret };
   
-exprOrSlice =
-  { Minus,
-    NOT,
-    NumberLiteral,
-    StringLiteral,
-    LeftBrace,
-    StdIdent,
-    ForeignIdent,
-    LeftParent };
+subscriptOrSlice =
+  { LeftBracket };
   
+targetDesignator =
+  { StdIdent };
+  
+targetDesignatorTail =
+  { LeftBracket,
+    Period,
+    Caret };
+ 
+fieldSelector =
+  { Period };
+    
 expressionList =
   { Minus,
     NOT,
@@ -315,28 +327,25 @@ expressionList =
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
-    LeftParent };
+    LeftParen };
   
 expression =
-  { NOT,
+  { Minus,
+    NOT,
     NumberLiteral,
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
-    LeftParen,
-    Minus };
+    LeftParen };
   
 simpleExpression =
-  { NOT,
+  { Minus,
+    NOT,
     NumberLiteral,
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
-    LeftParen,
-    Minus };
+    LeftParen };
   
 term =
   { NOT,
@@ -344,7 +353,6 @@ term =
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
     LeftParen };
   
 simpleTerm =
@@ -353,7 +361,6 @@ simpleTerm =
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
     LeftParen };
   
 factor =
@@ -361,7 +368,6 @@ factor =
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
     LeftParen };
   
 simpleFactor =
@@ -369,24 +375,30 @@ simpleFactor =
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
     LeftParen };
   
 designatorOrFuncCall =
-  { StdIdent,
-    ForeignIdent };
+  { StdIdent };
   
 structuredValue =
   { LeftBrace };
   
 valueComponent =
-  { NOT,
+  { Minus,
+    NOT,
     NumberLiteral,
     StringLiteral,
     LeftBrace,
     StdIdent,
-    ForeignIdent,
-    LeftParen,
-    Minus };
+    LeftParen };
+  
+toDoList =
+  { TO };
+  
+trackingRef =
+  { LeftParen };
+  
+taskToDo =
+  { StringLiteral };
   
 END OF FILE
