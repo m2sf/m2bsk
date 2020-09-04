@@ -30,7 +30,7 @@ reserved
   ALIAS, AND, ARGLIST, ARRAY, BEGIN, CASE, CONST, COPY, DEFINITION, DIV, DO, ELSE,
   ELSIF, END, EXIT, FOR, IF, IMPLEMENTATION, IMPORT, IN, LOOP, MOD, MODULE, NEW, NOP,
   NOT, OCTETSEQ, OF, OPAQUE, OR, POINTER, PROCEDURE, READ, RECORD, RELEASE, REPEAT
-  RETAIN, RETURN, SET, THEN, TO, TYPE, UNTIL, VAR, WHILE, WRITE;
+  RETAIN, RETURN, SET, THEN, TO, TYPE, UNQUALIFIED, UNTIL, VAR, WHILE, WRITE;
 
 /* ADDRESS, CAPACITY, CAST and NIL are Schroedinger's Tokens */
 
@@ -85,8 +85,10 @@ definition :=
 /* Constant Definition */
 
 constDefinition :=
-  ( '[' ( COLLATION | TLIMIT ) ']' )?
-  ident '=' constExpression
+  ( '[' ( COLLATION | TLIMIT ) ']' )? simpleConstDefinition ;
+
+simpleConstDefinition :=
+  ident ( ':' typeIdent )? '=' constExpression
   ;
 
 /* Identifier */
@@ -228,7 +230,7 @@ pointerType :=
 /* Procedure Type */
 
 procedureType :=
-  PROCEDURE ( '(' formalType ( ',' formalType )* ')' )? ( ':' returnedType )?
+  PROCEDURE ( '(' formalType ( ';' formalType )* ')' )? ( ':' returnedType )?
   ;
 
 
@@ -358,47 +360,23 @@ possiblyEmptyBlock :=
 /* Declaration */
 
 declaration :=
-  ALIAS ( aliasDeclaration ';' )+ |
   CONST ( ident '=' constExpression ';' )+ |
   TYPE ( typeDeclaration ';' )+ |
   VAR ( varDeclaration ';' )+ |
   procedureHeader ';' block ident ';' |
+  aliasDeclaration ';' |
   toDoList ';'
   ;
 
 
-/* Alias Declaration */
+/* Constant Declaration */
 
-aliasDeclaration :=
-  namedAliasDecl | wildcardAliasDecl
-  ;
+alias constDeclaration = simpleConstDefinition ;
 
-/* Named Alias Declaration */
 
-namedAliasDecl :=
-  aliasName
-    ( '=' qualifiedName | ( ',' aliasName )* '=' qualifiedWildcard )
-  ;
+/* Constant Expression */
 
-/* Alias Name */
-
-alias aliasName = ident ;
-
-/* Qualified Name */
-
-alias qualifiedName = qualident ;
-
-/* Qualified Wildcard */
-
-qualifiedWildcard :=
-  qualident '.*'
-  ;
-
-/* Wildcard Alias Declaration */
-
-wildcardAliasDecl :=
-  '*' '=' qualifiedWildcard
-  ;
+alias constExpression = expression ;
 
 
 /* Type Declaration */
@@ -438,6 +416,23 @@ alias capacityField = ident ;
 varDeclaration :=
   identList ':' ( typeIdent | arrayType | subrange Type | procedureType )
   ;
+
+
+/* Alias Declaration */
+
+aliasDeclaration :=
+  UNQUALIFIED nameSelector ( ',' nameSelector )*
+  ;
+
+/* Name Selector */
+
+nameSelector :=
+  qualident wildcard?
+  ;
+
+/* Wildcard */
+
+alias wildcard = '.*' ;
 
 
 /* Statement Sequence */

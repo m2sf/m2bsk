@@ -22,6 +22,9 @@ constDefinition =
   { LeftBracket,
     StdIdent };
   
+simpleConstDefinition =
+  { StdIdent };
+  
 ident =
   { StdIdent };
   
@@ -123,11 +126,11 @@ privateImport =
   { IMPORT };
   
 block =
-  { ALIAS,
-    CONST,
+  { CONST,
     TYPE,
     VAR,
     PROCEDURE,
+    UNQUALIFIED,
     TO,
     BEGIN };
   
@@ -135,36 +138,26 @@ implementationModule =
   { IMPLEMENTATION };
   
 possiblyEmptyBlock =
-  { ALIAS,
-    CONST,
+  { CONST,
     TYPE,
     VAR,
     PROCEDURE,
+    UNQUALIFIED,
     TO,
     BEGIN,
     END };
   
 declaration =
-  { ALIAS,
-    CONST,
+  { CONST,
     TYPE,
     VAR,
     PROCEDURE,
+    UNQUALIFIED,
     TO };
   
-aliasDeclaration =
-  { StdIdent,
-    Asterisk };
-  
-namedAliasDecl =
+constDeclaration =
   { StdIdent };
-  
-qualifiedWildcard =
-  { StdIdent };
-  
-wildcardAliasDecl =
-  { Asterisk };
-  
+   
 typeDeclaration =
   { StdIdent };
   
@@ -179,7 +172,13 @@ indeterminateField =
   
 varDeclaration =
   { StdIdent };
-    
+  
+aliasDeclaration =
+  { UNQUALIFIED };
+  
+nameSelector =
+  { StdIdent };
+  
 statementSequence =
   { NEW,
     RETAIN,
