@@ -7,19 +7,20 @@ FROM String IMPORT StringT;
 
 
 VAR (* use read-only *)
-  alias, and, arglist, array, begin, case, const, copy, definition, div, do, else,
-  elsif, end, exit, for, if, implementation, import, in, loop, mod, module, new,
-  nop, not, octetseq, of, opaque, or, pointer, procedure, read, record, release,
-  repeat, retain, return, set, then, to, type, until, var, while, write : StringT;
+  alias, and, arglist, array, begin, case, const, copy, definition, div, do,
+  else, elsif, end, exit, for, if, implementation, import, in, loop, mod,
+  module, new, nop, not, octetseq, of, opaque, or, pointer, procedure, read,
+  record, release, repeat, retain, return, set, then, to, type, unqualified,
+  until, var, while, write : StringT;
 
 
 PROCEDURE tokenForLexeme ( lexeme : StringT; defaultToken : TokenT ) : TokenT;
-(* If lexeme represents a reserved word, its corresponding reserved word's token
-   value is returned, otherwise the value of defaultToken is returned. *)
+(* If lexeme represents a reserved word, its corresponding reserved word's
+   token is returned, otherwise the value of defaultToken is returned. *)
 
 
 PROCEDURE lexemeForToken ( token : TokenT ) : StringT;
-(* If token represents a reserved word, an interned string with its corresponding
-   lexeme is returned, otherwise NIL is returned. *)
+(* If token represents a reserved word, an interned string with its
+   corresponding lexeme is returned, otherwise NIL is returned. *)
 
 END Resword.
