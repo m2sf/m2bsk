@@ -382,7 +382,15 @@ BEGIN
       RETURN Token.Definition
     END (* IF *)
     
-  | 14 :
+  | 11 :
+
+    (* 'UNQUALIFIED' *)
+    
+    IF lexeme = unqualified THEN
+      RETURN Token.Unqualified
+    END (* IF *)
+    
+   | 14 :
 
     (* 'IMPLEMENTATION' *)
     
@@ -537,7 +545,10 @@ BEGIN (* initialise lexemes *)
   type := String.forArray("TYPE");
   lexeme[Token.Type] := type;
 
-  until := String.forArray("UNTIL");
+  unqualified := String.forArray("UNQUALIFIED");
+  lexeme[Token.Unqualified] := unqualified;
+
+   until := String.forArray("UNTIL");
   lexeme[Token.Until] := until;
 
   var := String.forArray("VAR");
