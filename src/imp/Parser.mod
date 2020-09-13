@@ -243,10 +243,12 @@ END definitionModule;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * import :=
- *   IMPORT libIdent ( ',' libIdent )* ';'
+ *   IMPORT libIdent reExport? ( ',' libIdent reExport? )* ';'
  *   ;
  *
- * alias libIdent := StdIdent ;
+ * alias libIdent = StdIdent ;
+ *
+ * alias reExport = '+' ;
  *
  * astNode: (IMPORT implist)
  * --------------------------------------------------------------------------
@@ -271,6 +273,12 @@ BEGIN
     LexQueue.Enqueue(tmplist, lookahead.lexeme);
     lookahead := Lexer.consumeSym(lexer)
     
+    (* reExport? *)
+    IF lookahead.token = Token.Plus THEN
+      (* TO DO : encode re-export flag *)
+      lookahead := Lexer.consumeSym(lexer)
+    END; (* IF *)
+  
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet(Token.Comma, FOLLOW(Import))
   END; (* IF *)
@@ -284,6 +292,12 @@ BEGIN
     IF matchToken(Token.StdIdent) THEN
       LexQueue.Enqueue(tmplist, lookahead.lexeme);
       lookahead := Lexer.ConsumeSym(lexer)
+
+      (* reExport? *)
+      IF lookahead.token = Token.Plus THEN
+        (* TO DO : encode re-export flag *)
+        lookahead := Lexer.consumeSym(lexer)
+      END; (* IF *)
       
     ELSE (* resync *)
       lookahead := skipToMatchTokenOrSet(Token.Comma, FOLLOW(Import))
@@ -1923,6 +1937,69 @@ BEGIN
   
   RETURN lookahead
 END implOrPrgmModule;
+
+
+(* --------------------------------------------------------------------------
+ * private function privateImport(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule privateImport, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * import :=
+ *   IMPORT libIdent ( ',' libIdent )* ';'
+ *   ;
+ *
+ * alias libIdent := StdIdent ;
+ *
+ * astNode: (IMPORT implist)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE privateImport ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  idlist : AstT;
+  tmplist : LexQueueT;
+  lookahead := SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("privateImport");
+
+  (* IMPORT *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  LexQueue.New(tmplist);
+  
+  (* libIdent *)
+  IF matchToken(Token.StdIdent) THEN
+    LexQueue.Enqueue(tmplist, lookahead.lexeme);
+    lookahead := Lexer.consumeSym(lexer)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.Comma, FOLLOW(Import))
+  END; (* IF *)
+  
+  (* ( ',' libIdent )* *)
+  WHILE lookahead.token = Token.Comma DO
+    (* ',' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* libIdent *)
+    IF matchToken(Token.StdIdent) THEN
+      LexQueue.Enqueue(tmplist, lookahead.lexeme);
+      lookahead := Lexer.ConsumeSym(lexer)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Comma, FOLLOW(Import))
+    END (* IF *)
+  END; (* WHILE *)
+    
+  (* build AST node and pass it back in astNode *)
+  idlist := NewTerminalListNode(AstNodeType.IdentList, tmplist);
+  astNode := AST.NewListNode(AstNodeType.Import, idlist);
+  LexQueue.Release(tmplist);
+  
+  RETURN lookahead
+END privateImport;
 
 
 (* --------------------------------------------------------------------------
