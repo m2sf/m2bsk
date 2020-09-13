@@ -40,11 +40,10 @@ VAR
  * public function compilationUnit(source, stats, status)
  * --------------------------------------------------------------------------
  * Parses rule compilationUnit depending on the source file type and builds
- * its AST.  Parses definitionModule for file type Def and implOrPrgmModule
- * for file type Mod.  Returns the AST on success or NIL on failure.
+ * its AST.  Returns the AST on success or NIL on failure.
  *
  * compilationUnit :=
- *   definitionModule | implOrPrgmModule
+ *   definitionModule | implementationModule | programModule
  *   ;
  * --------------------------------------------------------------------------
  *)
@@ -64,15 +63,41 @@ BEGIN
   
   IF FileName.isFileTypeDefOrMod(fileType) THEN
     lexer := Lexer.New(source, lexerStatus);
-    
     (* TO DO: verify lexer status *)
+    
+    lookahead := Lexer.lookaheadSym(lexer);
   
     CASE fileType OF
     (* .def, *.DEF *)
-      Filename.FileType.Def : lookahead := definitionModule(ast);
+      Filename.FileType.Def :
+      
+      (* DEFINITION *)
+      IF lookahead.token = Token.Definition THEN
+        lookahead := Lexer.consumeSym(lexer);
+        lookahead := definitionModule(ast)
+        
+      ELSE (* missing start symbol *)
+        status := Status.MissingStartSymbol;
+        ast := NIL
+      END (* IF *)
     
     (* .mod, .MOD *)
-    | Filename.FileType.Mod : lookahead := implOrPrgmModule(ast);
+    | Filename.FileType.Mod :
+    
+      (* IMPLEMENTATION *)
+      IF lookahead.token = Token.Implementation THEN
+        lookahead := Lexer.consumeSym(lexer);
+        lookahead := implementationModule(ast)
+        
+      (* MODULE *)
+      ELSIF lookahead.token = Token.Module THEN
+        lookahead := Lexer.consumeSym(lexer);
+        lookahead := programModule(ast)
+        
+      ELSE (* missing start symbol *)
+        status := Status.MissingStartSymbol;
+        ast := NIL
+      END (* IF *)  
     END; (* CASE *)
     
     (* TO DO: verify lookahead *)
