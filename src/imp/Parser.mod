@@ -1040,7 +1040,7 @@ END recordType;
  *   identList ':' ( typeIdent | subrangeType | arrayType | procedureType )
  *   ;
  *
- * astNode: ( )
+ * astNode: (FIELDLIST identListNode typeNode)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE fieldList ( VAR astNode : AstT ) : SymbolT;
@@ -1155,12 +1155,48 @@ END pointerType;
 PROCEDURE opaqueType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
+  constExpr : AstT;
   lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("opaqueType");
   
+  (* OPAQUE *)
+  lookahead := Lexer.consumeSym(lexer);
   
+  CASE lookahead.token OF
+    (* '[' *)
+    Token.LeftBracket :
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* allocSize *)
+    IF matchSet(FIRST(constExpression) THEN
+      lookahead := constExpression(constExpr)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.RightBracket, FOLLOW(OpaqueType))
+    END; (* IF *)
+    
+    (* ']' *)
+    IF matchToken(Token.RightBracket) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchSet(FOLLOW(OpaqueType))
+    END (* IF *)
+    
+    (* POINTER *)
+  | Token.Pointer :
+      lookahead := Lexer.consumeSym(lexer)
+      
+      (* TO DO : pointer flag *)
+      
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(OpaqueType))
+  END; (* CASE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.OpaqueType, TO DO);
   
   RETURN lookahead
 END opaqueType;
@@ -1192,7 +1228,7 @@ BEGIN
   PARSER_DEBUG_INFO("procedureType");
     
   (* PROCEDURE *)
-  lookahead := Lexer.consumeSym(lexer);  
+  lookahead := Lexer.consumeSym(lexer);
   
   (* ( '(' formalType ( ',' formalType )* ')' )? *)
   IF lookahead.token = Token.LeftParen THEN
