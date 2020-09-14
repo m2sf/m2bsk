@@ -319,9 +319,7 @@ END import;
  * Parses rule ident, constructs its AST node, passes the node back
  * in out-parameter astNode and returns the new lookahead symbol.
  *
- * ident :=
- *   StdIdent | ForeignIdent
- *   ;
+ * alias ident = StdIdent ;
  *
  * astNode: (IDENT "lexeme")
  * --------------------------------------------------------------------------
@@ -339,7 +337,7 @@ BEGIN
   
   lexeme := lookahead.lexeme;
 
-  (* StdIdent | ForeignIdent *)
+  (* StdIdent *)
   lookahead := Lexer.consumeSym(lexer)
     
   (* build AST node and pass it back in astNode *)
@@ -347,59 +345,6 @@ BEGIN
   
   RETURN lookahead
 END ident;
-
-
-(* --------------------------------------------------------------------------
- * private function qualident(astNode)
- * --------------------------------------------------------------------------
- * Parses rule qualident, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * qualident :=
- *   ident ( '.' ident )*
- *   ;
- *
- * astNode: (QUALIDENT "lexeme1" "lexeme2" ... "lexemeN" )
- * --------------------------------------------------------------------------
- *)
-PROCEDURE qualident ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  tmplist : LexQueue;
-  lookahead := SymbolT;
-
-BEGIN
-  PARSER_DEBUG_INFO("qualident");
-  
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  LexQueue.New(tmplist);
-  LexQueue.Enqueue(tmplist, lookahead.lexeme);
-  
-  (* ident *)
-  lookahead := Lexer.consumeSym(lexer);
-  
-  (* ( '.' ident )* *)
-  WHILE lookahead.token = Token.Dot DO
-    (* '.' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* ident *)
-    IF matchSet(FIRST(Ident)) THEN
-      LexQueue.Enqueue(tmplist, lookahead.lexeme);
-      lookahead := Lexer.consumeSym(lexer)
-      
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.Dot, FOLLOW(Qualident))
-    END (* IF *)
-  END; (* WHILE *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewTerminalListNode(AstNodeType.Qualident, tmplist);
-  LexQueue.Release(tmplist);
-  
-  RETURN lookahead
-END qualident;
 
 
 (* --------------------------------------------------------------------------
@@ -758,6 +703,50 @@ BEGIN
   
   RETURN lookahead
 END aliasType;
+
+
+(* --------------------------------------------------------------------------
+ * private function qualident(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule qualident, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * qualident :=
+ *   StdIdent | Qualident
+ *   ;
+ *
+ * astNode: (IDENT "lexeme") | (QUALIDENT "lexeme")
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE qualident ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  lexeme : LexemeT;
+  lookahead := SymbolT;
+
+BEGIN
+  PARSER_DEBUG_INFO("qualident");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  lexeme := lookahead.lexeme;
+  
+  (* StdIdent | Qualident *)
+  CASE lookahead.token OF
+  
+    (* StdIdent *)
+    Token.StdIdent :
+    astNode := AST.NewTerminalNode(AstNodeType.Ident, lexeme)
+    
+    (* Qualident *)
+  | Token.Qualident :
+    astNode := AST.NewTerminalNode(AstNodeType.Qualident, lexeme)
+  END; (* CASE *)
+  
+  lookahead := Lexer.consumeSym(lexer);
+  
+  RETURN lookahead
+END qualident;
 
 
 (* --------------------------------------------------------------------------
