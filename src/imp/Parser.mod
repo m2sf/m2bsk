@@ -1276,7 +1276,7 @@ END procedureType;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * formalType :=
- *   nonAttrFormalType | attributedFormalType
+ *   ( CONST | VAR )? nonAttrFormalType
  *   ;
  *
  * astNode: formalTypeNode
@@ -1285,6 +1285,7 @@ END procedureType;
 PROCEDURE formalType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
+  nodeType : AstNodeTypeT;
   lookahead := SymbolT;
 
 BEGIN
@@ -1292,12 +1293,26 @@ BEGIN
   
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* nonAttrFormalType | *)
+  (* ( CONST | VAR )? *)
+  IF lookahead.token = Token.Const THEN
+    (* CONST *)
+    nodeType := AstNodeType.ConstP
+  ELSIF lookahead.token = Token.Var THEN
+    (* VAR *)
+    nodeType := AstNodeType.VarP
+  END; (* IF *)
+  
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* nonAttrFormalType *)
   IF inFIRST(NonAttrFormalType, lookahead.token) THEN
     lookahead := nonAttrFormalType(astNode)
-  ELSE (* attributedFormalType *)
-    lookahead := attributedFormalType(astNode)
-  END; (* IF *) 
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(FormalType))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(nodeType, astNode);
   
   RETURN lookahead
 END formalType;
@@ -1310,60 +1325,106 @@ END formalType;
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
  * nonAttrFormalType :=
- *   ( ARRAY OF )? typeIdent | castingFormalType
+ *   simpleFormalType | castingFormalType | variadicFormalType
  *   ;
  *
- * astNode:
- *  (FTYPE qualidentNode) |
- *  (ARRAYP identNode qualidentNode) |
- *  (OPENARRAYP qualidentNode) |
- *  castingFormalTypeNode
+ * astNode: 
  * --------------------------------------------------------------------------
  *)
 PROCEDURE nonAttrFormalType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  ftypeId, ftype : AstT;
-  seenArray : BOOLEAN;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("procedureType");
+  PARSER_DEBUG_INFO("nonAttrFormalType");
   
-  seenArray := FALSE;
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* castingFormalType | *)
-  IF lookahead.token = Token.Cast THEN
-    lookahead := castingFormalType(astNode)
-  
-  ELSE (* ( ARRAY OF )? typeIdent *)
-    (* ( ARRAY OF )? *)
-    IF lookahead.token = Token.Array THEN
-      (* ARRAY *)
-      lookahead := Lexer.consumeSym(lexer);
-      seenArray := TRUE;
-      
-      (* OF *)
-      IF matchToken(Token.Of) THEN
-        lookahead := Lexer.consumeSym(lexer);
-      ELSE (* resync *)
-        lookahead :=
-          skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(NonAttrFormalType))
-      END (* IF *)
-    END; (* IF *)
+  (* simpleFormalType | castingFormalType | variadicFormalType *)
+  CASE lookahead.token OF
+    (* ARGLIST *)
+    Token.Arglist :
+    lookahead := variadicFormalType(astNode)
     
-    (* typeIdent *)
-    IF matchSet(FIRST(Qualident)) THEN
-      lookahead := qualident(ftypeId);
-      
-      (* build AST node and pass it back in astNode *)
-      ftype := AST.NewNode(AstNodeType.FormalType, ftypeId);
-      IF seenArray THEN
-        astNode := AST.NewNode(AstNodeType.OpenArray, ftype)
-      ELSE
-        astNode := ftype
-      END (* IF *)
+    (* ARRAY *)
+  | Token.Array :
+    lookahead := simpleFormalType(astNode)
+    
+    (* CAST | StdIdent *)
+  | Token.StdIdent :
+    IF lookahead.lexeme = Resword.cast THEN
+      (* TO DO : check import of module UNSAFE *)
+      lookahead := castingFormalType(astNode)
+    ELSE
+      lookahead := simpleFormalType(astNode)
+    END (* IF *)
+  
+    (* Qualident *)
+  | Token.Qualident :
+    lookahead := simpleFormalType(astNode)
+    
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(FormalType))
+  END; (* CASE *)
+  
+  RETURN lookahead
+END nonAttrFormalType;
+
+
+(* --------------------------------------------------------------------------
+ * private function simpleFormalType(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule simpleFormalType, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * simpleFormalType :=
+ *   ( ARRAY OF )? typeIdent
+ *   ;
+ *
+ * astNode: 
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE simpleFormalType ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  seenArray : BOOLEAN;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("nonAttrFormalType");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* ( ARRAY OF )? *)
+  IF lookahead.token = Token.Array THEN
+    (* ARRAY *)
+    lookahead := Lexer.consumeSym(lexer);
+    seenArray := TRUE;
+    
+    (* OF *)
+    IF matchToken(Token.Of) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(SimpleFormalType))
+    END (* IF *)
+    
+  ELSE (* no array prefix *)
+    seenArray = FALSE
+  END; (* IF *)
+  
+  (* typeIdent *)
+  IF matchSet(FIRST(Qualident)) THEN
+    lookahead := qualident(ftypeId);
+    
+    (* build AST node and pass it back in astNode *)
+    ftype := AST.NewNode(AstNodeType.FormalType, ftypeId);
+    IF seenArray THEN
+      astNode := AST.NewNode(AstNodeType.OpenArray, ftype)
+    ELSE
+      astNode := ftype
+    END (* IF *)
       
     ELSE (* resync *)
       lookahead := skipToMatchSet(FOLLOW(NonAttrFormalType))
@@ -1371,7 +1432,7 @@ BEGIN
   END; (* IF *)
   
   RETURN lookahead
-END nonAttrFormalType;
+END simpleFormalType;
 
 
 (* --------------------------------------------------------------------------
@@ -1381,18 +1442,16 @@ END nonAttrFormalType;
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
  * castingFormalType :=
- *   CAST ( BARE ARRAY OF OCTET | addressTypeIdent )
+ *   CAST ( OCTETSEQ | ADDRESS )
  *   ;
  *
- * astNode: (CASTP formalTypeNode)
+ * astNode: (CASTP OctetSeq ) | (CASTP Address)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE castingFormalType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lexeme : LexemeT;
-  ftypeId, ftype : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("castingFormalType");
@@ -1400,209 +1459,71 @@ BEGIN
   (* CAST *)
   lookahead := Lexer.consumeSym(lexer);
   
-  (* BARE ARRAY OF OCTET | addressTypeIdent *)
-  IF matchTokenOrSet(Token.Bare, FIRST(AddressType)) THEN
-    (* BARE ARRAY OF OCTET | *)
-    IF lookahead.token = Token.Bare THEN
-      (* BARE *)
+  (* OCTETSEQ | ADDRESS *)
+  CASE lookahead.token OF
+    (* OCTETSEQ | *)
+    Token.Octetseq :
+    lookahead := Lexer.consumeSym(lexer);
+    ftype := AST.NewNode(AstNodeType.OctetSeq);
+    
+    (* StdIdent="ADDRESS" *)
+  | Token.StdIdent :
+    IF lookahead.lexeme = Resword.address THEN
       lookahead := Lexer.consumeSym(lexer);
-      
-      (* ARRAY *)
-      IF matchToken(Token.Array) THEN
-        lookahead := Lexer.consumeSym(lexer)
-      ELSE (* resync *)
-        lookahead := skipToMatchTokenOrToken(Token.Of, Token.Octet)
-      END; (* IF *)
-      
-      (* OF *)
-      IF matchToken(Token.Of) THEN
-        lookahead := Lexer.consumeSym(lexer)
-      ELSE (* resync *)
-        lookahead :=
-          skipToMatchTokenOrSet(Token.Octet, FOLLOW(CastingFormalType))
-      END; (* IF *)
-      
-      (* OCTET *)
-      IF matchToken(Token.Octet) THEN
-        lexeme := lookahead.lexeme;
-        lookahead := Lexer.consumeSym(lexer);
-        
-        (* build AST node and pass it back in astNode *)
-        ftypeId := AST.NewTerminalNode(AstNodeType.Qualident, lexeme);
-        ftype := AST.NewNode(AstNodeType.OpenArray, ftypeId);
-        astNode := AST.NewNode(AstNodeType.CastP, ftype)
-        
-      ELSE (* resync *)
-        lookahead := skipToMatchSet(FOLLOW(CastingFormalType))
-      END; (* IF *)
-      
-    ELSE (* addressType *)
-      lookahead := addressTypeIdent(astNode)
+      ftype := AST.NewNode(AstNodeType.Address);
     END (* IF *)
-  END; (* IF *)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(CastingFormalType))
+  END; (* CASE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.CastP, ftype)
   
   RETURN lookahead
 END castingFormalType;
 
 
 (* --------------------------------------------------------------------------
- * private function addressTypeIdent(astNode)
+ * private function variadicFormalType(astNode)
  * --------------------------------------------------------------------------
- * Parses rule addressTypeIdent, constructs its AST node, passes the node
+ * Parses rule variadicFormalType, constructs its AST node, passes the node
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
- * addressTypeIdent :=
- *   ( UNSAFE '.' )? ADDRESS
+ * variadicFormalType :=
+ *   ARGLIST OF simpleFormalType
  *   ;
  *
- * astNode: qualidentNode
+ * astNode: 
  * --------------------------------------------------------------------------
  *)
-PROCEDURE addressTypeIdent ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE variadicFormalType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
- tmplist : LexQueueT;
-  lookahead := SymbolT;
- 
-BEGIN
-  PARSER_DEBUG_INFO("addressTypeIdent");
-  
-  LexQueue.New(tmplist);
-  
-  lookahead = Lexer.lookaheadSym(lexer);
-  
-  (* ( UNSAFE '.' )?  *)
-  IF lookahead.token = Token.Address THEN
-    (* UNSAFE *)
-    LexQueue.Enqueue(tmplist, lookahead.lexeme);
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* '.' *)
-    IF matchToken(Token.Dot) THEN
-      lookahead := Lexer.consumeSym(lexer)
-    ELSE (* resync *)
-      lookahead :=
-        skipToMatchTokenOrSet(Token.Address, FOLLOW(AddressTypeIdent))
-    END (* IF *)
-  END; (* IF *)
-  
-  (* ADDRESS *)
-  IF matchToken(Token.Address) THEN
-    LexQueue.Enqueue(tmplist, lookahead.lexeme);
-    lookahead := Lexer.consumeSym(lexer)
-    
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(AddressTypeIdent))
-  END (* IF *)
-    
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewTerminalListNode(AstNodeType.Qualident, tmplist);
-  LexQueue.Release(tmplist);
-  
-  RETURN lookahead
-END addressTypeIdent;
-
-
-(* --------------------------------------------------------------------------
- * private function attributedFormalType(astNode)
- * --------------------------------------------------------------------------
- * Parses rule attributedFormalType, constructs its AST node, passes the node
- * back in out-parameter astNode and returns the new lookahead symbol.
- *
- * attributedFormalType :=
- *   ( CONST | VAR ) ( nonAttrFormalType | simpleVariadicFormalType )
- *   ;
- *
- * astNode: formalTypeNode
- * --------------------------------------------------------------------------
- *)
-PROCEDURE attributedFormalType ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  ftype : AstT;
-  nodeType : AstNodeTypeT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("attributedFormalType");
-  
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* CONST | VAR *)
-  IF lookahead.token = Token.Const THEN
-    (* CONST *)
-    nodeType := AstNodeType.ConstP
-  ELSE
-    (* VAR *)
-    nodeType := AstNodeType.VarP
-  END; (* IF *)
-  
-  lookahead := Lexer.consumeSym(lexer);
-  
-  (* nonAttrFormalType | simpleVariadicFormalType *)
-  IF matchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType)) THEN
-    (* simpleVariadicFormalType | *)
-    IF lookahead.token = Token.ArgList THEN
-      lookahead := simpleVariadicFormalType(ftype)
-    ELSE (* nonAttrFormalType *)
-      lookahead := nonAttrFormalType(ftype)
-    END (* IF *)
-    
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(AttributedFormalType))
-  END; (* IF *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(nodeType, ftype);
-  
-  RETURN lookahead
-END attributedFormalType;
-
-
-(* --------------------------------------------------------------------------
- * private function simpleVariadicFormalType(astNode)
- * --------------------------------------------------------------------------
- * Parses rule simpleVariadicFormalType, constructs its AST node, passes the
- * node back in out-parameter astNode and returns the new lookahead symbol.
- *
- * simpleVariadicFormalType :=
- *   ARGLIST OF nonAttrFormalType
- *   ;
- *
- * astNode: (ARGLIST formalTypeNode)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE simpleVariadicFormalType ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  ftype : AstT;
-  lookahead := SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("simpleVariadicFormalType");
+  PARSER_DEBUG_INFO("variadicFormalType");
   
   (* ARGLIST *)
   lookahead := Lexer.consumeSym(lexer);
   
   (* OF *)
   IF matchToken(Token.Of) THEN
-    lookahead := Lexer.consumeSym(lexer)
+    lookahead := Lexer.consumeSym(lexer);
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FIRST(NonAttrFormalType))
-  END; (* IF *)
-  
-  (* nonAttrFormalType *)
-  IF matchSet(FIRST(NonAttrFormalType)) THEN
-    lookahead := nonAttrFormalType(ftype)
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(SimpleVariadicFormalType))
+    lookahead :=
+      skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(VariadicFormalType))
   END (* IF *)
   
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.ArgList, ftype);
+  (* simpleFormalType *)
+  IF matchSet(FIRST(SimpleFormalType)) THEN
+    lookahead := simpleFormalType(astNode)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(VariadicFormalType))
+  END; (* IF *)
   
   RETURN lookahead
-END simpleVariadicFormalType;
+END variadicFormalType;
 
 
 (* --------------------------------------------------------------------------
