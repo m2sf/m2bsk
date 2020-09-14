@@ -658,7 +658,17 @@ END qualident;
  * Parses rule subrangeType, constructs its AST node, passes the node back
  * in out-parameter astNode and returns the new lookahead symbol.
  *
- * alias subrangeType = rangeOfOrdinalType;
+ * subrangeType :=
+ *   constRange OF countableType
+ *   ;
+ *
+ * constRange :=
+ *   '[' lowerBound '..' upperBound ']'
+ *   ;
+ *
+ * alias countableType = typeIdent ;
+ *
+ * alias upperBound, lowerBound = constExpression ;
  *
  * astNode: (SUBR lowerBound upperBound baseType)
  * --------------------------------------------------------------------------
@@ -667,40 +677,6 @@ PROCEDURE subrangeType ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("subrangeType");
-  
-  RETURN rangeOfOrdinalType(astNode)
-END subrangeType;
-
-
-(* --------------------------------------------------------------------------
- * private function rangeOfOrdinalType(astNode)
- * --------------------------------------------------------------------------
- * Parses rule rangeOfOrdinalType, constructs its AST node, passes the node
- * back in out-parameter astNode and returns the new lookahead symbol.
- *
- * rangeOfOrdinalType :=
- *   '[' lowerBound '..' upperBound ']' OF ordinalType
- *   ;
- *
- * alias lowerBound = ordinalExpression ;
- *
- * alias upperBound = ordinalExpression ;
- *
- * alias ordinalExpression = expression ;
- *
- * alias ordinalType = typeIdent ;
- *
- * astNode: (SUBR lowerBound upperBound typeId)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE rangeOfOrdinalType ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  lowerBound, upperBound, typeId : AstT;
-  lookahead := SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("rangeOfOrdinalType");
   
   (* '[' *)
   lookahead := Lexer.consumeSym(lexer);
@@ -738,21 +714,21 @@ BEGIN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead :=
-      skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(RangeOfOrdinalType))
+      skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(SubrangeType))
   END; (* IF *)
-    
-  (* ordinalType *)
+  
+  (* countableType *)
   IF matchSet(FIRST(Qualident)) THEN
     lookahead := qualident(typeId)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(RangeOfOrdinalType))
+    lookahead := skipToMatchSet(FOLLOW(SubrangeType))
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
   astNode := AST.NewNode(AstNodeType.Subr, lowerBound, upperBound, typeId);
   
   RETURN lookahead
-END rangeOfOrdinalType;
+END subrangeType;
 
 
 (* --------------------------------------------------------------------------
