@@ -1031,6 +1031,68 @@ END recordType;
 
 
 (* --------------------------------------------------------------------------
+ * private function fieldList(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule fieldList, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * fieldList :=
+ *   identList ':' ( typeIdent | subrangeType | arrayType | procedureType )
+ *   ;
+ *
+ * astNode: ( )
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE fieldList ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  idList, typeNode : AstT;
+  lookahead := SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("fieldList");
+  
+  (* identList *)
+  lookahead := identList(idList);
+  
+  (* ':' *)
+  IF matchToken(Token.Colon) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSetOrSet(FIRST(Qualident), FIRST(AnonType))
+  END; (* IF *)
+  
+  (* typeIdent | subrangeType | arrayType | procedureType *)
+  CASE lookahead.token OF
+    (* typeIdent | *)
+    Token.StdIdent,
+    Token.Qualident :
+      lookahead := qualident(typeNode)
+      
+    (* subrangeType | *)
+  | Token.LeftBracket :
+      lookahead := subrangeType(typeNode)
+  
+    (* arrayType | *)
+  | Token.Array :
+      lookahead := arrayType(typeNode)
+  
+    (* procedureType *)
+  | Token.Procedure :
+      lookahead := procedureType(typeNode)
+  
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(FieldList))
+  END; (* CASE *)
+    
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.FieldList, idlist, typeNode);
+  
+  RETURN lookahead
+END fieldList;
+
+
+(* --------------------------------------------------------------------------
  * private function pointerType(astNode)
  * --------------------------------------------------------------------------
  * Parses rule pointerType, constructs its AST node, passes the node back
