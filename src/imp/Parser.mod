@@ -314,93 +314,6 @@ END import;
 
 
 (* --------------------------------------------------------------------------
- * private function ident(astNode)
- * --------------------------------------------------------------------------
- * Parses rule ident, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * alias ident = StdIdent ;
- *
- * astNode: (IDENT "lexeme")
- * --------------------------------------------------------------------------
- *)
-PROCEDURE ident ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  lexeme : LexemeT;
-  lookahead := SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("ident");
-  
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  lexeme := lookahead.lexeme;
-
-  (* StdIdent *)
-  lookahead := Lexer.consumeSym(lexer)
-    
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewTerminalNode(AstNodeType.Ident, lexeme);
-  
-  RETURN lookahead
-END ident;
-
-
-(* --------------------------------------------------------------------------
- * private function identList(astNode)
- * --------------------------------------------------------------------------
- * Parses rule identList, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * identList :=
- *   ident ( ',' ident )*
- *   ;
- *
- * astNode: (IDENTLIST "lexeme1" "lexeme2" ... "lexemeN" )
- * --------------------------------------------------------------------------
- *)
-PROCEDURE identList ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  tmplist : LexQueue;
-  lookahead := SymbolT;
-
-BEGIN
-  PARSER_DEBUG_INFO("identList");
-
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  LexQueue.New(tmplist);
-  LexQueue.Enqueue(tmplist, lookahead.lexeme);
-  
-  (* ident *)
-  lookahead := Lexer.consumeSym(lexer);
-  
-  (* ( ',' ident )* *)
-  WHILE lookahead.token = Token.Comma DO
-    (* ',' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* ident *)
-    IF matchSet(FIRST(Ident)) THEN
-      LexQueue.EnqueueUnique(tmplist, lookahead.lexeme);
-      lookahead := Lexer.consumeSym(lexer)
-      
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.Comma, FOLLOW(IdentList))
-    END (* IF *)
-  END; (* WHILE *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewTerminalListNode(AstNodeType.IdentList, tmplist);
-  LexQueue.Release(tmplist);
-  
-  RETURN lookahead
-END identList;
-
-
-(* --------------------------------------------------------------------------
  * private function definition(astNode)
  * --------------------------------------------------------------------------
  * Parses rule definition, constructs its AST node, passes the node back
@@ -537,17 +450,49 @@ END constDefinition;
 
 
 (* --------------------------------------------------------------------------
+ * private function ident(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule ident, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * alias ident = StdIdent ;
+ *
+ * astNode: (IDENT "lexeme")
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE ident ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  lexeme : LexemeT;
+  lookahead := SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("ident");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  lexeme := lookahead.lexeme;
+
+  (* StdIdent *)
+  lookahead := Lexer.consumeSym(lexer)
+    
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewTerminalNode(AstNodeType.Ident, lexeme);
+  
+  RETURN lookahead
+END ident;
+
+
+(* --------------------------------------------------------------------------
  * private function typeDefinition(astNode)
  * --------------------------------------------------------------------------
  * Parses rule typeDefinition, constructs its AST node, passes the node back
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * typeDefinition :=
- *   ident '=' typeDefinitionTail
- *   ;
- *
- * typeDefinitionTail :=
- *   ( OPAQUE | type )
+ *   ident '='
+ *     ( aliasType | derivedType | subrangeType | enumType | setType |
+ *       arrayType | recordType | pointerType | opaqueType | procedureType )
  *   ;
  *
  * astNode: (TYPEDEF identNode typeNode)
@@ -569,25 +514,45 @@ BEGIN
   IF matchToken(Token.Equal) THEN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.Opaque, FIRST(Type))
+    (* we assume '=' is simply missing *)
   END; (* IF *)
   
-  (* OPAQUE | type *)
-  IF matchTokenOrSet(Token.Opaque ,FIRST(Type)) THEN
-    (* OPAQUE | *)
-    IF lookahead.token = Token.Opaque THEN
-      lookahead := Lexer.consumeSym(lexer)
-      typeDef := AST.emptyNode()
+  CASE lookahead.token OF
+  (* aliasType | *)
+    Token.Alias : lookahead := aliasType(typeDef)
       
-    (* type *)
-    ELSE
-      lookahead := type(typeDef)
-    END (* IF *)
+  (* derivedType | *)
+  | Token.StdIdent,
+    Token.Qualident : lookahead := qualident(typeDef)
     
+  (* subrangeType | *)
+  | Token.LeftBracket : lookahead := subrangeType(typeDef)
+  
+  (* enumType | *)
+  | Token.LeftParen : lookahead := enumType(typeDef)
+  
+  (* setType | *)
+  | Token.Set : lookahead := setType(typeDef)
+  
+  (* arrayType | *)
+  | Token.Array : lookahead := arrayType(typeDef)
+  
+  (* recordType | *)
+  | Token.Record : lookahead := recordType(typeDef)
+  
+  (* pointerType | *)
+  | Token.Pointer : lookahead := pointerType(typeDef)
+  
+  (* opaqueType | *)
+  | Token.Opaque : lookahead := opaqueType(typeDef)
+  
+  (* procedureType *)
+  | Token.Procedure : lookahead := procedureType(typeDef)
+  
   ELSE (* resync *)
     lookahead := skipToMatchSet(FOLLOW(TypeDefinition))
-  END; (* IF *)
-    
+  END; (* CASE *)
+      
   (* build AST node and pass it back in astNode *)
   astNode := AST.NewNode(AstNodeType.TypeDef, typeId, typeDef);
   
@@ -629,7 +594,7 @@ BEGIN
       
   (* derivedType | *)
   | Token.StdIdent,
-    Token.ForeignIdent : lookahead := qualident(astNode)
+    Token.Qualident : lookahead := qualident(astNode)
     
   (* subrangeType | *)
   | Token.LeftBracket : lookahead := subrangeType(astNode)
@@ -648,6 +613,9 @@ BEGIN
   
   (* pointerType | *)
   | Token.Pointer : lookahead := pointerType(astNode)
+  
+  (* opaqueType | *)
+  | Token.Opaque : lookahead := opaqueType(astNode)
   
   (* procedureType *)
   | Token.Procedure : lookahead := procedureType(astNode)
@@ -923,6 +891,59 @@ END enumType;
 
 
 (* --------------------------------------------------------------------------
+ * private function identList(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule identList, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * identList :=
+ *   ident ( ',' ident )*
+ *   ;
+ *
+ * astNode: (IDENTLIST "lexeme1" "lexeme2" ... "lexemeN" )
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE identList ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  tmplist : LexQueue;
+  lookahead := SymbolT;
+
+BEGIN
+  PARSER_DEBUG_INFO("identList");
+
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  LexQueue.New(tmplist);
+  LexQueue.Enqueue(tmplist, lookahead.lexeme);
+  
+  (* ident *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( ',' ident )* *)
+  WHILE lookahead.token = Token.Comma DO
+    (* ',' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* ident *)
+    IF matchSet(FIRST(Ident)) THEN
+      LexQueue.EnqueueUnique(tmplist, lookahead.lexeme);
+      lookahead := Lexer.consumeSym(lexer)
+      
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Comma, FOLLOW(IdentList))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewTerminalListNode(AstNodeType.IdentList, tmplist);
+  LexQueue.Release(tmplist);
+  
+  RETURN lookahead
+END identList;
+
+
+(* --------------------------------------------------------------------------
  * private function setType(astNode)
  * --------------------------------------------------------------------------
  * Parses rule setType, constructs its AST node, passes the node back
@@ -1142,6 +1163,34 @@ BEGIN
   
   RETURN lookahead
 END pointerType;
+
+
+(* --------------------------------------------------------------------------
+ * private function opaqueType(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule opaqueType, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * opaqueType :=
+ *   OPAQUE ( '[' allocSize ']' | POINTER );
+ *
+ * alias allocSize = constExpression ;
+ *
+ * astNode: ()
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE opaqueType ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("opaqueType");
+  
+  
+  
+  RETURN lookahead
+END opaqueType;
 
 
 (* --------------------------------------------------------------------------
