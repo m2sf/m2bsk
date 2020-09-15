@@ -1580,21 +1580,21 @@ END varDefinition;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * procedureHeader :=
- *   PROCEDURE procedureSignature
+ *   PROCEDURE ( '[' bindingSpecifier ']' )? procedureSignature
  *   ;
  *
- * procedureSignature :=
+ * .procedureSignature :=
  *   ident ( '(' formalParams ( ';' formalParams )* ')' )?
  *   ( ':' returnedType )?
  *   ;
  *
- * astNode: (PROC procId fplist retType)
+ * astNode: (PROC bindSpec procId fplist retType)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE procedureHeader ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  procId, fpList, retType : AstT;
+  bindSpec, procId, fpList, retType : AstT;
   lookahead := SymbolT;
   
 BEGIN
@@ -1602,6 +1602,31 @@ BEGIN
     
   (* PROCEDURE *)
   lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( '[' bindingSpecifier ']' )? *)
+  IF lookahead.token = Token.LeftBracket THEN
+    (* '[' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* bindingSpecifier *)
+    IF matchSet(FIRST(BindingSpecifier) THEN
+      lookahead := bindingSpecifier(bindSpec)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.RightBracket, FIRST(ProcedureSignature));
+      bindSpec := AST.emptyNode()
+    END; (* IF *)
+    
+    (* ']' *)
+    IF matchToken(Token.RightBracket) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FIRST(ProcedureSignature))
+    END (* IF *)
+    
+  ELSE (* no binding specifier *)
+    bindSpec := AST.emptyNode()
+  END; (* IF *)
   
   (* procedureSignature *)
   IF matchSet(FIRST(ProcedureSignature)) THEN
@@ -1657,10 +1682,106 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.Proc, procId, fplist, retType);
+  astNode := AST.NewNode(AstNodeType.Proc, bindSpec, procId, fplist, retType);
   
   RETURN lookahead
 END procedureHeader;
+
+
+(* --------------------------------------------------------------------------
+ * private function bindingSpecifier(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule bindingSpecifier, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * bindingSpecifier :=
+ *   NEW ( argListFlag | capacityFlag )? | RETAIN | RELEASE |
+ *   READ allocFlag? | WRITE formatFlag? | bindableIdent
+ *   ;
+ *
+ * astNode: TO DO
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE bindingSpecifier ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  lookahead := SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("bindingSpecifier");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  CASE lookahead.Token OF
+    (* NEW *)
+    Token.New :
+      lookahead := Lexer.consumeSym(lexer);
+    
+      (* ( arglistFlag | capacityFlag )? *)
+      IF lookahead.token = Token.Plus THEN
+        (* arglistFlag | *)
+        lookahead := Lexer.consumeSym(lexer);
+        
+      (* capacityFlag *)
+      ELSIF lookahead.token = Token.Asterisk THEN
+        (* capacityFlag *)
+        lookahead := Lexer.consumeSym(lexer);
+            
+      END; (* IF *)
+      
+      astNode := TO DO
+      
+    (* READ *)
+  | Token.Read :
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* allocFlag? *)
+      IF token.lookahead = Token.Asterisk THEN
+        lookahead := Lexer.consumeSym(lexer);
+        
+      END; (* IF *)
+      
+      astNode := TO DO
+    
+    (* RELEASE *)
+  | Token.Release :
+      lookahead := Lexer.consumeSym(lexer);
+      
+      astNode := TO DO
+      
+    (* RETAIN *)
+  | Token.Retain :
+      lookahead := Lexer.consumeSym(lexer);
+      
+      astNode := TO DO
+      
+    (* WRITE *)
+  | Token.Write :
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* formatFlag? *)
+      IF token.lookahead = Token.Octothorpe THEN
+        lookahead := Lexer.consumeSym(lexer);
+        
+      END; (* IF *)
+      
+      astNode := TO DO
+      
+    (* StdIdent *)
+  | Token.StdIdent :
+      lookahead := bindableIdent(astNode)
+      
+    (* Primitive *)
+  | Token.Primitive :
+      lookahead := bindableIdent(astNode)
+    
+  ELSE (* pre-conditions not met *)
+    (* FATAL ERROR *)
+    Halt
+  END; (* CASE *)
+  
+  RETURN lookahead
+END bindingSpecifier;
 
 
 (* --------------------------------------------------------------------------
