@@ -2477,6 +2477,74 @@ END typeDeclaration;
 
 
 (* --------------------------------------------------------------------------
+ * private function octetSeqType(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule octetSeqType, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * octetSeqType :=
+ *   OCTETSEQ '[' valueCount ']'
+ *   ;
+ *
+ * astNode: TO DO
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE octetSeqType ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+
+  TO DO
+
+END octetSeqType;
+
+
+(* --------------------------------------------------------------------------
+ * private function privatePointerType(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule privatePointerType, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * privatePointerType :=
+ *   POINTER TO ( determinateTarget | indeterminateTarget )
+ *   ;
+ *
+ * alias determinateTarget = typeIdent ;
+ *
+ * astNode: TO DO
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE privatePointerType ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+
+  TO DO
+
+END privatePointerType;
+
+
+(* --------------------------------------------------------------------------
+ * private function indeterminateTarget(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule indeterminateTarget, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * indeterminateTarget :=
+ *   RECORD ( fieldList ';' )* indeterminateField END
+ *   ;
+ *
+ * astNode: TO DO
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE indeterminateTarget ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+
+  TO DO
+
+END indeterminateTarget;
+
+
+(* --------------------------------------------------------------------------
  * private function indeterminateType(astNode)
  * --------------------------------------------------------------------------
  * Parses rule indeterminateType, constructs its AST node, passes the node
