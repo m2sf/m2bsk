@@ -1720,12 +1720,12 @@ BEGIN
       (* ( arglistFlag | capacityFlag )? *)
       IF lookahead.token = Token.Plus THEN
         (* arglistFlag | *)
-        lookahead := Lexer.consumeSym(lexer);
+        lookahead := Lexer.consumeSym(lexer)
         
       (* capacityFlag *)
       ELSIF lookahead.token = Token.Asterisk THEN
         (* capacityFlag *)
-        lookahead := Lexer.consumeSym(lexer);
+        lookahead := Lexer.consumeSym(lexer)
             
       END; (* IF *)
       
@@ -1776,7 +1776,7 @@ BEGIN
       lookahead := bindableIdent(astNode)
     
   ELSE (* pre-conditions not met *)
-    (* FATAL ERROR *)
+    (* if we ever get here, then this will be a parser bug *)
     Halt
   END; (* CASE *)
   
@@ -1791,17 +1791,16 @@ END bindingSpecifier;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * formalParams :=
- *   identList ':' ( nonAttrFormalType | simpleVariadicFormalType ) |
- *   attributedFormalParams
+ *   ( CONST | VAR )? identList ':' nonAttrFormalType
  *   ;
  *
- * astNode: (FPARAMS identListNode formalTypeNode) | attrFParamsNode
+ * astNode: (FPARAMS attr idlist ftype)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE formalParams ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  idlist, ftype : AstT;
+  attr, idlist, ftype : AstT;
   lookahead := SymbolT;
   
 BEGIN
@@ -1809,36 +1808,47 @@ BEGIN
   
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* nonAttrFormalParams | *)
-  IF inFIRST(IdentList, lookahead.token) THEN
-    lookahead := nonAttrFormalParams(idlist);
-    (* ':' *)
-    IF matchToken(Token.Colon) THEN
-      lookahead := Lexer.consumeSym(lexer)
-    ELSE
-      lookahead :=
-        skipToMatchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType))
-    END; (* IF *)
-    
-    (* nonAttrFormalType | simpleVariadicFormalType *)
-    IF matchTokenOrSet(Token.ArgList, FIRST(NonAttrFormalType)) THEN
-      (* simpleVariadicFormalType | *)
-      IF lookahead.token = Token.ArgList THEN
-        lookahead := simpleVariadicFormalType(ftype)
-      ELSE (* nonAttrFormalType *)
-        lookahead := nonAttrFormalType(ftype)
-      END (* IF *)
+  (* ( CONST | VAR )? *)
+  CASE lookahead.token OF
+    (* CONST | *)
+    Token.Const :
+      lookahead := Lexer.consumeSym(lexer);
+      attr := TO DO
       
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(FormalParams))
-    END (* IF *)
-    
-    (* build AST node and pass it back in astNode *)
-    astNode := AST.NewNode(AstNodeType.FParams, idlist, ftype)
-    
-  ELSE (* attributedFormalParams *)
-    lookahead := attributedFormalParams(astNode)
-  END;
+    (* VAR *)
+  | Token.Var :
+      lookahead := Lexer.consumeSym(lexer);
+      attr := TO DO
+      
+  ELSE (* no attribute *)
+    attr := AST.NewNode.emptyNode()
+  END; (* CASE *)
+  
+  (* identList *)
+  IF matchSet(FIRST(IdentList)) THEN
+    lookahead := identList(idlist)
+  ELSE (* resync *)
+    idlist := NIL;
+    lookahead := skipToMatchTokenOrSet(Token.Colon, FIRST(NonAttrFormalType))
+  END; (* IF *)
+  
+  (* ':' *)
+  IF matchToken(Token.Colon) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchSetOrSet(FIRST(NonAttrFormalType), FOLLOW(NonAttrFormalType))
+  END; (* IF *)
+  
+  (* nonAttrFormalType *)
+  IF matchSet(FIRST(NonAttrFormalType)) THEN
+    lookahead := nonAttrFormalType(ftype)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(NonAttrFormalType))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(NodeType.FParams, attr, idlist, ftype);
   
   RETURN lookahead
 END formalParams;
