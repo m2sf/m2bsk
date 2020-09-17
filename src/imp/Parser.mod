@@ -490,14 +490,14 @@ END ident;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * typeDefinition :=
- *   ident '='
- *     ( aliasType | derivedType | subrangeType | enumType | setType |
- *       arrayType | recordType | pointerType | opaqueType | procedureType )
+ *   ident '=' type
  *   ;
  *
  * astNode: (TYPEDEF identNode typeNode)
  * --------------------------------------------------------------------------
  *)
+TYPE Context = ( Public, Private );
+
 PROCEDURE typeDefinition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
@@ -517,47 +517,116 @@ BEGIN
     (* we assume '=' is simply missing *)
   END; (* IF *)
   
-  CASE lookahead.token OF
-  (* aliasType | *)
-    Token.Alias : lookahead := aliasType(typeDef)
-      
-  (* derivedType | *)
-  | Token.StdIdent,
-    Token.Qualident : lookahead := qualident(typeDef)
-    
-  (* subrangeType | *)
-  | Token.LeftBracket : lookahead := subrangeType(typeDef)
-  
-  (* enumType | *)
-  | Token.LeftParen : lookahead := enumType(typeDef)
-  
-  (* setType | *)
-  | Token.Set : lookahead := setType(typeDef)
-  
-  (* arrayType | *)
-  | Token.Array : lookahead := arrayType(typeDef)
-  
-  (* recordType | *)
-  | Token.Record : lookahead := recordType(typeDef)
-  
-  (* pointerType | *)
-  | Token.Pointer : lookahead := pointerType(typeDef)
-  
-  (* opaqueType | *)
-  | Token.Opaque : lookahead := opaqueType(typeDef)
-  
-  (* procedureType *)
-  | Token.Procedure : lookahead := procedureType(typeDef)
-  
+  (* type *)
+  IF matchSet(FIRST(Type)) THEN
+    lookahead := type(Public, typeDef)
   ELSE (* resync *)
     lookahead := skipToMatchSet(FOLLOW(TypeDefinition))
-  END; (* CASE *)
-      
+  END; (* IF *)
+        
   (* build AST node and pass it back in astNode *)
   astNode := AST.NewNode(AstNodeType.TypeDef, typeId, typeDef);
   
   RETURN lookahead
 END typeDefinition;
+
+
+(* --------------------------------------------------------------------------
+ * private function type(context, astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule type or privateType depending on context, constructs its AST
+ * node, passes the node back in out-parameter astNode and returns the new
+ * lookahead symbol.
+ *
+ * type :=
+ *   aliasType | derivedType | subrangeType | enumType | setType |
+ *   arrayType | recordType | pointerType | opaqueType | procedureType )
+ *   ;
+ *
+ * privateType :=
+ *   aliasType | derivedType | subrangeType | enumType | setType |
+ *   arrayType | recordType | octetSeqType | privatePointerType |
+ *   procedureType )
+ *   ;
+ *
+ * astNode: (TYPEDECL identNode typeNode)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE type ( context : Context; VAR astNode : AstT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+  
+BEGIN
+  lookahead := Lexer.lookaheadSym(lexer);
+    
+  CASE lookahead.token OF
+  (* aliasType *)  
+    Token.Alias :
+    lookahead := aliasType(astNode)
+    
+  (* derivedType *)
+  | Token.StdIdent :
+    lookahead := derivedType(astNode)
+  
+  (* subrangeType *)
+  | Token.LeftBracket :
+    lookahead := subrangeType(astNode)
+  
+  (* enumType *)
+  | Token.LeftParen :
+    lookahead := enumType(astNode)
+  
+  (* setType *)
+  | Token.Set :
+    lookahead := setType(astNode)
+  
+  (* arrayType *)
+  | Token.Array :
+    lookahead := arrayType(astNode)
+    
+  (* recordType *)
+  | Token.Record :
+    lookahead := recordType(astNode)
+  
+  (* pointerType or privatePointerType *)
+  | Token.Pointer :
+    CASE context OF
+      Public :
+      lookahead := pointerType(astNode)
+      
+    | Private :
+      lookahead := privatePointerType(astNode)
+    END (* CASE *)
+  
+  (* opaqueType *)
+  | Token.Opaque :
+    
+    IF context # Public THEN (* pre-condition not met *)
+      Halt
+    END; (* IF *)
+    
+    lookahead := opaqueType(astNode)
+  
+  (* octetSeqType *)
+  | Token.OctetSeq :
+    
+    IF context # Private THEN (* pre-condition not met *)
+      Halt
+    END; (* IF *)
+    
+    lookahead := octetSeqType(astNode)
+  
+  (* procedureType *)
+  | Token.Procedure :
+    lookahead := procedureType(astNode)
+  
+  ELSE (* pre-condition not met *)
+    Halt
+  END; (* CASE *)
+  
+  RETURN lookahead
+END type;
 
 
 (* --------------------------------------------------------------------------
@@ -2367,10 +2436,10 @@ END declaration;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * typeDeclaration :=
- *   ident '=' ( indeterminateType |  type )
+ *   ident '=' privateType
  *   ;
  *
- * astNode: (TYPEDECL identNode typeNode) | indeterminateTypeNode
+ * astNode: (TYPEDECL identNode typeNode)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE typeDeclaration ( VAR astNode : AstT ) : SymbolT;
@@ -2389,23 +2458,17 @@ BEGIN
   IF matchToken(Token.Equal) THEN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
-    lookahead :=
-      skipToMatchTokenOrSet(Token.In, FIRST(Type))
+    (* we assume '=' is simply missing *)
   END; (* IF *)
   
-  (* indeterminateType | type *)
-  IF matchTokenOrSet(Token.In, FIRST(Type)) THEN
-    (* indeterminateType | *)
-    IF lookahead.token = Token.In THEN
-      lookahead := indeterminateType(typeDecl)
-    ELSE (* type *)
-      lookahead := type(typeDecl)
-    END (* IF *)
+  (* privateType *)
+  IF matchSet(FIRST(PrivateType)) THEN
+    lookahead := type(Private, typeDecl)
     
   ELSE (* resync *)
     lookahead := skipToMatchSet(FOLLOW(TypeDeclaration))
   END; (* IF *)
-    
+  
   (* build AST node and pass it back in astNode *)
   astNode := AST.NewNode(AstNodeType.TypeDecl, typeId, typeDecl);
   
@@ -2622,12 +2685,10 @@ END varOrFieldDeclaration;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * anonType :=
- *   ARRAY valueCount OF typeIdent |
- *   subrangeType |
- *   procedureType
+ *   subrangeType | arrayType | procedureType
  *   ;
  *
- * astNode: arrayTypeNode | subrangeTypeNode | procedureTypeNode
+ * astNode: subrangeTypeNode | arrayTypeNode | procedureTypeNode
  * --------------------------------------------------------------------------
  *)
 PROCEDURE anonType ( VAR astNode : AstT ) : SymbolT;
