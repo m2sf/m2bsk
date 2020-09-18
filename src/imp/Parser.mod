@@ -4182,14 +4182,12 @@ END forStatement;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * forLoopVariants :=
- *   accessor ascOrDesc? ( ',' value )?
+ *   accessor descender? ( ',' value )?
  *   ;
  *
- * alias accessor = ident ;
+ * alias accessor, value = ident ;
  *
- * alias value = ident ;
- *
- * alias ascOrDesc = IncOrDecSuffix ;
+ * alias descender = '--' ;
  *
  * astNode: (FLV identNode ascOrDescNode identNode)
  * --------------------------------------------------------------------------
@@ -4206,17 +4204,16 @@ BEGIN
   (* accessor *)
   lookahead := ident(accessor);
   
-  (* ascOrDesc? *)
-  CASE lookahead.token OF
-  (* '++' *)
-    Token.PlusPlus : accessor := AST.NewNode(AstNodeType.Asc, accessor)
-      
-  (* '--' *)
-  | Token.MinusMinus : accessor := AST.NewNode(AstNodeType.Desc, accessor)
-  END; (* CASE *)
+  (* descender? *)
+  IF lookahead.token # Token.MinusMinus THEN
+    accessor := AST.NewNode(AstNodeType.Asc, accessor)
+  ELSE (* '--' *)
+    lookahead := Lexer.consumeSym(lexer);
+    accessor := AST.NewNode(AstNodeType.Desc, accessor)
+  END; (* IF *)
   
   (* ( ',' value )? *)
-  IF matchToken(Token.Comma) THEN
+  IF lookahead.token = Token.Comma THEN
     (* ',' *)
     lookahead := Lexer.consumeSym(lexer);
     
