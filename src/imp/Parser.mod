@@ -2933,6 +2933,9 @@ BEGIN
   (* caseStatement | *)
     Token.Case : lookahead := caseStatement(astNode)
     
+  (* copyStatement | *)
+  | Token.Copy : lookahead := copyStatement(astNode)
+    
   (* EXIT | *)
   | Token.Exit :
       lookahead := Lexer.consumeSym(lexer);
@@ -2989,82 +2992,149 @@ END statement;
 
 
 (* --------------------------------------------------------------------------
- * private function memMgtOperation(astNode)
+ * private function newStatement(astNode)
  * --------------------------------------------------------------------------
- * Parses rule memMgtOperation, constructs its AST node, passes the node back
+ * Parses rule newStatement, constructs its AST node, passes the node back
  * in out-parameter astNode and returns the new lookahead symbol.
  *
- * memMgtOperation :=
- *   NEW designator ( OF initSize )? |
- *   RELEASE designator
+ * newStatement :=
+ *   NEW designator ( ':=' expression | CAPACITY expression )?
  *   ;
  *
- * alias initSize = expression ;
- *
- * astNode: (NEW desigNode exprNode) | (RELEASE desigNode)
+ * astNode: (NEW desigNode exprNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE memMgtOperation ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE newStatement ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  desig, initSize : AstT;
+  desig, expr : AstT;
   lookahead : SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("memMgtOperation");
+  PARSER_DEBUG_INFO("newStatement");
   
+  (* NEW *)
   lookahead := Lexer.lookaheadSym(lexer);
   
-  (* NEW designator ( OF initSize )? | *)
-  IF lookahead.token = Token.New THEN
-    (* NEW *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* designator *)
-    IF matchSet(FIRST(Designator)) THEN
-      lookahead := designator(desig)
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.Of, FOLLOW(MemMgtOperation))
-    END; (* IF *)
-    
-    (* ( OF initSize )? *)
-    IF lookahead.token = Token.Of THEN
-      
-      (* OF *)
-      lookahead := Lexer.consumeSym(lexer);
-      
-      (* initSize *)
-      IF matchSet(FIRST(Expression)) THEN
-        lookahead := expression(initSize)
-      ELSE (* resync *)
-        lookahead := skipToMatchSet(FOLLOW(MemMgtOperation))
-      END (* IF *)
-      
-    ELSE (* no size *)
-      initSize := AST.emptyNode()
-    END; (* IF *)
-    
-    (* build AST node and pass it back in astNode *)
-    astNode := AST.NewNode(AstNodeType.New, desig, initSize)
-    
-  (* RELEASE designator *)
-  ELSE
-    (* RELEASE *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* designator *)
-    IF matchSet(FIRST(Designator)) THEN
-      lookahead := designator(desig)
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(MemMgtOperation))
-    END; (* IF *)
-    
-    (* build AST node and pass it back in astNode *)
-    astNode := AST.NewNode(AstNodeType.Release, desig)
+  (* designator *)
+  IF matchSet(FIRST(Designator) THEN
+    lookahead := designator(desig)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Statement))
   END; (* IF *)
   
+  (* ( ':=' expression )? | *)
+  IF lookahead.token = Token.Assign THEN
+    (* ':=' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* expression *)
+    IF matchSet(FIRST(Expression) THEN
+      lookahead := expression(expr)
+    ELSE (* resync *)
+      lookahead := skipToMatch(FOLLOW(Statement))
+    END (* IF *)
+    
+  (* ( CAPACITY expression )? *)
+  ELSIF (lookahead.token = Token.StdIdent) AND
+        (lookahead.lexeme = Resword.Capacity) THEN
+    (* CAPACITY *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* expression *)
+    IF matchSet(FIRST(Expression) THEN
+      lookahead := expression(expr)
+    ELSE (* resync *)
+      lookahead := skipToMatch(FOLLOW(Statement))
+    END (* IF *)
+    
+  ELSE (* no tail component *)
+    expr := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(NodeType.New, desig, expr);
+  
   RETURN lookahead
-END memMgtOperation;
+END newStatement;
+
+
+(* --------------------------------------------------------------------------
+ * private function retainStatement(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule retainStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * retainStatement :=
+ *   RETAIN designator
+ *   ;
+ *
+ * astNode: (RETAIN desigNode)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE retainStatement ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  desig : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("retainStatement");
+  
+  (* RETAIN *)
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* designator *)
+  IF matchSet(FIRST(Designator) THEN
+    lookahead := designator(desig)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Statement))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(NodeType.Retain, desig);
+  
+  RETURN lookahead
+END retainStatement;
+
+
+(* --------------------------------------------------------------------------
+ * private function releaseStatement(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule releaseStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * releaseStatement :=
+ *   RELEASE designator
+ *   ;
+ *
+ * astNode: (RELEASE desigNode)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE releaseStatement ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  desig : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("releaseStatement");
+  
+  (* RELEASE *)
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* designator *)
+  IF matchSet(FIRST(Designator) THEN
+    lookahead := designator(desig)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Statement))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(NodeType.Release, desig);
+  
+  RETURN lookahead
+END releaseStatement;
 
 
 (* --------------------------------------------------------------------------
