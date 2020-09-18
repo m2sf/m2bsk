@@ -73,7 +73,6 @@ BEGIN
       
       (* DEFINITION *)
       IF lookahead.token = Token.Definition THEN
-        lookahead := Lexer.consumeSym(lexer);
         lookahead := definitionModule(ast)
         
       ELSE (* missing start symbol *)
@@ -86,12 +85,10 @@ BEGIN
     
       (* IMPLEMENTATION *)
       IF lookahead.token = Token.Implementation THEN
-        lookahead := Lexer.consumeSym(lexer);
         lookahead := implementationModule(ast)
         
       (* MODULE *)
       ELSIF lookahead.token = Token.Module THEN
-        lookahead := Lexer.consumeSym(lexer);
         lookahead := programModule(ast)
         
       ELSE (* missing start symbol *)
