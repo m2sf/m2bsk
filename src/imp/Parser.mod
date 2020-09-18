@@ -2529,10 +2529,16 @@ BEGIN
   (* valueCount *)
   IF matchSet(FIRST(ConstExpression)) THEN
     lookahead := constExpression(astNode)
-    
   ELSE (* resync *)
     lookahead :=
       skipToMatchTokenOrSet(Token.RightBracket, FOLLOW(TypeDeclaration))
+  END; (* IF *)
+  
+  (* ']' *)
+  IF matchToken(Token.RightBracket) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(TypeDeclaration))
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
