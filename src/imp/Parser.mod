@@ -3144,11 +3144,11 @@ END releaseStatement;
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
  * updateOrProcCall :=
- *   designator
- *     ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )?
+ *   designator  ( IncOrDecSuffix | '(' expressionList ')' )? |
+ *   targetDesignator ':=' expression
  *   ;
  *
- * IncOrDecSuffix := '++' | '--' ;
+ * .IncOrDecSuffix := '++' | '--' ;
  *
  * astNode: (ASSIGN desigNode exprNode) | (PCALL exprListNode)
  * --------------------------------------------------------------------------
@@ -3162,43 +3162,31 @@ VAR
 BEGIN
   PARSER_DEBUG_INFO("updateOrProcCall");
   
-  (* designator *)
-  lookahead := designator(desig);
+  (* designator or targetDesignator *)
+  lookahead := designator(variant, desig);
   
-  (* ( IncOrDecSuffix | ':=' expression | '(' expressionList ')' )? *)
-  CASE lookahead.token OF
-  (* IncOrDecSuffix | *)
-    Token.PlusPlus :
-      (* '++' *)
+  CASE variant OF
+  (* designator *) 
+    common :
+    
+    (* ( '++' | '--' | '(' expressionList ')' )? *)
+    CASE lookahead.token OF
+    (* '++' | *)
+      Token.PlusPlus :
       lookahead := Lexer.consumeSym(lexer);
       
       (* build AST node and pass it back in astNode *)
       astNode := AST.NewNode(AstNodeType.Incr, desig)
-    
-  | Token.MinusMinus :
-      (* '--' *)
+      
+    (* '--' | *)
+    | Token.MinusMinus :
       lookahead := Lexer.consumeSym(lexer);
       
       (* build AST node and pass it back in astNode *)
-      astNode := AST.NewNode(AstNodeType.Decr, desig)
+      astNode := AST.NewNode(AstNodeType.Incr, desig)
       
-  (* ':=' expression | *)
-  | Token.Assign :
-      (* ':=' *)
-      lookahead := Lexer.consumeSym(lexer);
-      
-      (* expression *)
-      IF matchSet(FIRST(Expression)) THEN
-        lookahead := expression(expr)
-      ELSE (* resync *)
-        lookahead := skipToMatchSet(FOLLOW(UpdateOrProcCall))
-      END; (* IF *)
-      
-      (* build AST node and pass it back in astNode *)
-      astNode := AST.NewNode(AstNodeType.Assign, desig, expr)
-  
-  (* '(' expressionList ')' *)
-  | Token.LeftParen :
+    (* '(' expressionList ')' *)
+    | Token.LeftParen :
       (* '(' *)
       lookahead := Lexer.consumeSym(lexer);
       
@@ -3207,23 +3195,45 @@ BEGIN
         lookahead := expressionList(exprList)
       ELSE (* resync *)
         lookahead :=
-          skipToMatchTokenOrSet(Token.RightParen, FOLLOW(UpdateOrProcCall))
+          skipToMatchTokenOrSet(Token.RightParen, FOLLOW(Statement))
       END; (* IF *)
       
       (* ')' *)
       IF matchToken(Token.RightParen) THEN
         lookahead := Lexer.consumeSym(lexer)
       ELSE (* resync *)
-        lookahead := skipToMatchSet(FOLLOW(UpdateOrProcCall))
+        lookahead := skipToMatchSet(FOLLOW(Statement))
       END; (* IF *)
       
       (* build AST node and pass it back in astNode *)
       astNode := AST.NewNode(AstNodeType.PCall, desig, exprList)
-  
-  ELSE (* sole designator *)
-    astNode := desig
+      
+    ELSE (* sole designator *)
+      astNode := desig
+    END (* CASE *)
+    
+  (* targetDesignator *)
+  | target :
+    
+    (* ':=' *)
+    IF matchToken(Token.Assign) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      (* we assume ':=' has simply been forgotten *)
+    END; (* IF *)
+    
+    (* expression *)
+    IF matchSet(FIRST(expression)) THEN
+      lookahead := expression(expr)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(Statement))
+    END (* IF *)
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.Assign, desig, expr)
+    
   END; (* CASE *)
-  
+    
   RETURN lookahead
 END updateOrProcCall;
 
