@@ -3343,13 +3343,14 @@ END copyStatement;
  *
  * alias chan = designator ;
  *
- * astNode: (COPY desigNode exprNode)
+ * astNode: (READ desigNode desigListNode)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE readStatement ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   chan, arg : AstT;
+  arglist : AstQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -3364,6 +3365,8 @@ BEGIN
   ELSE (* no channel *)
     chan := AST.emptyNode()
   END; (* IF *)
+  
+  AstQueue.New(arglist);
   
   (* inputArg *)
   IF matchSet(FIRST(InputArg)) THEN
@@ -3385,9 +3388,9 @@ BEGIN
       lookahead := inputArg(arg);
       AstQueue.Enqueue(arglist, arg)
     ELSE (* resync *)
-    lookahead :=
-      skipToMatchTokenOrSetOrSet
-        (Token.Comma, FIRST(InputArg), FOLLOW(InputArg))
+      lookahead :=
+        skipToMatchTokenOrSetOrSet
+          (Token.Comma, FIRST(InputArg), FOLLOW(InputArg))
     END (* IF *)
   END; (* WHILE *)
   
@@ -3396,6 +3399,50 @@ BEGIN
   
   RETURN lookahead
 END readStatement;
+
+
+(* --------------------------------------------------------------------------
+ * private function inputArg(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule inputArg, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * inputArg := NEW? designator ; *   ;
+ *
+ * astNode: TO DO
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE inputArg ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  desig : AstT;
+  newAttr : BOOLEAN;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("inputArg");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* NEW? *)
+  IF lookahead.token = Token.New THEN
+    lookahead := Lexer.consumeSym(lexer);
+    newAttr := TRUE
+  ELSE
+    newAttr := FALSE
+  END; (* IF *)
+  
+  (* designator *)
+  IF matchSet(FIRST(Designator)) THEN
+    lookahead := designator(Common, desig)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(InputArg))
+  END; (* IF *)
+  
+  astNode := TO DO
+  
+  RETURN lookahead
+END inputArg;
 
 
 (* --------------------------------------------------------------------------
