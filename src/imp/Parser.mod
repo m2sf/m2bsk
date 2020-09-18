@@ -2362,13 +2362,15 @@ END possiblyEmptyBlock;
  * declaration :=
  *   CONST ( constDeclaration ';' )+ |
  *   TYPE ( typeDeclaration ';' )+ |
- *   VAR ( varOrFieldDeclaration ';' )+ |
+ *   VAR ( varDeclaration ';' )+ |
  *   procedureHeader ';' block ident ';' |
  *   aliasDeclaration ';' |
  *   toDoList ';'
  *   ;
  *
  * alias constDeclaration = constDefinition ;
+ *
+ * alias varDeclaration = fieldList ;
  *
  * astNode: (DECLLIST declNode1 declNode2 ... declNodeN)
  * --------------------------------------------------------------------------
@@ -2612,10 +2614,10 @@ END indeterminateTarget;
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
  * indeterminateField :=
- *   '+' ident ':' BARE ARRAY discriminantFieldIdent OF typeIdent
+ *   '+' ident ':' ARRAY capacityField OF typeIdent
  *   ;
  *
- * alias discriminantFieldIdent = ident ;
+ * alias capacityField = ident ;
  *
  * astNode: (TERMLIST identNode identNode qualidentNode)
  * --------------------------------------------------------------------------
@@ -2623,7 +2625,7 @@ END indeterminateTarget;
 PROCEDURE indeterminateField ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  fieldId, discrId, typeId : AstT;
+  fieldId, capacityId, typeId : AstT;
   lookahead := SymbolT;
   
 BEGIN
@@ -2636,8 +2638,8 @@ BEGIN
   IF matchSet(FIRST(Ident)) THEN
     lookahead := ident(fieldId)
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrTokenOrSet
-      (Token.Colon, Token.Bare, FOLLOW(IndeterminateField))
+    lookahead :=
+      skipToMatchTokenOrSet(Token.Colon, FOLLOW(IndeterminateField))
   END; (* IF *)
 
   (* ':' *)
@@ -2645,14 +2647,7 @@ BEGIN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead :=
-      skipToMatchTokenOrTokenOrSet(Token.Bare, Token.Array, FIRST(Ident))
-  END; (* IF *)
-  
-  (* BARE *)
-  IF matchToken(Token.Bare) THEN
-    lookahead := Lexer.consumeSym(lexer)
-  ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.Array, FIRST(Ident))
+      skipToMatchTokenOrSet(Token.Array, FIRST(Ident))
   END; (* IF *)
   
   (* ARRAY *)
@@ -2665,7 +2660,7 @@ BEGIN
   
   (* discriminantFieldIdent *)
   IF matchSet(FIRST(Ident)) THEN
-    lookahead := ident(discrId)
+    lookahead := ident(capacityId)
   ELSE (* resync *)
     lookahead :=
       skipToMatchTokenOrSet(Token.Of, FIRST(Qualident))
@@ -2688,128 +2683,10 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.InField, fieldId, discrId, typeId);
+  astNode := AST.NewNode(AstNodeType.InField, fieldId, capacityId, typeId);
   
   RETURN lookahead
 END indeterminateField;
-
-
-(* --------------------------------------------------------------------------
- * private function varOrFieldDeclaration(astNode)
- * --------------------------------------------------------------------------
- * Parses rule varOrFieldDeclaration, constructs its AST node, passes the
- * node back in out-parameter astNode and returns the new lookahead symbol.
- *
- * varOrFieldDeclaration :=
- *   identList ':' ( typeIdent | anonType )
- *   ;
- *
- * astNode: (VARDECL identListNode typeNode)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE varOrFieldDeclaration ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  idlist, typeNode : AstT;
-  lookahead := SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("varOrFieldDeclaration");
-  
-  (* identList *)
-  lookahead := identList(idlist);
-  
-  (* ':' *)
-  IF matchToken(Token.Colon) THEN
-    lookahead := Lexer.consumeSym(lexer)
-  ELSE (* resync *)
-    lookahead := skipToMatchSetOrSet(FIRST(Qualident), FIRST(AnonType))
-  END; (* IF *)
-  
-  (* typeIdent | anonType *)
-  IF matchSetOrSet(FIRST(Qualident), FIRST(AnonType)) THEN
-    (* typeIdent | *)
-    IF inFIRST(Qualident, lookahead.token) THEN
-      lookahead := qualident(typeNode)
-    ELSE (* anonType *)
-      lookahead := anonType(typeNode)
-    END (* IF *)
-    
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(VarOrFieldDeclaration))
-  END; (* IF *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.VarDecl, idlist, typeNode);
-  
-  RETURN lookahead
-END varOrFieldDeclaration;
-
-
-(* --------------------------------------------------------------------------
- * private function anonType(astNode)
- * --------------------------------------------------------------------------
- * Parses rule anonType, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * anonType :=
- *   subrangeType | arrayType | procedureType
- *   ;
- *
- * astNode: subrangeTypeNode | arrayTypeNode | procedureTypeNode
- * --------------------------------------------------------------------------
- *)
-PROCEDURE anonType ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  valueCount, baseType : AstT;
-  lookahead := SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("anonType");
-  
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* ARRAY valueCount OF typeIdent | *)
-  IF lookahead.token = Token.Array THEN
-    (* ARRAY *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* valueCount *)
-    IF matchSet(FIRST(Expression) THEN
-      lookahead := expression(valueCount)
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.Of, FIRST(Qualident))
-    END; (* IF *)
-    
-    (* OF *)
-    IF matchToken(Token.Of) THEN
-      lookahead := Lexer.consumeSym(lexer)
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FIRST(Qualident))
-    END; (* IF *)
-    
-    (* typeIdent *)
-    IF matchSet(FIRST(Qualident) THEN
-      lookahead := qualident(baseType)
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(AnonType))
-    END; (* IF *)
-    
-    (* build AST node and pass it back in astNode *)
-    astNode := AST.NewNode(AstNodeType.ArrayType, valueCount, baseType)
-  
-  (* subrangeType | *)
-  ELSIF inFIRST(SubrangeType) THEN
-    lookahead := subrangeType(astNode)
-    
-  (* procedureType *)
-  ELSE
-    lookahead := procedureType(astNode)
-  END; (* IF *)
-  
-  RETURN lookahead
-END anonType;
 
 
 (* --------------------------------------------------------------------------
@@ -2966,6 +2843,9 @@ END aliasDeclaration;
  *)
 PROCEDURE nameSelector ( VAR astNode : AstT ) : SymbolT;
 
+BEGIN
+
+  TO DO
 
 END nameSelector;
 
