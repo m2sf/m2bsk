@@ -591,13 +591,7 @@ BEGIN
   
   (* pointerType or privatePointerType *)
   | Token.Pointer :
-    CASE context OF
-      Public :
-      lookahead := pointerType(astNode)
-      
-    | Private :
-      lookahead := privatePointerType(astNode)
-    END (* CASE *)
+    lookahead := pointerType(context, astNode)
   
   (* opaqueType *)
   | Token.Opaque :
@@ -1162,19 +1156,26 @@ END fieldList;
 
 
 (* --------------------------------------------------------------------------
- * private function pointerType(astNode)
+ * private function pointerType(context, astNode)
  * --------------------------------------------------------------------------
- * Parses rule pointerType, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
+ * Parses rule pointerType or privatePointerType, depending on context,
+ * constructs its AST node, passes the node back  in out-parameter astNode
+ * and returns the new lookahead symbol.
  *
  * pointerType :=
  *   POINTER TO typeIdent
  *   ;
  *
+ * privatePointerType :=
+ *   POINTER TO ( determinateTarget | indeterminateTarget )
+ *   ;
+ *
+ * alias determinateTarget = typeIdent ;
+ *
  * astNode: (POINTER qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE pointerType ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE pointerType ( context : Context; VAR astNode : AstT ) : SymbolT;
 
 VAR
   baseType : AstT;
@@ -1189,16 +1190,36 @@ BEGIN
   (* TO *)
   IF matchToken(Token.To) THEN
     lookahead := Lexer.consumeSym(lexer)
-  ELSE (* resync *)
-    lookahead := skipToMatchSetOrSet(FIRST(Qualident), FOLLOW(PointerType))
+  ELSE
+    (* we assume 'TO' is simply missing *)
   END; (* IF *)
   
-  (* typeIdent *)
-  IF matchSet(FIRST(Qualident)) THEN
-    lookahead := qualident(baseType)
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(PointerType))
-  END; (* IF *)
+  CASE context OF
+  
+    Public :
+    (* typeIdent *)
+    IF matchSet(FIRST(Qualident)) THEN
+      lookahead := qualident(baseType)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(PointerType))
+    END (* IF *)
+    
+  | Private :
+    IF matchTokenOrSet(Token.Record, FIRST(Qualident)) THEN
+    
+      (* determinateTarget *)
+      IF lookahead.token # Token.Record THEN
+        lookahead := qualident(baseType)
+        
+      (* indeterminateTarget *)
+      ELSE (* lookahead.token = Token.Record *)
+        lookahead := indeterminateTarget(baseType)
+      END (* IF *)
+    
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(PrivatePointerType))
+    END (* IF *)
+  END; (* CASE *)
     
   (* build AST node and pass it back in astNode *)
   astNode := AST.NewNode(AstNodeType.PointerType, baseType);
@@ -2496,30 +2517,6 @@ BEGIN
   TO DO
 
 END octetSeqType;
-
-
-(* --------------------------------------------------------------------------
- * private function privatePointerType(astNode)
- * --------------------------------------------------------------------------
- * Parses rule privatePointerType, constructs its AST node, passes the node
- * back in out-parameter astNode and returns the new lookahead symbol.
- *
- * privatePointerType :=
- *   POINTER TO ( determinateTarget | indeterminateTarget )
- *   ;
- *
- * alias determinateTarget = typeIdent ;
- *
- * astNode: TO DO
- * --------------------------------------------------------------------------
- *)
-PROCEDURE privatePointerType ( VAR astNode : AstT ) : SymbolT;
-
-BEGIN
-
-  TO DO
-
-END privatePointerType;
 
 
 (* --------------------------------------------------------------------------
