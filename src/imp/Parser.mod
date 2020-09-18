@@ -2512,6 +2512,9 @@ END typeDeclaration;
  *)
 PROCEDURE octetSeqType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  lookahead := SymbolT;
+
 BEGIN
   PARSER_DEBUG_INFO("octetSeqType");
   
@@ -2558,77 +2561,48 @@ END octetSeqType;
  *   RECORD ( fieldList ';' )* indeterminateField END
  *   ;
  *
- * astNode: TO DO
+ * astNode: (INREC fieldListNode identNode identNode qualidentNode)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE indeterminateTarget ( VAR astNode : AstT ) : SymbolT;
 
-BEGIN
-
-  TO DO
-
-END indeterminateTarget;
-
-
-(* --------------------------------------------------------------------------
- * private function indeterminateType(astNode)
- * --------------------------------------------------------------------------
- * Parses rule indeterminateType, constructs its AST node, passes the node
- * back in out-parameter astNode and returns the new lookahead symbol.
- *
- * indeterminateType :=
- *   IN RECORD ( fieldDeclaration ';' )+ indeterminateField END
- *   ;
- *
- * alias fieldDeclaration = varOrFieldDeclaration ;
- *
- * astNode: (INREC fieldListNode identNode identNode qualidentNode)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE indeterminateType ( VAR astNode : AstT ) : SymbolT;
-
 VAR
-  fieldListSeq, inField : AstT;
+  listseq, inField : AstT;
   lookahead := SymbolT;
 
 BEGIN
-  PARSER_DEBUG_INFO("indeterminateType");
+  PARSER_DEBUG_INFO("indeterminateTarget");
     
-  (* IN *)
-  lookahead := Lexer.consumeSym(lexer);
-      
   (* RECORD *)
-  IF matchToken(Token.Record) THEN
-    lookahead := Lexer.consumeSym(lexer);
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FIRST(VarOrFieldDeclaration))
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( fieldList ';' )* *)
+  IF inFIRST(FieldList, lookahead.token) THEN
+    lookahead :=
+      parseListWTerminator(fieldList, Token.Semicolon,
+        FIRST(FieldList), FIRST(IndeterminateField),
+        AstNodeType.FieldListSeq, listseq)
   END; (* IF *)
   
-  (* ( varOrFieldDeclaration ';' )+ *)
-  lookahead :=
-    parseListWTerminator(varOrFieldDeclaration, Token.Semicolon,
-      FIRST(VarOrFieldDeclaration), FIRST(IndeterminateField),
-      AstNodeType.FieldListSeq, fieldListSeq)
-      
   (* indeterminateField *)
   IF matchSet(FIRST(IndeterminateField)) THEN
     lookahead := indeterminateField(inField)
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(IndeterminateType))
+    lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(IndeterminateTarget))
   END; (* IF *)
   
   (* END *)
   IF matchToken(Token.End) THEN
     lookahead := Lexer.consumeSym(lexer)
-  ELSE
-    lookahead := skipToMatchSet(FOLLOW(IndeterminateType))
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(IndeterminateTarget))
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.InRec, fieldListSeq, inField);
+  astNode := AST.NewNode(AstNodeType.InRec, listseq, inField);
   
   RETURN lookahead
-END indeterminateType;
+END indeterminateTarget;
 
 
 (* --------------------------------------------------------------------------
