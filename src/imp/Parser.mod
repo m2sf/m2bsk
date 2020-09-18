@@ -4242,8 +4242,10 @@ END forLoopVariants;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * iterableExpr :=
- *   rangeOfOrdinalType | designator
+ *   collectionOrType valueRange?
  *   ;
+ *
+ * alias collectionOrType = qualident ;
  *
  * astNode: desigNode | rangeNode
  * --------------------------------------------------------------------------
@@ -4251,17 +4253,30 @@ END forLoopVariants;
 PROCEDURE iterableExpr ( VAR astNode : AstT ) : SymbolT;
 
 VAR
+  identNode, rangeNode : AstT;
   lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("iterableExpr");
   
-  (* ordinalRange OF ordinalType | *)
-  IF lookahead.token = Token.LeftBracket THEN
-    lookahead := rangeOfOrdinalType(astNode)
-  ELSE (* designator *)
-    lookahead := designator(astNode)
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* collectionOrType *)
+  IF matchSet(FIRST(Qualident)) THEN
+    lookahead := qualident(identNode)
+  ELSE (* resync *)
+    lookahead := skipToMatch()
   END; (* IF *)
+  
+  (* valueRange? *)
+  IF lookahead.token = Token.LeftBracket THEN
+    lookahead := valueRange(rangeNode)
+  ELSE (* no value range *)
+    rangeNode := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Iter, identNode, rangeNode);
   
   RETURN lookahead
 END iterableExpr;
