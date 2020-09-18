@@ -258,7 +258,7 @@ PROCEDURE import ( VAR astNode : AstT ) : SymbolT;
 VAR
   idlist : AstT;
   tmplist : LexQueueT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("import");
@@ -333,7 +333,7 @@ END import;
 PROCEDURE definition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("definition");
@@ -419,7 +419,7 @@ PROCEDURE constDefinition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   constId, expr : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("constDefinition");
@@ -464,7 +464,7 @@ PROCEDURE ident ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   lexeme : LexemeT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("ident");
@@ -502,7 +502,7 @@ PROCEDURE typeDefinition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   typeId, typeDef : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("typeDefinition");
@@ -642,7 +642,7 @@ PROCEDURE aliasType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   baseType : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("aliasType");
@@ -688,7 +688,7 @@ PROCEDURE qualident ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   lexeme : LexemeT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("qualident");
@@ -738,6 +738,9 @@ END qualident;
  *)
 PROCEDURE subrangeType ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  lookahead : SymbolT;
+  
 BEGIN
   PARSER_DEBUG_INFO("subrangeType");
   
@@ -815,7 +818,7 @@ PROCEDURE enumType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   baseType, valueList : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("enumType");
@@ -881,7 +884,7 @@ PROCEDURE identList ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   tmplist : LexQueue;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("identList");
@@ -936,7 +939,7 @@ PROCEDURE setType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   elemType : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("setType");
@@ -984,7 +987,7 @@ PROCEDURE arrayType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   valueCount, baseType : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("arrayType");
@@ -1042,7 +1045,7 @@ PROCEDURE recordType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   baseType, fieldListSeq : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("recordType");
@@ -1110,7 +1113,7 @@ PROCEDURE fieldList ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   idList, typeNode : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("fieldList");
@@ -1179,7 +1182,7 @@ PROCEDURE pointerType ( context : Context; VAR astNode : AstT ) : SymbolT;
 
 VAR
   baseType : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("pointerType");
@@ -1312,7 +1315,7 @@ PROCEDURE procedureType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   formalTypeList, retType : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("procedureType");
@@ -1376,7 +1379,7 @@ PROCEDURE formalType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   nodeType : AstNodeTypeT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("formalType");
@@ -1633,7 +1636,7 @@ PROCEDURE varDefinition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   idlist, typeId : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("varDefinition");
@@ -1685,7 +1688,7 @@ PROCEDURE procedureHeader ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   bindSpec, procId, fpList, retType : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("procedureHeader");
@@ -1795,7 +1798,7 @@ END procedureHeader;
 PROCEDURE bindingSpecifier ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("bindingSpecifier");
@@ -1891,7 +1894,7 @@ PROCEDURE formalParams ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   attr, idlist, ftype : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("formalParams");
@@ -2060,7 +2063,7 @@ PROCEDURE privateImport ( VAR astNode : AstT ) : SymbolT;
 VAR
   idlist : AstT;
   tmplist : LexQueueT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("privateImport");
@@ -2122,7 +2125,7 @@ PROCEDURE block ( VAR astNode : AstT ) : SymbolT;
 VAR
   decllist, stmtSeq : AstT;
   tmplist : AstQueueT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("block");
@@ -2304,7 +2307,7 @@ PROCEDURE possiblyEmptyBlock ( VAR astNode : AstT ) : SymbolT;
 VAR
   decllist, stmtSeq : AstT;
   tmplist : AstQueueT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("block");
@@ -2378,7 +2381,7 @@ END possiblyEmptyBlock;
 PROCEDURE declaration ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("declaration");
@@ -2469,7 +2472,7 @@ PROCEDURE typeDeclaration ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   typeId, typeDecl : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("typeDeclaration");
@@ -2515,7 +2518,7 @@ END typeDeclaration;
 PROCEDURE octetSeqType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("octetSeqType");
@@ -2570,7 +2573,7 @@ PROCEDURE indeterminateTarget ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   listseq, inField : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("indeterminateTarget");
@@ -2626,7 +2629,7 @@ PROCEDURE indeterminateField ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   fieldId, capacityId, typeId : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("indeterminateField");
@@ -2707,7 +2710,7 @@ PROCEDURE procDeclaration ( VAR astNode : AstT ) : SymbolT;
 VAR
   procId, procHeader, blockNode : AstT;
   ident1, ident2 : StringT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("procDeclaration");
@@ -2783,7 +2786,7 @@ PROCEDURE aliasDeclaration ( VAR astNode : AstT ) : SymbolT;
 VAR
   name : AstT;
   tmplist : AstQueueT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("aliasDeclSection");
@@ -2833,7 +2836,7 @@ END aliasDeclaration;
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
  * nameSelector :=
- *   Qualident wildcard?
+ *   qualident wildcard?
  *   ;
  *
  * alias wildcard = '.*' ;
@@ -2843,10 +2846,28 @@ END aliasDeclaration;
  *)
 PROCEDURE nameSelector ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  name : AstT;
+  wildcard : BOOLEAN;
+  lookahead : SymbolT;
+  
 BEGIN
+  PARSER_DEBUG_INFO("nameSelector");
 
-  TO DO
-
+  (* qualident *)
+  lookahead := qualident(name);
+  
+  (* wildcard? *)
+  IF lookahead.token := Token.DotStar THEN
+    wildcard := TRUE
+  ELSE
+    wildcard := FALSE
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(NodeType.AliasDecl, name, wildcard);
+  
+  RETURN lookahead
 END nameSelector;
 
 
@@ -2866,7 +2887,7 @@ END nameSelector;
 PROCEDURE statementSequence ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("statementSequence");
@@ -2976,7 +2997,7 @@ PROCEDURE toDoList ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   issueId, weight, taskList : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("toDoList");
@@ -3125,7 +3146,7 @@ PROCEDURE memMgtOperation ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   desig, initSize : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("memMgtOperation");
@@ -4150,7 +4171,7 @@ PROCEDURE expressionList ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   expr : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("expressionList");
@@ -4225,7 +4246,7 @@ PROCEDURE expression ( VAR astNode : AstT ) : SymbolT;
 VAR
   leftNode, rightNode : AstT;
   nodeType : AstNodeTypeT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("expression");
@@ -4285,7 +4306,7 @@ PROCEDURE simpleExpression ( VAR astNode : AstT ) : SymbolT;
 VAR
   leftNode, rightNode : AstT;
   nodeType : AstNodeTypeT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("simpleExpression");
@@ -4356,7 +4377,7 @@ PROCEDURE term ( VAR astNode : AstT ) : SymbolT;
 VAR
   leftNode, rightNode : AstT;
   nodeType : AstNodeTypeT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("term");
@@ -4406,7 +4427,7 @@ PROCEDURE simpleTerm ( VAR astNode : AstT ) : SymbolT;
 VAR
   seenNot : BOOLEAN;
   factorNode : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("simpleTerm");
@@ -4458,7 +4479,7 @@ PROCEDURE factor ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   leftNode, rightNode : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("factor");
@@ -4508,7 +4529,7 @@ END factor;
 PROCEDURE simpleFactor ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("simpleFactor");
@@ -4578,7 +4599,7 @@ PROCEDURE designatorOrFuncCall ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   desig, exprList : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("designatorOrFuncCall");
@@ -4632,7 +4653,7 @@ END designatorOrFuncCall;
 PROCEDURE structuredValue ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lookahead := SymbolT;
+  lookahead : SymbolT;
 
 BEGIN
   PARSER_DEBUG_INFO("structuredValue");
@@ -4696,7 +4717,7 @@ PROCEDURE valueComponent ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   leftNode, rightNode : AstT;
-  lookahead := SymbolT;
+  lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("valueComponent");
