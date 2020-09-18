@@ -3446,6 +3446,77 @@ END inputArg;
 
 
 (* --------------------------------------------------------------------------
+ * private function writeStatement(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule writeStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * writeStatement :=
+ *   WRITE ( '@' chan ':' )?
+ *   outputArgs ( ',' outputArgs )*
+ *   ;
+ *
+ * alias chan = designator ;
+ *
+ * astNode: (WRITE desigNode desigListNode)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE writeStatement ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  chan, arg : AstT;
+  arglist : AstQueueT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("writeStatement");
+  
+  (* READ *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* ( '@' chan ':' )? *)
+  IF lookahead.token = Token.Octothorpe THEN
+    lookahead := designator(Common, chan)
+  ELSE (* no channel *)
+    chan := AST.emptyNode()
+  END; (* IF *)
+  
+  AstQueue.New(arglist);
+  
+  (* outputArgs *)
+  IF matchSet(FIRST(OutputArgs)) THEN
+    lookahead := outputArgs(arg);
+    AstQueue.Enqueue(arglist, arg)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSetOrSet
+        (Token.Comma, FIRST(OutputArgs), FOLLOW(OutputArgs))
+  END; (* IF *)
+  
+  (* ( ',' outputArgs )* *)
+  WHILE lookahead.token = Token.Comma DO
+    (* ',' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* outputArgs *)
+    IF matchSet(FIRST(OutputArgs)) THEN
+      lookahead := outputArgs(arg);
+      AstQueue.Enqueue(arglist, arg)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSetOrSet
+          (Token.Comma, FIRST(OutputArgs), FOLLOW(OutputArgs))
+    END (* IF *)
+  END; (* WHILE *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Write, chan, arglist);
+  
+  RETURN lookahead
+END writeStatement;
+
+
+(* --------------------------------------------------------------------------
  * private function ifStatement(astNode)
  * --------------------------------------------------------------------------
  * Parses rule ifStatement, constructs its AST node, passes the node back
