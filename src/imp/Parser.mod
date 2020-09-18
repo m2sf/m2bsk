@@ -3266,7 +3266,7 @@ BEGIN
   (* expression? *)
   IF inFIRST(Expression, lookahead.token) THEN
     lookahead := expression(expr)
-  ELSE
+  ELSE (* no return value *)
     expr := AST.emptyNode()
   END; (* IF *)
   
@@ -3275,6 +3275,59 @@ BEGIN
   
   RETURN lookahead
 END returnStatement;
+
+
+(* --------------------------------------------------------------------------
+ * private function copyStatement(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule copyStatement, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * copyStatement :=
+ *   COPY targetDesignator ':=' expression
+ *   ;
+ *
+ * astNode: (COPY desigNode exprNode)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE copyStatement ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  desig, expr : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("copyStatement");
+  
+  (* COPY *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* targetDesignator *)
+  IF matchSet() THEN
+    lookahead := designator(target, desig)
+  ELSE (* resync *)
+    lookahead := skipToMatchSetOrSet(FIRST(Designator), FOLLOW(Designator))
+  END; (* IF *)
+  
+  (* ':=' *)
+  IF matchToken(Token.Assign) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    (* we assume ':=' has simply been forgotten *)
+  END; (* IF *)
+  
+  (* expression *)
+  IF matchSet(FIRST(expression)) THEN
+    lookahead := expression(expr)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(Statement))
+  END (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Copy, desig, expr);
+  
+  RETURN lookahead
+END copyStatement;
 
 
 (* --------------------------------------------------------------------------
