@@ -3553,6 +3553,82 @@ END outputArgs;
 
 
 (* --------------------------------------------------------------------------
+ * private function formattedArgs(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule formattedArgs, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * formattedArgs :=
+ *   '#' '(' fmtStr, unformattedArg ')'
+ *   ;
+ *
+ * alias fmtStr = expression ;
+ *
+ * astNode: TO DO
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE formattedArgs ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  fmtstr, arglist : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("formattedArgs");
+  
+  (* '#' *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* '(' *)
+  IF matchToken(Token.LeftParen) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSetOrSet
+        (Token.Comma, FIRST(Expression), FOLLOW(OutputArgs))
+  END; (* IF *)
+  
+  (* fmtStr *)
+  IF matchSet(FIRST(Expression)) THEN
+    lookahead := expression(fmtstr)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSetOrSet
+        (Token.Comma, FIRST(Expression), FOLLOW(OutputArgs))
+  END; (* IF *)
+  
+  (* ',' *)
+  IF matchToken(Token.Comma) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSetOrSet
+        (Token.RightParen, FIRST(Expression), FOLLOW(OutputArgs))
+  END; (* IF *)
+  
+  (* unformattedArgs *)
+  IF matchSet(FIRST(Expression) THEN
+    lookahead := expressionList(arglist)
+  
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.RightParen, FOLLOW(OutputArgs))
+  END; (* IF *)
+  
+  (* ')' *)
+  IF matchToken() THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(OutputArgs))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.FmtArgs, fmtstr, arglist);
+  
+  RETURN lookahead
+END formattedArgs;
+
+
+(* --------------------------------------------------------------------------
  * private function ifStatement(astNode)
  * --------------------------------------------------------------------------
  * Parses rule ifStatement, constructs its AST node, passes the node back
