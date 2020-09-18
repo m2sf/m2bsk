@@ -2513,9 +2513,32 @@ END typeDeclaration;
 PROCEDURE octetSeqType ( VAR astNode : AstT ) : SymbolT;
 
 BEGIN
-
-  TO DO
-
+  PARSER_DEBUG_INFO("octetSeqType");
+  
+  (* OCTETSEQ *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* '[' *)
+  IF matchToken(Token.LeftBracket) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchSetOrSet(FIRST(ConstExpression), FOLLOW(TypeDeclaration))
+  END; (* IF *)
+  
+  (* valueCount *)
+  IF matchSet(FIRST(ConstExpression)) THEN
+    lookahead := constExpression(astNode)
+    
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrSet(Token.RightBracket, FOLLOW(TypeDeclaration))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := TO DO
+  
+  RETURN lookahead
 END octetSeqType;
 
 
