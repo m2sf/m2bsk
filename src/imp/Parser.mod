@@ -2909,12 +2909,11 @@ END statementSequence;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * statement :=
- *   emptyStatement | memMgtOperation | updateOrProcCall | returnStatement |
- *   ifStatement | caseStatement | loopStatement | whileStatement |
- *   repeatStatement | forStatement | EXIT
+ *   memMgtOperation | updateOrProcCall | returnStatement |
+ *   copyStatement | readStatement | writeStateent | ifStatement |
+ *   caseStatement | loopStatement | whileStatement | repeatStatement |
+ *   forStatement | toDoList | EXIT | NOP
  *   ;
- *
- * alias emptyStatement = toDoList ;
  *
  * astNode: statementNode
  * --------------------------------------------------------------------------
@@ -2928,41 +2927,58 @@ BEGIN
   PARSER_DEBUG_INFO("statement");
   
   lookahead := Lexer.lookaheadSym(lexer);
-    
+  
+  (* case labels in order of their ordinal values *)
   CASE lookahead.token OF
-  (* emptyStatement | *)
-    Token.To : lookahead := toDoList(astNode)
-      
-  (* memMgtOperation | *)
-  | Token.New,
-    Token.Release : lookahead := memMgtOperation(astNode)
-      
-  (* returnStatement | *)
-  | Token.Return : lookahead := returnStatement(astNode)
-    
-  (* ifStatement | *)
-  | Token.If : lookahead := ifStatement(astNode)
-    
-   (* caseStatement | *)
-  | Token.Case : lookahead := caseStatement(astNode)
-    
-  (* loopStatement | *)
-  | Token.Loop : lookahead := loopStatement(astNode)
-    
-  (* whileStatement | *)
-  | Token.While : lookahead := whileStatement(astNode)
-    
-  (* repeatStatement | *)
-  | Token.Repeat : lookahead := repeatStatement(astNode)
-    
-  (* forStatement | *)
-  | Token.For : lookahead := forStatement(astNode)
+  (* caseStatement | *)
+    Token.Case : lookahead := caseStatement(astNode)
     
   (* EXIT | *)
   | Token.Exit :
       lookahead := Lexer.consumeSym(lexer);
       astNode := AST.NewNode(AstNodeType.Exit)
       
+  (* forStatement | *)
+  | Token.For : lookahead := forStatement(astNode)
+    
+  (* ifStatement | *)
+  | Token.If : lookahead := ifStatement(astNode)
+    
+  (* loopStatement | *)
+  | Token.Loop : lookahead := loopStatement(astNode)
+    
+  (* newStatement | *)
+  | Token.New : lookahead := newStatement(astNode)
+    
+  (* NOP | *)
+  | Token.Exit :
+      lookahead := Lexer.consumeSym(lexer);
+      astNode := AST.NewNode(AstNodeType.Nop)
+      
+  (* readStatement | *)
+  | Token.Read : lookahead := readStatement(astNode)
+    
+  (* releaseStatement | *)
+  | Token.Release : lookahead := releaseStatement(astNode)
+    
+  (* repeatStatement | *)
+  | Token.Repeat : lookahead := repeatStatement(astNode)
+    
+  (* retainStatement | *)
+  | Token.Retain : lookahead := retainStatement(astNode)
+    
+  (* returnStatement | *)
+  | Token.Return : lookahead := returnStatement(astNode)
+    
+  (* toDoList | *)
+  | Token.To : lookahead := toDoList(astNode)
+      
+  (* whileStatement | *)
+  | Token.While : lookahead := whileStatement(astNode)
+    
+  (* writeStatement | *)
+  | Token.Write : lookahead := writeStatement(astNode)
+    
   (* updateOrProcCall *)
   ELSE
     lookahead := updateOrProcCall(astNode)    
@@ -2970,160 +2986,6 @@ BEGIN
   
   RETURN lookahead
 END statement;
-
-
-(* --------------------------------------------------------------------------
- * private function toDoList(astNode)
- * --------------------------------------------------------------------------
- * Parses rule toDoList, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * toDoList :=
- *   TO DO trackingRef? taskToDo ( ';' taskToDo )* END
- *   ;
- *
- * trackingRef :=
- *   '(' issueId ',' weight ')'
- *   ;
- *
- * alias issueId = wholeNumber ;
- *
- * alias weight = constExpression ;
- *
- * astNode: (TODO issueId weight taskList)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE toDoList ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  issueId, weight, taskList : AstT;
-  lookahead : SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("toDoList");
-  
-  (* TO *)
-  lookahead := Lexer.consumeSym(lexer);
-  
-  (* DO *)
-  IF matchToken(Token.Do) THEN
-    lookahead := Lexer.consumeSym(lexer);
-  ELSE (* resync *)
-    lookahead :=
-      skipToMatchSetOrSet(FIRST(TrackingRef), FIRST(TaskToDo))
-  END; (* IF *)
-  
-  (* trackingRef? *)
-  IF inFIRST(TrackingRef, lookahead.token) THEN
-    (* '(' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* issueId *)
-    IF matchToken(Token.NumberLiteral) THEN
-      issueId := AST.NewTerminalNode(AstNodeTye.IntVal, lookahead.lexeme);
-      lookahead := Lexer.consumeSym(lexer);
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.Comma, FIRST(Expression));
-      issueId := AST.emptyNode()
-    END; (* IF *)
-    
-    (* ',' *)
-    IF matchToken(Token.Comma) THEN
-      lookahead := Lexer.consumeSym(lexer);
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.RightParen, FIRST(Expression))
-    END; (* IF *)
-    
-    (* weight *)
-    IF matchSet(FIRST(Expression)) THEN
-      lookahead := expression(weight)
-    ELSE (* resync *)
-      lookahead :=
-        skipToMatchTokenOrSet(Token.RightParen, FOLLOW(TrackingRef));
-      weight := AST.emptyNode()
-    END; (* IF *)
-    
-    (* ')' *)
-    IF matchToken(Token.RightParen) THEN
-      lookahead := Lexer.consumeSym(lexer);
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(TrackingRef))
-    END (* IF *)
-    
-  ELSE (* no tracking reference *)
-    issueId := AST.emptyNode();
-    weight := AST.emptyNode()
-  END;
-  
-  (* taskToDo ( ';' taskToDo )* *)
-  lookahead :=
-    parseListWithSeparator(taskToDo, Token.Semicolon,
-      FIRST(TaskToDo), FOLLOW(TaskToDo, AstNodeType.TaskToDo, taskList);
-    
-  (* END *)
-  IF matchToken(Token.End) THEN
-    lookahead := Lexer.consumeSym(lexer);
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(ToDoList))
-  END; (* IF *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.ToDo, issueId, weight, taskList);
-  
-  RETURN lookahead
-END toDoList;
-
-
-(* --------------------------------------------------------------------------
- * private function taskToDo(astNode)
- * --------------------------------------------------------------------------
- * Parses rule taskToDo, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * taskToDo :=
- *   description ( ',' estimatedHours )?
- *   ;
- *
- * alias description = StringLiteral ;
- *
- * alias estimatedHours = constExpression ;
- *
- * astNode: (TASK description estimatedHours)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE taskToDo ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  description, estimatedHours : AstT;
-  lookahead : SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("taskToDo");
-  
-  (* description *)
-  description := AST.NewTerminalNode(AstNodeType.QuotedVal, lookahead.lexeme);
-  
-  (* ( ',' estimatedHours )? *)
-  IF lookahead.token = Token.Comma THEN
-    (* ',' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* estimatedHours *)
-    IF matchSet(FIRST(Expression)) THEN
-      lookahead := expression(estimatedHours)
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(TaskToDo));
-    END (* IF *)
-    
-  ELSE (* no estimate given *)
-    estimatedHours := AST.emptyNode()
-  END; (* IF *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.TaskToDo, description, estimatedHours);
-    
-  RETURN lookahead
-END taskToDo;
 
 
 (* --------------------------------------------------------------------------
@@ -4746,6 +4608,160 @@ BEGIN
   
   RETURN lookahead
 END valueComponent;
+
+
+(* --------------------------------------------------------------------------
+ * private function toDoList(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule toDoList, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * toDoList :=
+ *   TO DO trackingRef? taskToDo ( ';' taskToDo )* END
+ *   ;
+ *
+ * trackingRef :=
+ *   '(' issueId ',' weight ')'
+ *   ;
+ *
+ * alias issueId = wholeNumber ;
+ *
+ * alias weight = constExpression ;
+ *
+ * astNode: (TODO issueId weight taskList)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE toDoList ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  issueId, weight, taskList : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("toDoList");
+  
+  (* TO *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* DO *)
+  IF matchToken(Token.Do) THEN
+    lookahead := Lexer.consumeSym(lexer);
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchSetOrSet(FIRST(TrackingRef), FIRST(TaskToDo))
+  END; (* IF *)
+  
+  (* trackingRef? *)
+  IF inFIRST(TrackingRef, lookahead.token) THEN
+    (* '(' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* issueId *)
+    IF matchToken(Token.NumberLiteral) THEN
+      issueId := AST.NewTerminalNode(AstNodeTye.IntVal, lookahead.lexeme);
+      lookahead := Lexer.consumeSym(lexer);
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Comma, FIRST(Expression));
+      issueId := AST.emptyNode()
+    END; (* IF *)
+    
+    (* ',' *)
+    IF matchToken(Token.Comma) THEN
+      lookahead := Lexer.consumeSym(lexer);
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.RightParen, FIRST(Expression))
+    END; (* IF *)
+    
+    (* weight *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(weight)
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.RightParen, FOLLOW(TrackingRef));
+      weight := AST.emptyNode()
+    END; (* IF *)
+    
+    (* ')' *)
+    IF matchToken(Token.RightParen) THEN
+      lookahead := Lexer.consumeSym(lexer);
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(TrackingRef))
+    END (* IF *)
+    
+  ELSE (* no tracking reference *)
+    issueId := AST.emptyNode();
+    weight := AST.emptyNode()
+  END;
+  
+  (* taskToDo ( ';' taskToDo )* *)
+  lookahead :=
+    parseListWithSeparator(taskToDo, Token.Semicolon,
+      FIRST(TaskToDo), FOLLOW(TaskToDo, AstNodeType.TaskToDo, taskList);
+    
+  (* END *)
+  IF matchToken(Token.End) THEN
+    lookahead := Lexer.consumeSym(lexer);
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(ToDoList))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.ToDo, issueId, weight, taskList);
+  
+  RETURN lookahead
+END toDoList;
+
+
+(* --------------------------------------------------------------------------
+ * private function taskToDo(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule taskToDo, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * taskToDo :=
+ *   description ( ',' estimatedHours )?
+ *   ;
+ *
+ * alias description = StringLiteral ;
+ *
+ * alias estimatedHours = constExpression ;
+ *
+ * astNode: (TASK description estimatedHours)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE taskToDo ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  description, estimatedHours : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("taskToDo");
+  
+  (* description *)
+  description := AST.NewTerminalNode(AstNodeType.QuotedVal, lookahead.lexeme);
+  
+  (* ( ',' estimatedHours )? *)
+  IF lookahead.token = Token.Comma THEN
+    (* ',' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* estimatedHours *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(estimatedHours)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(TaskToDo));
+    END (* IF *)
+    
+  ELSE (* no estimate given *)
+    estimatedHours := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.TaskToDo, description, estimatedHours);
+    
+  RETURN lookahead
+END taskToDo;
 
 
 (* --------------------------------------------------------------------------
