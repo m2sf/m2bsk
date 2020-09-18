@@ -3517,6 +3517,42 @@ END writeStatement;
 
 
 (* --------------------------------------------------------------------------
+ * private function outputArgs(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule outputArgs, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * outputArgs := formattedArgs | unformattedArg ;
+ *
+ * alias unformattedArg = expression ;
+ *
+ * astNode: TO DO
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE outputArgs ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("outputArgs");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* formattedArgs *)
+  IF lookahead.token = Token.Octothorpe THEN
+    lookahead := formattedArgs(astNode)
+    
+  (* unformattedArg *)
+  ELSE (* lookahead.token # Octothorpe *)
+    lookahead := expression(astNode)
+  END; (* IF *)
+  
+  RETURN lookahead
+END outputArgs;
+
+
+(* --------------------------------------------------------------------------
  * private function ifStatement(astNode)
  * --------------------------------------------------------------------------
  * Parses rule ifStatement, constructs its AST node, passes the node back
