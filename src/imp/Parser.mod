@@ -3148,8 +3148,10 @@ TYPE DesignatorVariant = ( Common, Target );
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
  * updateOrProcCall :=
- *   designator  ( IncOrDecSuffix | '(' expressionList ')' )? |
- *   targetDesignator ':=' expression
+ *   designator
+ *     ( IncOrDecSuffix | '(' expressionList ')' | ':=' expression )? |
+ *   targetDesignator
+ *     ':=' expression
  *   ;
  *
  * .IncOrDecSuffix := '++' | '--' ;
@@ -3163,11 +3165,11 @@ VAR
   desig, expr, exprList : AstT;
   variant : DesignatorVariant;
   lookahead : SymbolT;
-  
+
 BEGIN
   PARSER_DEBUG_INFO("updateOrProcCall");
   
-  (* designator or targetDesignator *)
+  (* designator | targetDesignator *)
   lookahead := targetDesignator(variant, desig);
   
   CASE variant OF
@@ -3213,6 +3215,13 @@ BEGIN
       (* build AST node and pass it back in astNode *)
       astNode := AST.NewNode(AstNodeType.PCall, desig, exprList)
       
+    (* ':=' expression *)
+    | Token.Assign :
+      lookahead := assignmentTail(expr)
+      
+      (* build AST node and pass it back in astNode *)
+      astNode := AST.NewNode(AstNodeType.Assign, desig, expr)
+      
     ELSE (* sole designator *)
       astNode := desig
     END (* CASE *)
@@ -3220,20 +3229,13 @@ BEGIN
   (* targetDesignator *)
   | Target :
     
-    (* ':=' *)
+    (* ':=' expression *)
     IF matchToken(Token.Assign) THEN
-      lookahead := Lexer.consumeSym(lexer)
-    ELSE (* resync *)
-      (* we assume ':=' has simply been forgotten *)
-    END; (* IF *)
-    
-    (* expression *)
-    IF matchSet(FIRST(Expression)) THEN
-      lookahead := expression(expr)
+      lookahead := assignmentTail(expr)
     ELSE (* resync *)
       lookahead := skipToMatchSet(FOLLOW(Statement))
-    END (* IF *)
-    
+    END; (* IF *)
+
     (* build AST node and pass it back in astNode *)
     astNode := AST.NewNode(AstNodeType.Assign, desig, expr)
     
@@ -3241,6 +3243,42 @@ BEGIN
     
   RETURN lookahead
 END updateOrProcCall;
+
+
+(* --------------------------------------------------------------------------
+ * private function assignmentTail(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule assignmentTail, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * assignmentTail :=
+ *   ':=' expression
+ *   ;
+ *
+ * astNode: exprNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE assignmentTail ( astNode : AstT ) : SymbolT;
+
+VAR
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("assignmentTail");
+  
+  (* ':=' *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* expression *)
+    IF matchSet(FIRST(Expression)) THEN
+      lookahead := expression(astNode)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(Statement))
+    END; (* IF *)
+    
+  RETURN lookahead
+END assignmentTail;
+
 
 
 (* --------------------------------------------------------------------------
@@ -3317,17 +3355,10 @@ BEGIN
   
   (* ':=' *)
   IF matchToken(Token.Assign) THEN
-    lookahead := Lexer.consumeSym(lexer)
-  ELSE (* resync *)
-    (* we assume ':=' has simply been forgotten *)
-  END; (* IF *)
-  
-  (* expression *)
-  IF matchSet(FIRST(expression)) THEN
-    lookahead := expression(expr)
+    lookahead := assignmentTail(expr)
   ELSE (* resync *)
     lookahead := skipToMatchSet(FOLLOW(Statement))
-  END (* IF *)
+  END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
   astNode := AST.NewNode(AstNodeType.Copy, desig, expr);
