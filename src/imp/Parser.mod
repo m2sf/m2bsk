@@ -4286,7 +4286,7 @@ END iterableExpr;
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * designator :=
- *   ident designatorTail?
+ *   qualident ( derefTail | subscriptTail )?
  *   ;
  *
  * astNode: (DESIG head tail)
@@ -4301,12 +4301,16 @@ VAR
 BEGIN
   PARSER_DEBUG_INFO("designator");
   
-  (* ident *)
-  lookahead := ident(head);
+  (* qualident *)
+  lookahead := qualident(head);
     
-  (* designatorTail? *)
-  IF inFIRST(DesignatorTail) THEN
-    lookahead := designatorTail(head, tail)
+  (* ( derefTail | subscriptTail )? *)
+  IF lookahead.token = Token.Deref THEN
+    lookahead := derefTail(tail)
+    
+  ELSIF lookahead.token = Token.LeftBracket THEN
+    lookahead := subscriptTail(tail)
+    
   ELSE (* no tail *)
     tail := AST.emptyNode()
   END; (* IF *)
@@ -4319,141 +4323,286 @@ END designator;
 
 
 (* --------------------------------------------------------------------------
- * private function designatorTail(astNode)
+ * private function derefTail(mode, astNode)
  * --------------------------------------------------------------------------
- * Parses rule designatorTail, constructs its AST node, passes the node back
+ * Parses rule derefTail, constructs its AST node, passes the node back
  * in out-parameter astNode and returns the new lookahead symbol.
  *
- * designatorTail :=
- *   ( deref | fieldSelector ) designatorTail? | subscriptOrSlice
- *   ;
- *
- * alias deref = '^' ;
- *
- * fieldSelector :=
- *   '.' ident
- *   ;
- *
- * astNode: (DESIG )
- * --------------------------------------------------------------------------
- *)
-PROCEDURE designatorTail ( head : AstT; VAR astNode : AstT ) : SymbolT;
-
-VAR
-  deref, fieldId, field : AstT;
-  lookahead : SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("designatorTail");
-  
-  (* deref *)
-  IF lookahead.token = Token.Caret THEN
-    (* '^' *)
-    lookahead := Lexer.consumeSym(lexer);
-    deref := AST.NewNode(AstTokenType.Deref, head);
-    
-    (* designatorTail? *)
-    IF inFIRST(DesignatorTail, lookahead.token) THEN
-      lookahead := designatorTail(deref, astNode)
-    ELSE
-      astNode := deref
-    END (* IF *)
-      
-  (* fieldSelector *)
-  ELSIF lookahead.token = Token.Dot THEN
-    (* '.' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* ident *)
-    lookahead := ident(fieldId);
-    
-    field := AST.NewNode(AstTokenType.Field, fieldId);
-    
-    (* designatorTail? *)
-    IF inFIRST(DesignatorTail, lookahead.token) THEN
-      lookahead := designatorTail(field, astNode)
-    ELSE
-      astNode := field
-    END (* IF *)
-    
-  (* subscriptOrSlice *)
-  ELSE
-    lookahead := subscriptOrSlice(astNode)
-  END; (* IF *)
-  
-  RETURN lookahead
-END designatorTail;
-
-
-(* --------------------------------------------------------------------------
- * private function subscriptOrSlice(astNode)
- * --------------------------------------------------------------------------
- * Parses rule subscriptOrSlice, constructs its AST node, passes the node
- * back in out-parameter astNode and returns the new lookahead symbol.
- *
- * subscriptOrSlice :=
- *   '[' expression ( ']' designatorTail? | '..' expression? ']' )
+ * derefTail :=
+ *   deref ( '.' designator | subscriptTail )?
  *   ;
  *
  * astNode: (DESIG head tail)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE subscriptOrSlice ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE derefTail ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  expr1, expr2, subscript : AstT;
   lookahead : SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("subscriptOrSlice");
+  PARSER_DEBUG_INFO("derefTail");
   
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* deref *)
+  WHILE lookahead.token = Token.Deref DO
+    lookahead := Lexer.consumeSym(lexer);
+    
+  END; (* WHILE *)
+  
+  (* ( '.' designator | subscriptTail )? *)
+  IF lookahead.token = Token.Period THEN
+    (* '.' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* designator *)
+    IF matchSet(FIRST(Designator)) THEN
+      lookahead := designator(astNode)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Period, FOLLOW(DerefTail))
+    END (* IF *)
+    
+  (* subscriptTail *)
+  ELSIF lookahead.token = Token.LeftBracket THEN
+    lookahead := subscriptTail(astNode)
+  ELSE (* no tail *)
+    astNode := TO DO
+  END; (* IF *)
+  
+  RETURN lookahead
+END derefTail;
+
+
+(* --------------------------------------------------------------------------
+ * private function subscriptTail(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule subscriptTail, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * subscriptTail :=
+ *   '[' expression ']' ( '.' designator | derefTail )?
+ *   ;
+ *
+ * astNode: (SUBSCR subscript tail)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE subscriptTail ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  subscript, tail : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("subscriptTail");
+    
   (* '[' *)
   lookahead := Lexer.consumeSym(lexer);
+    
+  (* expression *)
+  IF matchSet(FIRST(Expression)) THEN
+    lookahead := expression(subscript)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrToken(Token.RightBracket, Token.DotDot)
+  END; (* IF *)
   
+  (* ']' *)
+  IF matchToken(Token.RightBracket) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrTokenOrSet
+        (Token.Period, Token.Deref, FOLLOW(SubscriptTail))
+  END; (* IF *)
+    
+  (* ( '.' designator | derefTail )? *)
+  CASE lookahead.token OF
+  (* '.' designator | *)
+    Token.Period :
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* designator *)
+      IF matchSet(FIRST(Designator)) THEN
+        lookahead := designator(mode, tail)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(SubscriptTail)
+      END (* IF *)
+    
+  (* derefTail *)
+  | Token.Deref :
+      lookahead := derefTail(tail)
+  END (* CASE *)  
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.SubTail, subscript, tail)
+  
+  RETURN lookahead
+END subscriptTail;
+
+
+(* --------------------------------------------------------------------------
+ * private type DesignatorVariant
+ * --------------------------------------------------------------------------
+ *)
+TYPE DesignatorVariant = ( Common, Target );
+
+(* --------------------------------------------------------------------------
+ * private function targetDesignator(variant, astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule targetDesignator, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * Upon return, out-parameter variant indicates the exit path taken:
+ * (1) value Common indicates that the '[' expression ']' path was taken
+ * (2) value Target indicates that the '[' expression '..' path was taken
+ *
+ * targetDesignator :=
+ *   qualident ( derefTargetTail | bracketTargetTail )?
+ *   ;
+ *
+ * astNode: (DESIG head tail)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE targetDesignator
+  ( VAR variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
+  
+BEGIN
+
+  TO DO
+
+END targetDesignator;
+
+
+(* --------------------------------------------------------------------------
+ * private function derefTargetTail(variant, astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule derefTargetTail, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * Upon return, out-parameter variant indicates the exit path taken:
+ * (1) value Common indicates that the '[' expression ']' path was taken
+ * (2) value Target indicates that the '[' expression '..' path was taken
+ *
+ * derefTargetTail :=
+ *   deref ( '.' targetDesignator | bracketTargetTail )?
+ *   ;
+ *
+ * astNode: (DESIG head tail)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE derefTargetTail
+  ( VAR variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
+  
+BEGIN
+
+  TO DO
+
+END derefTargetTail;
+
+
+(* --------------------------------------------------------------------------
+ * private function bracketTargetTail(variant, astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule bracketTargetTail, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * Upon return, out-parameter variant indicates the exit path taken:
+ * (1) value Common indicates that the '[' expression ']' path was taken
+ * (2) value Target indicates that the '[' expression '..' path was taken
+ *
+ * bracketTargetTail :=
+ *   '[' expression
+ *     ( ']' ( '.' targetDesignator | derefTargetTail )? |
+ *       '..' expression? ']' )
+ *   ;
+ *
+ * astNode: (SUBSCR subscript tail) | (INS index) | (SLICE start end)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE bracketTargetTail
+  ( VAR variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
+
+VAR
+  expr1, expr2, tail : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("bracketTail");
+    
+  (* '[' *)
+  lookahead := Lexer.consumeSym(lexer);
+    
   (* expression *)
   IF matchSet(FIRST(Expression)) THEN
     lookahead := expression(expr1)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FIRST(SubscriptOrSliceTail))
+    lookahead := skipToMatchTokenOrToken(Token.RightBracket, Token.DotDot)
   END; (* IF *)
   
-  (* ']' designatorTail? | '..' expression? ']' *)
-  IF matchSet(FIRST(SubscriptOrSliceTail)) THEN
-    (* ']' designatorTail? | *)
-    IF lookahead.token = Token.LeftBracket THEN
-      (* ']' *)
+  (* ']' ( '.' designator | derefTail )? | '..' expression? ']' *)
+  CASE lookahead.token OF
+  (* ']' *)
+  | Token.RightBracket :
+    (* ']' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* '.' designator *)
+    CASE lookahead.token OF
+    (* '.' *)
+    | Token.Period :
       lookahead := Lexer.consumeSym(lexer);
-      subscript := AST.NewNode(AstNodeType.Index, expr1);
       
-      (* designatorTail? *)
-      IF inFIRST(DesignatorTail, lookahead.token) THEN
-        lookahead := designatorTail(subscript, astNode)
-      ELSE
-         astNode := subscript
+      (* designator *)
+      IF matchSet(FIRST(Designator)) THEN
+        lookahead := designator(mode, tail)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(SubscriptTail)
       END (* IF *)
     
-    (* '..' expression? ']' *)
+    (* derefTail *)
+    | Token.Deref :
+      lookahead := Lexer.derefTail(tail);
+      
+    ELSE (* bypass *)
+      (* input also matches subscriptTail *)
+      variant := Common;
+    END; (* CASE *)
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.SubTail, expr1, tail)
+    
+  (* '..' expression? ']' *)
+  | Token.DotDot :
+    (* '..' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* expression? *)
+    IF inFIRST(Expression, lookahead.Token) THEN
+      lookahead := expression(expr2);
     ELSE
-      (* '..' *)
-      lookahead := Lexer.consumeSym(lexer);
-      
-      (* expression? *)
-      IF inFIRST(Expression, lookahead.token) THEN
-        lookahead := expression(expr2)
-      ELSE (* open ended slice *)
-        expr2 := AST.emptyNode()
-      END (* IF *)
-      
-      (* build AST node and pass it back in astNode *)
-      astNode := AST.NewNode(AstNodeType.Slice, expr1, expr2)
+      expr2 := NIL
+    END; (* IF *)
+    
+    (* ']' *)
+    IF matchToken(Token.RightBracket) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(BracketTargetTail))
     END (* IF *)
     
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(SubscriptOrSlice))
-  END; (* IF *)
-  
+    (* input only matches bracketTargetTail *)
+    variant := Target;
+      
+    (* build AST node and pass it back in astNode *)
+    IF expr2 = NIL THEN (* create insertion node *)
+      astNode := AST.NewNode(AstNodeType.Ins, expr1)
+    ELSE (* create slice node *)
+      astNode := AST.NewNode(AstNodeType.Slice, expr1, expr2)
+    END (* IF *)
+  END; (* CASE *)
+    
   RETURN lookahead
-END subscriptOrSlice;
+END bracketTargetTail;
 
 
 (* --------------------------------------------------------------------------
