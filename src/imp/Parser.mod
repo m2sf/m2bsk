@@ -3135,6 +3135,13 @@ END releaseStatement;
 
 
 (* --------------------------------------------------------------------------
+ * private type DesignatorVariant
+ * --------------------------------------------------------------------------
+ *)
+TYPE DesignatorVariant = ( Common, Target );
+
+
+(* --------------------------------------------------------------------------
  * private function updateOrProcCall(astNode)
  * --------------------------------------------------------------------------
  * Parses rule updateOrProcCall, constructs its AST node, passes the node
@@ -3154,24 +3161,25 @@ PROCEDURE updateOrProcCall ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   desig, expr, exprList : AstT;
+  variant : DesignatorVariant;
   lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("updateOrProcCall");
   
   (* designator or targetDesignator *)
-  lookahead := designator(variant, desig);
+  lookahead := targetDesignator(variant, desig);
   
   CASE variant OF
   (* designator *) 
-    common :
+    Common :
     
     (* ( '++' | '--' | '(' expressionList ')' )? *)
     CASE lookahead.token OF
     (* '++' | *)
       Token.PlusPlus :
       lookahead := Lexer.consumeSym(lexer);
-      
+            
       (* build AST node and pass it back in astNode *)
       astNode := AST.NewNode(AstNodeType.Incr, desig)
       
@@ -3180,7 +3188,7 @@ BEGIN
       lookahead := Lexer.consumeSym(lexer);
       
       (* build AST node and pass it back in astNode *)
-      astNode := AST.NewNode(AstNodeType.Incr, desig)
+      astNode := AST.NewNode(AstNodeType.Decr, desig)
       
     (* '(' expressionList ')' *)
     | Token.LeftParen :
@@ -3210,7 +3218,7 @@ BEGIN
     END (* CASE *)
     
   (* targetDesignator *)
-  | target :
+  | Target :
     
     (* ':=' *)
     IF matchToken(Token.Assign) THEN
@@ -3220,7 +3228,7 @@ BEGIN
     END; (* IF *)
     
     (* expression *)
-    IF matchSet(FIRST(expression)) THEN
+    IF matchSet(FIRST(Expression)) THEN
       lookahead := expression(expr)
     ELSE (* resync *)
       lookahead := skipToMatchSet(FOLLOW(Statement))
@@ -3292,6 +3300,7 @@ PROCEDURE copyStatement ( VAR astNode : AstT ) : SymbolT;
 VAR
   desig, expr : AstT;
   lookahead : SymbolT;
+  variant : DesignatorVariant;
   
 BEGIN
   PARSER_DEBUG_INFO("copyStatement");
@@ -3300,8 +3309,8 @@ BEGIN
   lookahead := Lexer.consumeSym(lexer);
   
   (* targetDesignator *)
-  IF matchSet() THEN
-    lookahead := designator(target, desig)
+  IF matchSet(FIRST(Designator)) THEN
+    lookahead := targetDesignator(variant, desig)
   ELSE (* resync *)
     lookahead := skipToMatchSetOrSet(FIRST(Designator), FOLLOW(Designator))
   END; (* IF *)
@@ -4441,12 +4450,6 @@ END subscriptTail;
 
 
 (* --------------------------------------------------------------------------
- * private type DesignatorVariant
- * --------------------------------------------------------------------------
- *)
-TYPE DesignatorVariant = ( Common, Target );
-
-(* --------------------------------------------------------------------------
  * private function targetDesignator(variant, astNode)
  * --------------------------------------------------------------------------
  * Parses rule targetDesignator, constructs its AST node, passes the node
@@ -4464,7 +4467,7 @@ TYPE DesignatorVariant = ( Common, Target );
  * --------------------------------------------------------------------------
  *)
 PROCEDURE targetDesignator
-  ( VAR variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
+  ( VAR (*OUT*) variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
   
 BEGIN
 
@@ -4491,7 +4494,7 @@ END targetDesignator;
  * --------------------------------------------------------------------------
  *)
 PROCEDURE derefTargetTail
-  ( VAR variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
+  ( VAR (*OUT*) variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
   
 BEGIN
 
@@ -4520,7 +4523,7 @@ END derefTargetTail;
  * --------------------------------------------------------------------------
  *)
 PROCEDURE bracketTargetTail
-  ( VAR variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
+  ( VAR (*OUT*) variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
 
 VAR
   expr1, expr2, tail : AstT;
