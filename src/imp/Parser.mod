@@ -1,4 +1,4 @@
-(*!m2pim*) (* Copyright (c) 2015-2017 B.Kowarsch. All rights reserved. *)
+(*!m2pim*) (* Copyright (c) 2015, 2020 Modula-2 Software Foundation. *)
 
 IMPLEMENTATION MODULE Parser;
 
