@@ -5087,7 +5087,7 @@ END simpleFactor;
 PROCEDURE sourceDesignator ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  id, args : AstT;
+  id, args, tail : AstT;
   lookahead : SymbolT;
 
 BEGIN
@@ -5108,17 +5108,17 @@ BEGIN
   
   (* derefSourceTail | *)
   | Token.Deref :
-    lookahead := derefSourceTail();
+    lookahead := derefSourceTail(tail);
     
     (* build AST node and pass it back in astNode *)
-    astNode := TO DO
+    astNode := AST.NewNode(AstNodeType.Desig, id, tail)
   
   (* bracketSourceTail *)
   | Token.LeftBracket :
-    lookahead := bracketSourceTail();
+    lookahead := bracketSourceTail(tail);
     
     (* build AST node and pass it back in astNode *)
-    astNode := TO DO
+    astNode := AST.NewNode(AstNodeType.Desig, id, tail)
   
   ELSE (* no tail *)
     astNode := id
@@ -5211,7 +5211,7 @@ BEGIN
     
     (* sourceDesignator *)
     IF matchSet(FIRST(Designator)) THEN
-      lookahead := sourceDesignator(tail)
+      lookahead := sourceDesignator(astNode)
     ELSE (* resync *)
       lookahead := skipToMatchSet(FOLLOW(DerefSourceTail))
     END; (* IF *)
@@ -5219,16 +5219,15 @@ BEGIN
     
   (* functionCallTail | *)
   | Token.LeftParen :
-    lookahead := functionCallTail(tail);
-    astNode := TO DO
-  
+    lookahead := functionCallTail(astNode);
+    
   (* bracketSourceTail *)
   | Token.LeftBracket :
-    lookahead := bracketSourceTail(tail);
+    lookahead := bracketSourceTail(astNode);
     astNode := TO DO
   
   ELSE (* no tail *)
-    astNode := TO DO
+    astNode := AST.emptyNode()
   END; (* CASE *)
   
   RETURN lookahead
@@ -5243,7 +5242,7 @@ END derefSourceTail;
  *
  * bracketSourceTail :=
  *   '[' expression
- *   ( ']' ( '.' sourceDesignator | functionCallTail | bracketSourceTail )? |
+ *   ( ']' ( '.' sourceDesignator | functionCallTail | derefSourceTail )? |
  *     '..' expression ']' )?
  *   ;
  *
@@ -5251,11 +5250,84 @@ END derefSourceTail;
  * --------------------------------------------------------------------------
  *)
 PROCEDURE bracketSourceTail ( VAR astNode : AstT ) : SymbolT;
-
+VAR
+  expr1, expr2, tail : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
-  TO DO
-
+  PARSER_DEBUG_INFO("bracketSourceTail");
+    
+  (* '[' *)
+  lookahead := Lexer.consumeSym(lexer);
+    
+  (* expression *)
+  IF matchSet(FIRST(Expression)) THEN
+    lookahead := expression(expr1)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrToken(Token.RightBracket, Token.DotDot)
+  END; (* IF *)
+  
+  (* ']' ( '.' sourceDesignator | functionCallTail | derefSourceTail )? |
+     '..' expression ']' *)
+  CASE lookahead.token OF
+  (* ']' *)
+  | Token.RightBracket :
+    (* ']' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* '.' sourceDesignator *)
+    CASE lookahead.token OF
+    (* '.' *)
+    | Token.Period :
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* sourceDesignator *)
+      IF matchSet(FIRST(Designator)) THEN
+        lookahead := sourceDesignator(tail)
+      ELSE (* resync *)
+        lookahead := skipToMatchSet(FOLLOW(bracketSourceTail))
+      END (* IF *)
+    
+    (* functionCallTail *)
+    | Token.LeftParen :
+      lookahead := functionCallTail(tail);
+      
+    (* derefSourceTail *)
+    | Token.Deref :
+      lookahead := derefSourceTail(tail);
+      
+    ELSE (* bypass *)
+      tail := AST.emptyNode()
+    END; (* CASE *)
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.SubTail, expr1, tail)
+    
+  (* '..' expression ']' *)
+  | Token.DotDot :
+    (* '..' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* expression *)
+    IF matchSet(Expression) THEN
+      lookahead := expression(expr2);
+    ELSE (* resync *)
+      lookahead :=
+        skipToMatchTokenOrSet(Token.RightBracket, FOLLOW(BracketTargetTail))
+    END; (* IF *)
+    
+    (* ']' *)
+    IF matchToken(Token.RightBracket) THEN
+      lookahead := Lexer.consumeSym(lexer)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(BracketTargetTail))
+    END (* IF *)
+          
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.Slice, expr1, expr2)
+  END; (* CASE *)
+    
+  RETURN lookahead
 END bracketSourceTail;
 
 
