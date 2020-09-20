@@ -5186,10 +5186,52 @@ END functionCallTail;
  *)
 PROCEDURE derefSourceTail ( VAR astNode : AstT ) : SymbolT;
 
+VAR
+  tail : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
-  TO DO
-
+  PARSER_DEBUG_INFO("derefSourceTail");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* deref *)
+  WHILE lookahead.token = Token.Deref DO
+    lookahead := Lexer.consumeSym(lexer);
+    
+  END; (* WHILE *)
+  
+  (* ( '.' sourceDesignator | functionCallTail | bracketSourceTail )? *)
+  CASE lookahead.token OF
+  
+  (* '.' sourceDesignator | *)
+    Token.Period :
+    (* '.' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* sourceDesignator *)
+    IF matchSet(FIRST(Designator)) THEN
+      lookahead := sourceDesignator(tail)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(DerefSourceTail))
+    END; (* IF *)
+    astNode := TO DO
+    
+  (* functionCallTail | *)
+  | Token.LeftParen :
+    lookahead := functionCallTail(tail);
+    astNode := TO DO
+  
+  (* bracketSourceTail *)
+  | Token.LeftBracket :
+    lookahead := bracketSourceTail(tail);
+    astNode := TO DO
+  
+  ELSE (* no tail *)
+    astNode := TO DO
+  END; (* CASE *)
+  
+  RETURN lookahead
 END derefSourceTail;
 
 
