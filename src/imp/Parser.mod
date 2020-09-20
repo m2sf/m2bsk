@@ -5003,7 +5003,7 @@ END factor;
  *
  * simpleFactor :=
  *   NumberLiteral | StringLiteral |
- *   structuredValue | designatorOrFuncCall | '(' expression ')'
+ *   structuredValue | sourceDesignator | '(' expression ')'
  *   ;
  *
  * astNode:
@@ -5058,8 +5058,12 @@ BEGIN
         lookahead := skipToMatchSet(FOLLOW(SimpleFactor))
       END (* IF *)
       
-  ELSE (* designatorOrFuncCall *)
-    lookahead := designatorOrFuncCall(astNode)
+  ELSE
+  
+    (* sourceDesignator *)
+    IF inFIRST(Designator) THEN
+      lookahead := sourceDesignator(astNode)
+    END (* IF *)
   END; (* CASE *)
   
   RETURN lookahead
@@ -5067,59 +5071,150 @@ END simpleFactor;
 
 
 (* --------------------------------------------------------------------------
- * private function designatorOrFuncCall(astNode)
+ * private function sourceDesignator(astNode)
  * --------------------------------------------------------------------------
- * Parses rule designatorOrFuncCall, constructs its AST node, passes the node
+ * Parses rule sourceDesignator, constructs its AST node, passes the node
  * back in out-parameter astNode and returns the new lookahead symbol.
  *
- * designatorOrFuncCall :=
- *   designator ( '(' expressionList? ')' )?
+ * sourceDesignator :=
+ *   qualident ( functionCallTail | derefSourceTail | bracketSourceTail )?
  *   ;
  *
  * astNode:
  *  desigNode | (FCALL desigNode exprListNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE designatorOrFuncCall ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE sourceDesignator ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  desig, exprList : AstT;
+  id, args : AstT;
   lookahead : SymbolT;
 
 BEGIN
-  PARSER_DEBUG_INFO("designatorOrFuncCall");
+  PARSER_DEBUG_INFO("sourceDesignator");
   
-  (* designator *)
-  lookahead := designator(desig);
+  (* qualident *)
+  lookahead := qualident(id);
   
-  (* ( '(' expressionList? ')' )? *)
-  IF lookahead.token = Token.LeftParen THEN
-    (* '(' *)
+  (* ( functionCallTail | derefSourceTail | bracketSourceTail )? *)
+  CASE lookahead.token OF
+  
+  (* functionCallTail | *)
+    Token.LeftParen :
+    lookahead := functionCallTail(args);
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := AST.NewNode(AstNodeType.FCall, id, args) 
+  
+  (* derefSourceTail | *)
+  | Token.Deref :
+    lookahead := derefSourceTail();
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := TO DO
+  
+  (* bracketSourceTail *)
+  | Token.LeftBracket :
+    lookahead := bracketSourceTail();
+    
+    (* build AST node and pass it back in astNode *)
+    astNode := TO DO
+  
+  ELSE (* no tail *)
+    astNode := id
+  END; (* CASE *)
+
+  RETURN lookahead
+END sourceDesignator;  
+
+
+(* --------------------------------------------------------------------------
+ * private function functionCallTail(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule functionCallTail, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * functionCallTail :=
+ *   '(' expressionList? ')'
+ *   ;
+ *
+ * astNode: exprListNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE functionCallTail ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  exprList : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("functionCallTail");
+  
+  (* '(' *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* expressionList? *)
+  IF inFIRST(ExpressionList, lookahead.token) THEN
+    lookahead := expressionList(exprList)
+  ELSE (* no arguments *)
+    exprList := AST.emptyNode()
+  END; (* IF *)
+  
+  (* ')' *)
+  IF matchToken(Token.RightParen) THEN
     lookahead := Lexer.consumeSym(lexer);
-    
-    (* expressionList? *)
-    IF inFIRST(ExpressionList, lookahead.token) THEN
-      lookahead := expressionList(exprList)
-    ELSE
-      exprList := AST.emptyNode()
-    END; (* IF *)
-    
-    (* ')' *)
-    IF matchToken(Token.RightParen) THEN
-      lookahead := Lexer.consumeSym(lexer)
-    ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(ExpressionList))
-    END; (* IF *)
-    
-    (* construct function call node *)
-    astNode := AST.NewNode(AstNodeType.FCall, desig, exprList)
-    
-  ELSE (* sole designator *)
-    astNode := desig
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(FunctionCallTail));
   END; (* IF *)
   
   RETURN lookahead
-END designatorOrFuncCall;
+END functionCallTail;
+
+
+(* --------------------------------------------------------------------------
+ * private function derefSourceTail(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule derefSourceTail, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * derefSourceTail :=
+ *   deref ( '.' sourceDesignator | functionCallTail | bracketSourceTail )?
+ *   ;
+ *
+ * astNode: exprListNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE derefSourceTail ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+
+  TO DO
+
+END derefSourceTail;
+
+
+(* --------------------------------------------------------------------------
+ * private function bracketSourceTail(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule bracketSourceTail, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * bracketSourceTail :=
+ *   '[' expression
+ *   ( ']' ( '.' sourceDesignator | functionCallTail | bracketSourceTail )? |
+ *     '..' expression ']' )?
+ *   ;
+ *
+ * astNode: exprListNode
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE bracketSourceTail ( VAR astNode : AstT ) : SymbolT;
+
+BEGIN
+
+  TO DO
+
+END bracketSourceTail;
 
 
 (* --------------------------------------------------------------------------
