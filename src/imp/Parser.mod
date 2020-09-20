@@ -4573,7 +4573,7 @@ BEGIN
     lookahead := skipToMatchTokenOrToken(Token.RightBracket, Token.DotDot)
   END; (* IF *)
   
-  (* ']' ( '.' designator | derefTail )? | '..' expression? ']' *)
+  (* ']' ( '.' targetDesignator | derefTargetTail )? | '..' expression? ']' *)
   CASE lookahead.token OF
   (* ']' *)
   | Token.RightBracket :
@@ -4586,16 +4586,16 @@ BEGIN
     | Token.Period :
       lookahead := Lexer.consumeSym(lexer);
       
-      (* designator *)
+      (* targetDesignator *)
       IF matchSet(FIRST(Designator)) THEN
-        lookahead := designator(mode, tail)
+        lookahead := targetDesignator(variant, tail)
       ELSE (* resync *)
         lookahead := skipToMatchSet(FOLLOW(SubscriptTail)
       END (* IF *)
     
-    (* derefTail *)
+    (* derefTargetTail *)
     | Token.Deref :
-      lookahead := Lexer.derefTail(tail);
+      lookahead := derefTargetTail(variant, tail);
       
     ELSE (* bypass *)
       (* input also matches subscriptTail *)
