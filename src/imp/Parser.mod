@@ -4449,10 +4449,34 @@ END subscriptTail;
 PROCEDURE targetDesignator
   ( VAR (*OUT*) variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
   
+VAR
+  head, tail : AstT;
+  lookahead : SymbolT;
+  
 BEGIN
-
-  TO DO
-
+  PARSER_DEBUG_INFO("targetDesignator");
+  
+  (* default variant *)
+  variant := Common;
+  
+  (* qualident *)
+  lookahead := qualident(head);
+    
+  (* ( derefTargetTail | bracketTargetTail )? *)
+  IF lookahead.token = Token.Deref THEN
+    lookahead := derefTargetTail(variant, tail)
+    
+  ELSIF lookahead.token = Token.LeftBracket THEN
+    lookahead := bracketTargetTail(variant, tail)
+    
+  ELSE (* no tail *)
+    tail := AST.emptyNode()
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.NewNode(AstNodeType.Desig, head, tail);
+    
+  RETURN lookahead
 END targetDesignator;
 
 
@@ -4477,9 +4501,36 @@ PROCEDURE derefTargetTail
   ( VAR (*OUT*) variant : DesignatorVariant; VAR astNode : AstT ) : SymbolT;
   
 BEGIN
-
-  TO DO
-
+  PARSER_DEBUG_INFO("derefTargetTail");
+  
+  lookahead := Lexer.lookaheadSym(lexer);
+  
+  (* deref *)
+  WHILE lookahead.token = Token.Deref DO
+    lookahead := Lexer.consumeSym(lexer);
+    
+  END; (* WHILE *)
+  
+  (* ( '.' targetDesignator | bracketTargetTail )? *)
+  IF lookahead.token = Token.Period THEN
+    (* '.' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* targetDesignator *)
+    IF matchSet(FIRST(Designator)) THEN
+      lookahead := targetDesignator(variant, astNode)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Period, FOLLOW(DerefTail))
+    END (* IF *)
+    
+  (* bracketTargetTail *)
+  ELSIF lookahead.token = Token.LeftBracket THEN
+    lookahead := bracketTargetTail(variant, astNode)
+  ELSE (* no tail *)
+    astNode := TO DO
+  END; (* IF *)
+  
+  RETURN lookahead
 END derefTargetTail;
 
 
@@ -4510,7 +4561,7 @@ VAR
   lookahead : SymbolT;
   
 BEGIN
-  PARSER_DEBUG_INFO("bracketTail");
+  PARSER_DEBUG_INFO("bracketTargetTail");
     
   (* '[' *)
   lookahead := Lexer.consumeSym(lexer);
