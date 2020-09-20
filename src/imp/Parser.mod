@@ -26,10 +26,18 @@ FROM NonTerminals IMPORT FIRST, FOLLOW, inFIRST;
 TYPE ParseProc = PROCEDURE ( VAR AstT ) : SymbolT;
 
 
+(* Module Context Type *)
+
+TYPE ModuleContext = (
+  Public,    (* when parsing definition modules *)
+  Private ); (* when parsing program and implementation modules *)
+
+
 (* Parser context *)
 
 VAR
   lexer : LexerT;
+  moduleContext : ModuleContext;
   fileType : Filename.FileType;
   statistics : Statistics;
 
@@ -70,6 +78,7 @@ BEGIN
     CASE fileType OF
     (* .def, *.DEF *)
       Filename.FileType.Def :
+      moduleContext := Public;
       
       (* DEFINITION *)
       IF lookahead.token = Token.Definition THEN
@@ -82,6 +91,7 @@ BEGIN
     
     (* .mod, .MOD *)
     | Filename.FileType.Mod :
+      moduleContext := Private;
     
       (* IMPLEMENTATION *)
       IF lookahead.token = Token.Implementation THEN
@@ -236,11 +246,16 @@ END definitionModule;
 (* --------------------------------------------------------------------------
  * private function import(astNode)
  * --------------------------------------------------------------------------
- * Parses rule import, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
+ * Parses rule import or privateImport depending on moduleContext,
+ * constructs its AST node, passes the node back in out-parameter astNode
+ * and returns the new lookahead symbol.
  *
  * import :=
  *   IMPORT libIdent reExport? ( ',' libIdent reExport? )* ';'
+ *   ;
+ *
+ * privateImport :=
+ *   IMPORT libIdent ( ',' libIdent )* ';'
  *   ;
  *
  * alias libIdent = StdIdent ;
@@ -271,7 +286,7 @@ BEGIN
     lookahead := Lexer.consumeSym(lexer)
     
     (* reExport? *)
-    IF lookahead.token = Token.Plus THEN
+    IF (moduleContext = Public) AND (lookahead.token = Token.Plus) THEN
       (* TO DO : encode re-export flag *)
       lookahead := Lexer.consumeSym(lexer)
     END; (* IF *)
@@ -291,7 +306,7 @@ BEGIN
       lookahead := Lexer.ConsumeSym(lexer)
 
       (* reExport? *)
-      IF lookahead.token = Token.Plus THEN
+      IF (moduleContext = Public) AND (lookahead.token = Token.Plus) THEN
         (* TO DO : encode re-export flag *)
         lookahead := Lexer.consumeSym(lexer)
       END; (* IF *)
@@ -493,8 +508,6 @@ END ident;
  * astNode: (TYPEDEF identNode typeNode)
  * --------------------------------------------------------------------------
  *)
-TYPE Context = ( Public, Private );
-
 PROCEDURE typeDefinition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
@@ -531,9 +544,9 @@ END typeDefinition;
 (* --------------------------------------------------------------------------
  * private function type(context, astNode)
  * --------------------------------------------------------------------------
- * Parses rule type or privateType depending on context, constructs its AST
- * node, passes the node back in out-parameter astNode and returns the new
- * lookahead symbol.
+ * Parses rule type or privateType depending on moduleContext, constructs its
+ * AST node, passes the node back in out-parameter astNode and returns the
+ * new lookahead symbol.
  *
  * type :=
  *   aliasType | derivedType | subrangeType | enumType | setType |
@@ -549,7 +562,7 @@ END typeDefinition;
  * astNode: (TYPEDECL identNode typeNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE type ( context : Context; VAR astNode : AstT ) : SymbolT;
+PROCEDURE type ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
@@ -588,32 +601,26 @@ BEGIN
   
   (* pointerType or privatePointerType *)
   | Token.Pointer :
-    lookahead := pointerType(context, astNode)
+    lookahead := pointerType(astNode)
   
   (* opaqueType *)
   | Token.Opaque :
     
-    IF context # Public THEN (* pre-condition not met *)
-      Halt
+    IF moduleContext = Public THEN
+      lookahead := opaqueType(astNode)
     END; (* IF *)
     
-    lookahead := opaqueType(astNode)
-  
   (* octetSeqType *)
   | Token.OctetSeq :
     
-    IF context # Private THEN (* pre-condition not met *)
-      Halt
-    END; (* IF *)
+    IF moduleContext = Private THEN
+      lookahead := octetSeqType(astNode)
+    END (* IF *)
     
-    lookahead := octetSeqType(astNode)
-  
   (* procedureType *)
   | Token.Procedure :
     lookahead := procedureType(astNode)
   
-  ELSE (* pre-condition not met *)
-    Halt
   END; (* CASE *)
   
   RETURN lookahead
@@ -1158,7 +1165,7 @@ END fieldList;
 (* --------------------------------------------------------------------------
  * private function pointerType(context, astNode)
  * --------------------------------------------------------------------------
- * Parses rule pointerType or privatePointerType, depending on context,
+ * Parses rule pointerType or privatePointerType, depending on mdouleContext,
  * constructs its AST node, passes the node back  in out-parameter astNode
  * and returns the new lookahead symbol.
  *
@@ -1175,7 +1182,7 @@ END fieldList;
  * astNode: (POINTER qualidentNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE pointerType ( context : Context; VAR astNode : AstT ) : SymbolT;
+PROCEDURE pointerType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
   baseType : AstT;
@@ -1194,7 +1201,7 @@ BEGIN
     (* we assume 'TO' is simply missing *)
   END; (* IF *)
   
-  CASE context OF
+  CASE moduleContext OF
   
     Public :
     (* typeIdent *)
@@ -1993,9 +2000,10 @@ BEGIN
   
   tmplist := AstQueue.New();
   
-  (* privateImport? *)
+  (* privateImport* *)
   WHILE lookahead.token = Token.Import DO
-    lookahead := privateImport(implist);
+    (* function import parses both import and privateImport *)
+    lookahead := import(implist);
     AstQueue.Enqueue(tmplist, implist)
   END; (* WHILE *)
   
@@ -2038,69 +2046,6 @@ BEGIN
   
   RETURN lookahead
 END programModule;
-
-
-(* --------------------------------------------------------------------------
- * private function privateImport(astNode)
- * --------------------------------------------------------------------------
- * Parses rule privateImport, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
- *
- * import :=
- *   IMPORT libIdent ( ',' libIdent )* ';'
- *   ;
- *
- * alias libIdent := StdIdent ;
- *
- * astNode: (IMPORT implist)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE privateImport ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  idlist : AstT;
-  tmplist : LexQueueT;
-  lookahead : SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("privateImport");
-
-  (* IMPORT *)
-  lookahead := Lexer.consumeSym(lexer);
-  
-  LexQueue.New(tmplist);
-  
-  (* libIdent *)
-  IF matchToken(Token.StdIdent) THEN
-    LexQueue.Enqueue(tmplist, lookahead.lexeme);
-    lookahead := Lexer.consumeSym(lexer)
-    
-  ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.Comma, FOLLOW(Import))
-  END; (* IF *)
-  
-  (* ( ',' libIdent )* *)
-  WHILE lookahead.token = Token.Comma DO
-    (* ',' *)
-    lookahead := Lexer.consumeSym(lexer);
-    
-    (* libIdent *)
-    IF matchToken(Token.StdIdent) THEN
-      LexQueue.Enqueue(tmplist, lookahead.lexeme);
-      lookahead := Lexer.ConsumeSym(lexer)
-      
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.Comma, FOLLOW(Import))
-    END (* IF *)
-  END; (* WHILE *)
-    
-  (* build AST node and pass it back in astNode *)
-  idlist := NewTerminalListNode(AstNodeType.IdentList, tmplist);
-  astNode := AST.NewListNode(AstNodeType.Import, idlist);
-  LexQueue.Release(tmplist);
-  
-  RETURN lookahead
-END privateImport;
 
 
 (* --------------------------------------------------------------------------
@@ -2236,7 +2181,7 @@ BEGIN
 
   (* privateImport* *)
   WHILE lookahead.token = Token.Import DO
-    (* alias privateImport = import *)
+    (* function import parses both import and privateImport *)
     lookahead := import(implist);
     AstQueue.Enqueue(tmplist, implist)
   END (* WHILE *)
@@ -2486,7 +2431,8 @@ BEGIN
   
   (* privateType *)
   IF matchSet(FIRST(PrivateType)) THEN
-    lookahead := type(Private, typeDecl)
+    (* function type parses both type and privateType *)
+    lookahead := type(typeDecl)
     
   ELSE (* resync *)
     lookahead := skipToMatchSet(FOLLOW(TypeDeclaration))
@@ -2951,7 +2897,7 @@ BEGIN
   | Token.New : lookahead := newStatement(astNode)
     
   (* NOP | *)
-  | Token.Exit :
+  | Token.Nop :
       lookahead := Lexer.consumeSym(lexer);
       astNode := AST.NewNode(AstNodeType.Nop)
       
@@ -2979,9 +2925,13 @@ BEGIN
   (* writeStatement | *)
   | Token.Write : lookahead := writeStatement(astNode)
     
-  (* updateOrProcCall *)
   ELSE
-    lookahead := updateOrProcCall(astNode)    
+    (* updateOrProcCall *)
+    IF matchSet(FIRST(Designator) THEN
+      lookahead := updateOrProcCall(astNode)
+    ELSE (* resync *)
+      lookahead := skipToMatchSet(FOLLOW(Statement))
+    END (* IF *)
   END; (* CASE *)
   
   RETURN lookahead
