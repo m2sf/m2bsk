@@ -455,12 +455,12 @@ BEGIN
       IF matchToken(Token.StdIdent) THEN
         bindableId := lookahead.lexeme;
       
-        (* COLLATION *)
+        (* StdIdent=COLLATION *)
         IF lookahead.lexeme = ResIdent.Collation THEN
           lookahead := Lexer.consumeSym(lexer);
           bindId := TO DO
       
-        (* TLIMIT *)
+        (* StdIdent=TLIMIT *)
         ELSIF lookahead.lexeme = ResIdent.Tlimit THEN
           lookahead := Lexer.consumeSym(lexer);
           bindId := TO DO
@@ -2076,12 +2076,12 @@ BEGIN
   
   (* block *)
   IF matchSet(FIRST(Block)) THEN
-    lookahead := block(blockNode)
+    lookahead := block((*allowEmptyBlock*)FALSE, blockNode)
   ELSE (* resync *)
     lookahead := skipToMatchTokenOrSet(Token.StdIdent, FIRST(Block));
     (* retry *)
     IF inFIRST(Block, lookahead.token) THEN
-      lookahead := block(blockNode)
+      lookahead := block((*allowEmptyBlock*)FALSE, blockNode)
     END (* IF *)
   END; (* IF *)
   
@@ -2115,18 +2115,24 @@ END programModule;
 (* --------------------------------------------------------------------------
  * private function block(astNode)
  * --------------------------------------------------------------------------
- * Parses rule block, constructs its AST node, passes the node back in
- * out-parameter astNode and returns the new lookahead symbol.
+ * Parses rule block or possiblyEmptyBlock, constructs its AST node,
+ * passes the node back in out-parameter astNode and returns the new
+ * lookahead symbol.
  *
  * block :=
  *   declaration*
  *   BEGIN statementSequence END
  *   ;
  *
+ * possiblyEmptyBlock :=
+ *   declaration*
+ *   ( BEGIN statementSequence )? END
+ *   ;
+ *
  * astNode: (BLOCK declListNode stmtSeqNode)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE block ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE block ( allowEmptyBlock : BOOLEAN; VAR astNode : AstT ) : SymbolT;
 
 VAR
   decllist, stmtSeq : AstT;
@@ -2149,8 +2155,9 @@ BEGIN
   decllist := AST.NewListNode(AstNodeType.DeclList, tmplist);
   tmplist := AstQueue.ResetQueue(tmplist);
   
-  (* BEGIN statementSequence *)
-  IF matchToken(Token.Begin) THEN
+  (* ( BEGIN statementSequence )? | BEGIN statementSequence *)  
+  IF (allowEmptyBlock AND lookahead.token = Token.Begin) OR
+     matchToken(Token.Begin) THEN
     (* BEGIN *)
     lookahead := Lexer.consumeSym(lexer)
         
@@ -2160,9 +2167,8 @@ BEGIN
     ELSE (* resync *)
       lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(Block))
     END (* IF *)
-    
   ELSE (* resync *)
-    stmtSeq := NIL;
+    stmtSeq := AST.emptyNode();
     lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(Block))
   END; (* IF *)
   
@@ -2255,13 +2261,13 @@ BEGIN
     
   (* possiblyEmptyBlock *)
   IF matchSet(FIRST(PossiblyEmptyBlock)) THEN
-    lookahead := possiblyEmptyBlock(blockNode)
+    lookahead := block((*allowEmptyBlock*)TRUE, blockNode)
   ELSE (* resync *)
     lookahead :=
       skipToMatchTokenOrSet(Token.StdIdent, FIRST(PossiblyEmptyBlock));
     (* retry *)
     IF inFIRST(PossiblyEmptyBlock, lookahead.token) THEN
-      lookahead := block(blockNode)
+      lookahead := block((*allowEmptyBlock*)TRUE, blockNode)
     END (* IF *)
   END; (* IF *)
   
@@ -2292,74 +2298,6 @@ BEGIN
   
   RETURN lookahead
 END implementationModule;
-
-
-(* --------------------------------------------------------------------------
- * private function possiblyEmptyBlock(astNode)
- * --------------------------------------------------------------------------
- * Parses rule possiblyEmptyBlock, constructs its AST node, passes the node
- * back in out-parameter astNode and returns the new lookahead symbol.
- *
- * possiblyEmptyBlock :=
- *   declaration*
- *   ( BEGIN statementSequence )? END
- *   ;
- *
- * astNode: (BLOCK declListNode stmtSeqNode)
- * --------------------------------------------------------------------------
- *)
-PROCEDURE possiblyEmptyBlock ( VAR astNode : AstT ) : SymbolT;
-
-VAR
-  decllist, stmtSeq : AstT;
-  tmplist : AstQueueT;
-  lookahead : SymbolT;
-  
-BEGIN
-  PARSER_DEBUG_INFO("block");
-  
-  AstQueue.New(tmplist);
-  
-  lookahead := Lexer.lookaheadSym(lexer);
-  
-  (* declaration* *)
-  WHILE inFIRST(Declaration, lookahead.token) DO
-    lookahead := definition(decllist);
-    AstQueue.Enqueue(tmplist, decllist)
-  END (* WHILE *)
-  
-  decllist := AST.NewListNode(AstNodeType.DeclList, tmplist);
-  tmplist := AstQueue.ResetQueue(tmplist);
-  
-  (* ( BEGIN statementSequence )? *)
-  IF lookahead.token = Token.Begin THEN
-    (* BEGIN *)
-    lookahead := Lexer.consumeSym(lexer)
-    
-    (* statementSequence *)
-    IF matchSet(FIRST(StatementSequence)) THEN
-      lookahead := statementSequence(stmtSeq)
-    ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.End, FOLLOW(Block))
-    END (* IF *)
-    
-  ELSE (* no statements *)
-    stmtSeq := AST.emptyNode()
-  END; (* IF *)
-  
-  (* END *)
-  IF matchToken(Token.End) THEN
-    lookahead := Lexer.consumeSym(lexer)
-  ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(Block))
-  END; (* IF *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.Block, decllist, stmtSeq);
-  AstQueue.Release(tmplist);
-  
-  RETURN lookahead
-END possiblyEmptyBlock;
 
 
 (* --------------------------------------------------------------------------
@@ -2736,12 +2674,12 @@ BEGIN
   
   (* block *)
   IF matchSet(FIRST(Block)) THEN
-    lookahead := block(blockNode)
+    lookahead := block((*allowEmptyBlock*)FALSE, blockNode)
   ELSE (* resync *)
     lookahead := skipToMatchSetOrSet(FIRST(Block), FIRST(Ident));
     (* retry *)
     IF inFIRST(Block) THEN
-      lookahead := block(blockNode)
+      lookahead := block((*allowEmptyBlock*)FALSE, blockNode)
     END (* IF *)
   END (* IF *)
   
