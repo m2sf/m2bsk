@@ -415,29 +415,93 @@ END definition;
 (* --------------------------------------------------------------------------
  * private function constDefinition(astNode)
  * --------------------------------------------------------------------------
- * Parses rule constDefinition, constructs its AST node, passes the node back
+ * Parses rule constDefinition or constDeclaration depending on
+ * moduleContext, constructs its AST node, passes the node back
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * constDefinition :=
- *   ident '=' constExpression
+ *   ( '[' ( COLLATION | TLIMIT ) ']' )? simpleConstDefinition ;
+ *   ;
+ *
+ * simpleConstDefinition :=
+ *   ident ( ':' typeIdent )? '=' constExpression
  *   ;
  *
  * alias constExpression = expression ;
  *
- * astNode: (CONSTDEF constId expr)
+ * alias constDeclaration = simpleConstDefinition ;
+ *
+ * astNode: (CONSTDEF bindId constId typeId expr)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE constDefinition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  constId, expr : AstT;
+  bindId, constId, typeId, expr : AstT;
   lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("constDefinition");
   
+  lookahead := Lexer.lookaheadSym(lexer);
+
+  (* ( '[' ( COLLATION | TLIMIT ) ']' )? *)
+  IF moduleContext = Public THEN
+    IF lookahead.token = Token.LeftBracket THEN
+      (* '[' *)
+      lookahead := Lexer.consumeSym(lexer);
+    
+      (* COLLATION | TLIMIT *)
+      IF matchToken(Token.StdIdent) THEN
+        bindableId := lookahead.lexeme;
+      
+        (* COLLATION *)
+        IF lookahead.lexeme = ResIdent.Collation THEN
+          lookahead := Lexer.consumeSym(lexer);
+          bindId := TO DO
+      
+        (* TLIMIT *)
+        ELSIF lookahead.lexeme = ResIdent.Tlimit THEN
+          lookahead := Lexer.consumeSym(lexer);
+          bindId := TO DO
+      
+        ELSE (* identifier not bindable *)
+          (* TO DO : error message *)
+          lookahead := Lexer.consumeSym(lexer)
+        END (* IF *)
+      END; (* IF *)
+    
+      (* ']' *)
+      IF matchToken(Token.RightBracket) THEN
+        lookahead := Lexer.consumeSym(lexer);
+      ELSE (* resync *)
+        lookahead :=
+          skipToMatchTokenOrSet(Token.StdIdent, FOLLOW(ConstDefinition))
+      END (* IF *)
+    END (* IF *)
+  END; (* IF *)
+  
   (* ident *)
-  lookahead := ident(constId);
+  IF matchToken(Token.StdIdent) THEN
+    lookahead := ident(constId)
+  ELSE (* resync *)
+    lookahead :=
+      skipToMatchTokenOrTokenOrSet
+        (Token.Equal, Token.Colon, FIRST(Expression))
+  END; (* IF *)
+  
+  (* ( ':' typeIdent )? *)
+  IF lookahead.token = Token.Colon THEN
+    (* ':' *)
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* typeIdent *)
+    IF matchToken(Token.Qualident) THEN
+      lookahead := qualident(typeId)
+    ELSE (* resync *)
+      lookahead := skipToMatchTokenOrSet(Token.Equal, FIRST(Expression))
+    END (* IF *)
+  END; (* IF *) 
   
   (* '=' *)
   IF matchToken(Token.Equal) THEN
@@ -455,7 +519,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.ConstDef, constId, expr);
+  astNode := AST.NewNode(AstNodeType.ConstDef, bindId, constId, typeId, expr);
   
   RETURN lookahead
 END constDefinition;
