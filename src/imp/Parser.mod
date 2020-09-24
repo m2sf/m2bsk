@@ -191,7 +191,7 @@ BEGIN
 
   (* import* *)
   WHILE lookahead.token = Token.Import DO
-    lookahead := import(implist);
+    lookahead := import(implist, rxplist);
     AstQueue.Enqueue(tmplist, implist)
   END (* WHILE *)
   
@@ -220,8 +220,8 @@ BEGIN
     ident2 := lookahead.lexeme;
     lookahead := Lexer.ConsumeSym(lexer);
     
-    IF ident1 # ident2 THEN
-      (* TO DO: report error -- module identifiers don't match *) 
+    IF ident1 # ident2 THEN (* module identifiers don't match *)
+      (* TO DO: report error *)
     END (* IF *)
     
   ELSE (* resync *)
@@ -244,11 +244,11 @@ END definitionModule;
 
 
 (* --------------------------------------------------------------------------
- * private function import(astNode)
+ * private function import(impNode, rxpNode)
  * --------------------------------------------------------------------------
  * Parses rule import or privateImport depending on moduleContext,
- * constructs its AST node, passes the node back in out-parameter astNode
- * and returns the new lookahead symbol.
+ * constructs its AST nodes, passes the nodes back in out-parameters
+ * impNode and rxpNode, and returns the new lookahead symbol.
  *
  * import :=
  *   IMPORT libIdent reExport? ( ',' libIdent reExport? )* ';'
@@ -262,14 +262,16 @@ END definitionModule;
  *
  * alias reExport = '+' ;
  *
- * astNode: (IMPORT implist)
+ * impNode: (IMPORT implist)
+ * rxpNode: (REEXPORT rxplist)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE import ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE import ( VAR impNode, rxpNode : AstT ) : SymbolT;
 
 VAR
   idlist : AstT;
-  tmplist : LexQueueT;
+  lastIdent : StringT;
+  implist, rxplist : LexQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -278,17 +280,23 @@ BEGIN
   (* IMPORT *)
   lookahead := Lexer.consumeSym(lexer);
   
-  LexQueue.New(tmplist);
+  LexQueue.New(implist);
+  LexQueue.New(rxplist);
   
   (* libIdent *)
   IF matchToken(Token.StdIdent) THEN
-    LexQueue.Enqueue(tmplist, lookahead.lexeme);
-    lookahead := Lexer.consumeSym(lexer)
+    lastIdent := lookahead.lexeme;
+    lookahead := Lexer.consumeSym(lexer);
+    
+    (* add identifier to import list *)
+    LexQueue.Enqueue(implist, lastIdent);
     
     (* reExport? *)
-    IF (moduleContext = Public) AND (lookahead.token = Token.Plus) THEN
-      (* TO DO : encode re-export flag *)
-      lookahead := Lexer.consumeSym(lexer)
+    IF (moduleContext = Public) AND (lookahead.token = Token.Plus) THEN      
+      lookahead := Lexer.consumeSym(lexer);
+      
+      (* add identifier to re-export list *)
+      LexQueue.Enqueue(rxplist, lastIdent)
     END; (* IF *)
   
   ELSE (* resync *)
@@ -302,13 +310,18 @@ BEGIN
     
     (* libIdent *)
     IF matchToken(Token.StdIdent) THEN
-      LexQueue.Enqueue(tmplist, lookahead.lexeme);
-      lookahead := Lexer.ConsumeSym(lexer)
+      lastIdent := lookahead.lexeme;
+      lookahead := Lexer.ConsumeSym(lexer);
+      
+      (* add identifier to import list *)
+      LexQueue.Enqueue(implist, lastIdent);
 
       (* reExport? *)
       IF (moduleContext = Public) AND (lookahead.token = Token.Plus) THEN
-        (* TO DO : encode re-export flag *)
-        lookahead := Lexer.consumeSym(lexer)
+        lookahead := Lexer.consumeSym(lexer);
+        
+        (* add identifier to re-export list *)
+        LexQueue.Enqueue(rxplist, lastIdent);
       END; (* IF *)
       
     ELSE (* resync *)
@@ -316,10 +329,16 @@ BEGIN
     END (* IF *)
   END; (* WHILE *)
     
-  (* build AST node and pass it back in astNode *)
-  idlist := NewTerminalListNode(AstNodeType.IdentList, tmplist);
-  astNode := AST.NewListNode(AstNodeType.Import, idlist);
-  LexQueue.Release(tmplist);
+  (* build AST node import and pass it back in impNode *)
+  idlist := NewTerminalListNode(AstNodeType.IdentList, implist);
+  impNode := AST.NewListNode(AstNodeType.Import, idlist);
+  
+  (* build AST node reexport and pass it back in rxpNode *)
+  idlist := NewTerminalListNode(AstNodeType.IdentList, rxplist);
+  rxpNode := AST.NewListNode(AstNodeType.Reexport, idlist);
+  
+  LexQueue.Release(implist);
+  LexQueue.Release(rxplist);
   
   RETURN lookahead
 END import;
@@ -2090,8 +2109,8 @@ BEGIN
     ident2 := lookahead.lexeme;
     lookahead := ident(moduleIdent)
 
-    IF ident1 # ident2 THEN
-      (* TO DO: report error -- module identifiers don't match *) 
+    IF ident1 # ident2 THEN (* module identifiers don't match *)
+      (* TO DO: report error *) 
     END (* IF *)
     
   ELSE (* resync *)
@@ -2276,8 +2295,8 @@ BEGIN
     ident2 := lookahead.lexeme;
     lookahead := Lexer.ConsumeSym(lexer);
     
-    IF ident1 # ident2 THEN
-      (* TO DO: report error -- module identifiers don't match *) 
+    IF ident1 # ident2 THEN (* module identifiers don't match *)
+      (* TO DO: report error *) 
     END (* IF *)
     
   ELSE (* resync *)
@@ -2688,8 +2707,8 @@ BEGIN
     ident2 := lookahead.lexeme;
     lookahead := Lexer.ConsumeSym(lexer);
     
-    IF ident1 # ident2 THEN
-      (* TO DO: report error -- procedure identifiers don't match *) 
+    IF ident1 # ident2 THEN (* procedure identifiers don't match *)
+      (* TO DO: report error *)
     END (* IF *)
     
   ELSE (* resync *)
