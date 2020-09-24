@@ -1,0 +1,198 @@
+/* M2AST -- EBNF Grammar for Abstract Syntax Tree S-Expressions. */
+ *
+ * Copyright (c) 2020 The Modula-2 Software Foundation
+ *
+ * Author & Maintainer: Benjamin Kowarsch <org.m2sf>
+ *
+ * @synopsis
+ *
+ * This document describes the grammar of AST S-Expressions.
+ *
+ * @repository
+ *
+ * https://github.com/m2sf/m2bsk
+ *
+ * @file
+ *
+ * m2ast-grammar.gll
+ *
+ * Grammar of AST S-Expressions.
+ *
+ */
+
+grammar m2ast;
+
+reserved
+  COMPUNIT, FILENAME, COMPILED, DIGEST, DEFMOD, IMPMOD, PROGRAM,
+  ID, IMPORT, REEXPORT, CONST, VAR, TYPE, PROC, BIND, ALIAS,
+  ENUM, SET, ARRAY, RECORD, POINTER, OPAQUE, FIELD, FT, FP,
+  CONSTP, VARP, ARRAYP, CASTSEQ, CASTPTR
+   /* incomplete */
+  ;
+
+compilationUnit :=
+  '(' COMPUNIT filenameNode timestampNode digestNode moduleNode ')'
+  ;
+  
+filenameNode :=
+  '(' FILENAME quotedLiteral ')'
+  ;
+
+timestampNode :=
+  '(' COMPILED quotedLiteral ')'
+  ;
+
+digestNode :=
+  '(' DIGEST quotedLiteral ')'
+  ;
+
+moduleNode :=
+  defModNode | impModNode | progNode
+  ;
+
+defModNode :=
+  '(' DEFMOD idNode importNode* reExportNode* declarationNode* ')'
+  ;
+  
+idNode :=
+  '(' ID quotedLiteral ')'
+  ;
+
+importNode :=
+  '(' IMPORT quotedLiteral+ ')'
+  ;
+
+reExportNode :=
+  '(' REEXPORT quotedLiteral+ ')'
+  ;
+
+declarationNode :=
+  constDeclNode | varDeclNode | typeDeclNode | procDeclNode
+  ;
+
+constDeclNode :=
+  '(' CONST idNode exprNode typeIdNode? ')'
+  ;
+
+alias typeIdNode = idNode ;
+
+varDeclNode :=
+  '(' VAR idListNode typeIdNode ')'
+  ;
+
+idListNode :=
+  '(' ID quotedLiteral+ ')'
+  ;
+
+typeDeclNode :=
+  '(' TYPE idNode typeConstructorNode ')'
+  ;
+
+typeConstructorNode :=
+  aliasTypeNode | derivedTypeNode | subrangeTypeNode |enumTypeNode |
+  setTypeNode | arrayTypeNode | recordTypeNode | pointerTypeNode |
+  opaqueTypeNode | procTypeNode
+  ;
+
+aliasTypeNode :=
+  '(' ALIAS baseTypeNode ')'
+  ;
+
+alias baseTypeNode = typeIdNode ;
+
+alias derivedTypeNode = typeIdNode ;
+
+subrangeTypeNode :=
+  '(' SUBR baseTypeNode lowerBound upperBound ')'
+  ;
+
+alias lowerBound, upperBound = exprNode ;
+
+enumTypeNode :=
+  '(' ENUM baseTypeNode valueListNode ')'
+  ;
+
+alias valueListNode = idListNode ;
+
+setTypeNode :=
+  '(' SET enumTypeIdNode ')'
+  ;
+
+alias enumTypeIdNode = typeIdNode ;
+
+arrayTypeNode :=
+  '(' ARRAY capacity baseTypeNode ')'
+  ;
+
+alias capacity = exprNode ;
+
+recordTypeNode :=
+  '(' RECORD baseTypeNode fieldListNode* ')'
+  ;
+
+fieldListNode :=
+  '(' FIELD idListNode fieldTypeNode ')'
+  ;
+
+fieldTypeNode :=
+  typeIdNode | arrayTypeNode | pointerTypeNode | procTypeNode
+  ;
+
+pointerTypeNode :=
+  '(' POINTER targetTypeIdNode ')'
+  ;
+
+alias targetTypeIdNode = typeIdNode;
+
+opaqueTypeNode :=
+  '(' OPAQUE ( allocSize | NIL ) ')'
+
+alias allocSize = exprNode ;
+
+procTypeNode :=
+  '(' PROCSIG formalTypeList returnTypeNode ')'
+  ;
+
+formalTypeList :=
+  formalTypeNode+ | NIL
+  ;
+
+formalTypeNode :=
+  '(' FT attrNode? idListNode+ structNode? typeIdNode ')'
+  ;
+
+attrNode :=
+  '(' ( CONSTP | VARP ) ')'
+  ;
+
+structNode :=
+  '(' ( ARRAYP | ARGLIST | CASTSEQ | CASTPTR ) ')'
+  ;
+
+returnTypeNode :=
+  '(' RTN typeIdNode ')' | NIL
+  ;
+
+procDeclNode :=
+  '(' PROC formalParamList returnTypeNode ')'
+  ;
+
+formalParamList :=
+  formalParamNode+ | NIL
+  ;
+
+formalParamNode :=
+  '(' FP attrNode idListNode+ structNode typeIdNode ')'
+  ;
+
+bindDeclNode :=
+  '( BIND idToBind targetToBindTo ')'
+  ;
+
+alias idToBind, targetToBindTo = idNode ;
+
+
+/* incomplete */
+
+
+end m2ast.
