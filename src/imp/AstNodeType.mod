@@ -7,51 +7,10 @@ IMPLEMENTATION MODULE AstNodeType;
 
 FROM String IMPORT StringT;
 
+
 (* Table for human readable names of node types *)
 
 VAR typeName : ARRAY [Invalid .. Qualident] OF StringT;
-
-
-
-
-(* Subranges by Arity *)
-
-(* Arity-0 Subrange *)
-
-TYPE Arity0 = AstNodeType [Empty .. Nop];
-
-(* Arity-1 Subrange *)
-
-TYPE Arity1 = AstNodeType [Alias .. Not];
-
-(* Arity-2 Subrange *)
-
-TYPE Arity2 = AstNodeType [VarDecl .. And];
-
-(* Arity-3 Subrange *)
-
-TYPE Arity3 = AstNodeType [Subr .. Subr];
-
-(* Arity-4 Subrange *)
-
-TYPE Arity4 = AstNodeType [CompUnit .. ];
-
-(* Arity-5 Subrange *)
-
-TYPE Arity5 = AstNodeType [ .. ];
-
-(* Variadic Subrange *)
-
-TYPE Variadic = AstNodeType [DefMod .. ExprList];
-
-
-(* Arity-1 Terminal Subrange *)
-
-TYPE Terminal1 = AstNodeType [Filename .. QuotedVal];
-
-(* Variadic Terminal Subrange *)
-
-TYPE TerminalN = AstNodeType [IdentList .. QualidentList];
 
 
 (* Category Tests *)
