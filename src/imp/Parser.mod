@@ -147,15 +147,16 @@ END compilationUnit;
  *
  * moduleIdent := Ident ;
  *
- * astNode: (DEFMOD moduleIdent implist deflist)
+ * astNode: (DEFMOD moduleIdent importNode reExportNode definitionNode+)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE definitionModule ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  moduleIdent, implist, deflist : AstT;
+  moduleIdent, impNode, rxpNode : AstT;
   ident1, ident2 : StringT;
-  tmplist : AstQueueT;
+  implist, rxplist : LexQueueT;
+  deflist : AstQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -187,25 +188,20 @@ BEGIN
     lookahead := skipToMatchSetOrSet(First(Import), FOLLOW(Import))
   END; (* IF *)
   
-  AstQueue.New(templist);
+  LexQueue.New(implist);
+  LexQueue.New(rxplist);
 
   (* import* *)
   WHILE lookahead.token = Token.Import DO
-    lookahead := import(implist, rxplist);
-    AstQueue.Enqueue(tmplist, implist)
+    lookahead := import(implist, rxplist)
   END (* WHILE *)
   
-  implist := AST.NewListNode(AstNodeType.ImpList, tmplist);
-  tmplist:= AstQueue.ResetQueue(tmplist);
+  AstQueue.New(deflist);
   
   (* definition* *)
   WHILE inFIRST(Definition) DO
-    lookahead := definition(deflist);
-    AstQueue.Enqueue(tmplist, deflist)
+    lookahead := definition(deflist)
   END (* WHILE *)
-  
-  deflist := AST.NewListNode(AstNodeType.DefList, tmplist);
-  tmplist := AstQueue.ResetQueue(tmplist);
   
   (* END *)
   IF matchToken(Token.End) THEN
@@ -236,19 +232,27 @@ BEGIN
   END (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  moduleIdent := AST.NewTerminalNode(AstNodeType.Ident, ident1);
-  astNode := AST.NewNode(AstNodeType.DefMod, moduleIdent, implist, deflist);
+  moduleIdent := AST.newTerminalNode(AstNodeType.Ident, ident1);
+  impNode := AST.newTermListNode(AstNodeType.Import, implist);
+  rxpNode := AST.newTermListNode(AstNodeType.Reexport, rxplist);
+  astNode := AST.newModuleNode
+    (AstNodeType.DefMod, moduleIdent, impNode, rxpNode, deflist);
+  
+  LexQueue.Release(implist);
+  LexQueue.Release(rxplist);
+  AstQueue.Release(deflist);
   
   RETURN lookahead
 END definitionModule;
 
 
 (* --------------------------------------------------------------------------
- * private function import(impNode, rxpNode)
+ * private function import(implist, rxplist)
  * --------------------------------------------------------------------------
  * Parses rule import or privateImport depending on moduleContext,
- * constructs its AST nodes, passes the nodes back in out-parameters
- * impNode and rxpNode, and returns the new lookahead symbol.
+ * appends any imported module identifiers to implist,
+ * appends any re-exported module identifers to rxplist,
+ * passes both lists back and returns the new lookahead symbol.
  *
  * import :=
  *   IMPORT libIdent reExport? ( ',' libIdent reExport? )* ';'
@@ -262,16 +266,15 @@ END definitionModule;
  *
  * alias reExport = '+' ;
  *
- * impNode: (IMPORT implist)
- * rxpNode: (REEXPORT rxplist)
+ * implist: (quotedLiteral+)
+ * rxplist: (quotedLiteral+)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE import ( VAR impNode, rxpNode : AstT ) : SymbolT;
+PROCEDURE import ( VAR implist, rxplist : LexQueueT ) : SymbolT;
 
 VAR
   idlist : AstT;
   lastIdent : StringT;
-  implist, rxplist : LexQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -279,10 +282,7 @@ BEGIN
 
   (* IMPORT *)
   lookahead := Lexer.consumeSym(lexer);
-  
-  LexQueue.New(implist);
-  LexQueue.New(rxplist);
-  
+    
   (* libIdent *)
   IF matchToken(Token.StdIdent) THEN
     lastIdent := lookahead.lexeme;
@@ -329,17 +329,6 @@ BEGIN
     END (* IF *)
   END; (* WHILE *)
     
-  (* build AST node import and pass it back in impNode *)
-  idlist := NewTerminalListNode(AstNodeType.IdentList, implist);
-  impNode := AST.NewListNode(AstNodeType.Import, idlist);
-  
-  (* build AST node reexport and pass it back in rxpNode *)
-  idlist := NewTerminalListNode(AstNodeType.IdentList, rxplist);
-  rxpNode := AST.NewListNode(AstNodeType.Reexport, idlist);
-  
-  LexQueue.Release(implist);
-  LexQueue.Release(rxplist);
-  
   RETURN lookahead
 END import;
 
