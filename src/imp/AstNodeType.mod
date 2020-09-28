@@ -102,5 +102,5 @@ BEGIN (* initialise name table *)
   typeName[StmtSeq] := String.forArray("STMT*");
   typeName[ExprList] := String.forArray("EXPR*");
   typeName[IdentList] := String.forArray("ID*");
-  typeName[QualidentList] := String.forArray("ID*")
+  typeName[QualidentList] := String.forArray("QID*")
 END AstNodeType.
