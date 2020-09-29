@@ -133,6 +133,10 @@ TYPE Arity5 = AstNodeType [ .. ];
 
 TYPE Variadic = AstNodeType [DefMod .. ExprList];
 
+(* Module Subrange *)
+
+TYPE Modules = AstNodeType [DefMod .. Program];
+
 
 (* Arity-1 Terminal Subrange *)
 
