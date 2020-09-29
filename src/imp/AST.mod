@@ -131,7 +131,7 @@ VAR
   newNode : Ast1;
   
 BEGIN
-  Storage.Allocate(newNode, TSIZE(AstNode1);
+  Storage.Allocate(newNode, TSIZE(AstNode1));
   newNode^.type := type;
   newNode^.subnode := subnode;
   RETURN AstT(newNode)
@@ -151,7 +151,7 @@ VAR
   newNode : Ast2;
   
 BEGIN
-  Storage.Allocate(newNode, TSIZE(AstNode2);
+  Storage.Allocate(newNode, TSIZE(AstNode2));
   newNode^.type := type;
   newNode^.subnode[0] := subnode0;
   newNode^.subnode[1] := subnode1;
@@ -172,7 +172,7 @@ VAR
   newNode : Ast3;
   
 BEGIN
-  Storage.Allocate(newNode, TSIZE(AstNode3);
+  Storage.Allocate(newNode, TSIZE(AstNode3));
   newNode^.type := type;
   newNode^.subnode[0] := subnode0;
   newNode^.subnode[1] := subnode1;
@@ -195,7 +195,7 @@ VAR
   newNode : Ast4;
   
 BEGIN
-  Storage.Allocate(newNode, TSIZE(AstNode4);
+  Storage.Allocate(newNode, TSIZE(AstNode4));
   newNode^.type := type;
   newNode^.subnode[0] := sub0;
   newNode^.subnode[1] := sub1;
@@ -250,7 +250,7 @@ VAR
   newNode : Ast1;
   
 BEGIN
-  Storage.Allocate(newNode, TSIZE(TermNode1);
+  Storage.Allocate(newNode, TSIZE(TermNode1));
   newNode^.type := type;
   newNode^.value := value;
   RETURN AstT(newNode)
@@ -284,11 +284,58 @@ BEGIN
     value := LexQueue.dequeue(valueList);
     (* newNode^.value[index] := value *)
     AstT(addr + ADDRESS(index*offset))^ := value
-  END; (*FOR*)
+  END; (* FOR *)
   
   RETURN newNode
 END newTermListNode;
 
+
+(* --------------------------------------------------------------------------
+ * public function newModuleNode(astNode)
+ * --------------------------------------------------------------------------
+ * Allocates and returns a new module type AST node.
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE newModuleNode
+  ( type : AstNodeType.Modules;
+    identNode, impNode, rxpNode : AstT; defnOrDeclList : AstQueueT ) : AstT;
+
+VAR
+  subnodeCount, index, maxIndex, offset : CARDINAL;
+  addr : ADDRESS;
+  newNode, subnode : AstT;
+
+BEGIN
+  (* determine allocation parameters and allocate node *)
+  subnodeCount := AstQueue.count(defnOrDeclList) + 3;
+  maxIndex := subnodeCount - 1;
+  offset := TSIZE(ADDRESS);
+  Storage.Allocate(newNode, TSIZE(Ast1) + maxIndex*offset);
+  
+  (* set node type and arity *)
+  newNode^.type := type;
+  newNode^.arity := subnodeCount;
+  
+  (* newNode^.subnode[0] := identNode *)
+  addr := SYSTEM.ADR(newNode^.subnode);
+  AstT(addr)^ := identNode; 
+  
+  (* newNode^.subnode[1] := impNode *)
+  AstT(addr + ADDRESS(offset))^ := impNode; 
+  
+  (* newNode^.subnode[2] := rxpNode *)
+  AstT(addr + ADDRESS(2*offset))^ := rxpNode; 
+  
+  (* definition or declaration subnodes *)
+  FOR index := 3 TO maxIndex DO
+    subnode := AstQueue.dequeue(defnOrDeclList);
+    (* newNode^.subnode[index] := subnode *)
+    AstT(addr + ADDRESS(index*offset))^ := subnode
+  END; (* FOR *)
+  
+  RETURN newNode
+END newModuleNode;
+    
 
 (* --------------------------------------------------------------------------
  * public function nodeType(astNode)
@@ -302,7 +349,7 @@ BEGIN
   (* verify preconditions *)
   IF astNode = NIL THEN
     RETURN AstNodeType.Invalid
-  END; (*IF*)
+  END; (* IF *)
   
   RETURN astNode^.type
 END nodeType;
@@ -320,12 +367,12 @@ BEGIN
   (* verify preconditions *)
   IF astNode = NIL THEN
     RETURN 0
-  END; (*IF*)
+  END; (* IF *)
   
   (* variadic nodes have an arity field *)
   IF astNode^.type IN AstNodeType.ArityN THEN
     RETURN AstNodeN(astNode)^.arity
-  END; (*IF*)
+  END; (* IF *)
   
   (* the arity of any other nodes is implicit in the node type *)
   CASE astNode^.type OF
@@ -337,7 +384,7 @@ BEGIN
   | MIN(AstNodeType.Arity4) .. MAX(AstNodeType.Arity4) : RETURN 4
   ELSE (* unreachable assert *)
     Halt
-  END (*CASE*)  
+  END (* CASE *)  
 END arity;
 
 
@@ -360,18 +407,18 @@ BEGIN
   
   IF astNode = NIL THEN (* invalid reference *)
     RETURN NIL
-  END; (*IF*)
+  END; (* IF *)
   
   type := nodeType(astNode);
   
   IF AstNodeType.isTerminal(type)
     OR (type IN AstNodeType.Arity0) THEN (* invalid type *)
     RETURN NIL
-  END; (*IF*)
+  END; (* IF *)
     
   IF index >= arity(astNode) THEN (* index out of bounds *)
     RETURN NIL
-  END; (*IF*)
+  END; (* IF *)
   
   (* RETURN astNode^.subnode[index] *)
   offset := TSIZE(ADDRESS);

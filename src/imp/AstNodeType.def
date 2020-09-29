@@ -1,0 +1,165 @@
+(*!m2pim*) (* Copyright (c) 2015, 2020 Modula-2 Software Foundation *)
+
+DEFINITION MODULE AstNodeType;
+
+(* AST Node Type Definitions for Modula-2 R10 Bootstrap Kernel *)
+
+
+FROM String IMPORT StringT;
+
+
+(* AST Node Type *)
+
+TYPE AstNodeType =
+  ( Invalid,
+    
+  (* Arity-0 Nodes *)
+    
+    Empty,            (* empty node sentinel *)
+    Exit,             (* EXIT statement node type *)
+    Nop,              (* NOP statement node type *)
+    
+  (* Arity-1 Nodes *)
+    
+    Alias,            (* alias type node *)
+    Set,              (* set type constructor node *)
+    Pointer,          (* pointer type node *)
+    Unq,              (* unqualified alias node *)
+    
+    Loop,             (* loop statement node *)
+    
+    Neg,              (* arithmetic negation sub-expression node *)
+    Not,              (* logical negation sub-expression node *)
+    
+    Filename,         (* filename node *)
+    Compiled,         (* timestamp node *)
+    Digest,           (* module digest node *)
+    Ident,            (* identifier node *)
+    Qualident,        (* qualified identifier node *)
+    IntVal,           (* whole number value node *)
+    RealVal,          (* real number value node *)
+    ChrVal,           (* character code value node *)
+    QuotedVal,        (* quoted literal value node *)
+    
+  (* Arity-2 Nodes *)
+    
+    VarDecl,          (* variable declaration node *)
+    TypeDecl,         (* type declaration node *)
+    Array,            (* array type constructor node *)
+    Enum,             (* enumeration type constructor node *)
+    ProcType,         (* procedure type constructor node *)
+    Field,            (* field list node *)
+    Proc,             (* procedure declaration node *)
+    Bind,             (* binding declaration node *)
+    
+    PCall,            (* procedure call node *)
+    While,            (* while statement node *)
+    Repeat,           (* repeat statement node *)
+    Range,            (* expression range node *)
+    
+    Eq,               (* equality sub-expression node *)
+    Neq,              (* inequality sub-expression node *)
+    Lt,               (* less-than sub-expression node *)
+    LtEq,             (* less-than-or-equal sub-expression node *)
+    Gt,               (* greater-than sub-expression node *)
+    GtEq,             (* greater-than-or-equal sub-expression node *)
+    In,               (* set membership sub-expression node *)
+    Plus,             (* plus sub-expression node *)
+    Minus,            (* minus sub-expression node *)
+    Or,               (* logical disjunction sub-expression node *)
+    Star,             (* asterisk sub-expression node *)
+    Slash,            (* solidus sub-expression node *)
+    Div,              (* integer division sub-expression node *)
+    Mod,              (* modulus sub-expression node *)
+    And,              (* logical conjunction expression node *)
+    FCall,            (* function call node *)
+    
+  (* Arity-3 Nodes *)
+    
+    Subr,             (* subrange type constructor node *)
+    
+  (* Arity-4 Nodes *)
+    
+    CompUnit,         (* compilation unit node *)
+    
+  (* Arity-5 Nodes *)
+    
+    
+  (* Variadic Nodes *)
+    
+    DefMod,           (* definition module node *)
+    ImpMod,           (* implementation module node *)
+    Program,          (* program node *)
+    
+    Import,           (* import list node *)
+    Reexport,         (* re-export list node *)
+    StmtSeq,          (* statement sequence node *)
+    ExprList,         (* expression list node *)
+    
+    IdentList,        (* identifier list node *)
+    QualidentList );  (* qualified identifier list node *)
+
+
+TYPE AstNodeTypeT = AstNodeType; (* for unqualified use *)
+
+
+(* Subranges by Arity *)
+
+(* Arity-0 Subrange *)
+
+TYPE Arity0 = AstNodeType [Empty .. Nop];
+
+(* Arity-1 Subrange *)
+
+TYPE Arity1 = AstNodeType [Alias .. Not];
+
+(* Arity-2 Subrange *)
+
+TYPE Arity2 = AstNodeType [VarDecl .. And];
+
+(* Arity-3 Subrange *)
+
+TYPE Arity3 = AstNodeType [Subr .. Subr];
+
+(* Arity-4 Subrange *)
+
+TYPE Arity4 = AstNodeType [CompUnit .. ];
+
+(* Arity-5 Subrange *)
+
+TYPE Arity5 = AstNodeType [ .. ];
+
+(* Variadic Subrange *)
+
+TYPE Variadic = AstNodeType [DefMod .. ExprList];
+
+(* Module Subrange *)
+
+TYPE Modules = AstNodeType [DefMod .. Program];
+
+
+(* Arity-1 Terminal Subrange *)
+
+TYPE Terminal1 = AstNodeType [Filename .. QuotedVal];
+
+(* Variadic Terminal Subrange *)
+
+TYPE TerminalN = AstNodeType [IdentList .. QualidentList];
+
+
+(* Category Tests *)
+
+PROCEDURE isNonTerminal ( t : AstNodeType ) : BOOLEAN;
+(* Returns TRUE if t is a non-terminal node type, otherwise FALSE. *)
+
+PROCEDURE isTerminal ( t : AstNodeType ) : BOOLEAN;
+(* Returns TRUE if t is a terminal node type, otherwise FALSE. *)
+
+
+(* Presentation *)
+
+PROCEDURE name ( t : AstNodeType ) : StringT;
+(* Returns a human readable name for node type t. *)
+
+
+END AstNodeType.
