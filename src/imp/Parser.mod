@@ -156,7 +156,7 @@ VAR
   moduleIdent, impNode, rxpNode : AstT;
   ident1, ident2 : StringT;
   implist, rxplist : LexQueueT;
-  deflist : AstQueueT;
+  defnlist : AstQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -196,11 +196,11 @@ BEGIN
     lookahead := import(implist, rxplist)
   END (* WHILE *)
   
-  AstQueue.New(deflist);
+  AstQueue.New(defnlist);
   
   (* definition* *)
   WHILE inFIRST(Definition) DO
-    lookahead := definition(deflist)
+    lookahead := definition(defnlist)
   END (* WHILE *)
   
   (* END *)
@@ -236,11 +236,11 @@ BEGIN
   impNode := AST.newTermListNode(AstNodeType.Import, implist);
   rxpNode := AST.newTermListNode(AstNodeType.Reexport, rxplist);
   astNode := AST.newModuleNode
-    (AstNodeType.DefMod, moduleIdent, impNode, rxpNode, deflist);
+    (AstNodeType.DefMod, moduleIdent, impNode, rxpNode, defnlist);
   
   LexQueue.Release(implist);
   LexQueue.Release(rxplist);
-  AstQueue.Release(deflist);
+  AstQueue.Release(defnlist);
   
   RETURN lookahead
 END definitionModule;
@@ -334,10 +334,10 @@ END import;
 
 
 (* --------------------------------------------------------------------------
- * private function definition(astNode)
+ * private function definition(defnList)
  * --------------------------------------------------------------------------
- * Parses rule definition, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
+ * Parses rule definition, adds each definition's AST node to the definition
+ * list and returns the new lookahead symbol.
  *
  * definition :=
  *   CONST ( constDefinition ';' )+ |
@@ -347,13 +347,15 @@ END import;
  *   toDoList ';'
  *   ;
  *
- * astNode: constDefNode | typeDefNode | varDeclNode | procDefNode | toDoNode
+ * defnList: (defnNode+)
+ * defnNode: constDefNode | typeDefNode | varDeclNode | procDefNode
  * --------------------------------------------------------------------------
  *)
-PROCEDURE definition ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE definition ( VAR defnlist : AstQueueT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
+  defnNode, bindNode, idNode, typeNode : AstT;
 
 BEGIN
   PARSER_DEBUG_INFO("definition");
@@ -368,8 +370,7 @@ BEGIN
       (* ( constDefinition ';' )+ *)
       lookahead :=
         parseListWTerminator(constDefinition, Token.Semicolon,
-          FIRST(ConstDefinition), FOLLOW(ConstDefinition),
-          AstNodeType.DefList, astNode)
+          FIRST(ConstDefinition), FOLLOW(ConstDefinition), defnlist)
             
   (* TYPE *)
   | Token.Type :
@@ -378,8 +379,7 @@ BEGIN
       (* ( typeDefinition ';' )+ *)
       lookahead :=
         parseListWTerminator(typeDefinition, Token.Semicolon,
-          FIRST(TypeDefinition), FOLLOW(TypeDefinition),
-          AstNodeType.DefList, astNode)
+          FIRST(TypeDefinition), FOLLOW(TypeDefinition), defnlist)
   
   (* VAR *)
   | Token.Var :
@@ -388,13 +388,22 @@ BEGIN
       (* ( varDefinition ';' )+ *)
       lookahead :=
         parseListWTerminator(varDefinition, Token.Semicolon,
-          FIRST(VarDefinition), FOLLOW(VarDefinition),
-          AstNodeType.DefList, astNode)
+          FIRST(VarDefinition), FOLLOW(VarDefinition), defnlist)
   
   (* PROCEDURE *)
   | Token.Procedure :
       (* procedureHeader *)
-      lookahead := procedureHeader(astNode);
+      lookahead := procedureHeader(bindNode, idNode, fplist, typeNode);
+      
+      (* build procedure definition AST node and add it to the list *)
+      defnNode :=
+        AST.newVariadicNode(AstNodeType.Proc, idNode, typeNode, fplist);
+      AstQueue.Enqueue(defnlist, defnNode);
+      
+      (* add bind node to the list unless NIL *)
+      IF bindNode # NIL THEN
+        AstQueue.Enqueue(defnlist, bindNode)
+      END; (* IF *)
       
       (* ';' *)
       IF matchToken(Token.Semicolon) THEN
@@ -406,7 +415,8 @@ BEGIN
   (* TO *)
   | Token.To :
       (* toDoList *)
-      lookahead := toDoList(astNode);
+      lookahead := toDoList(defnNode);
+      AstQueue.Enqueue(defnlist, defnNode);
       
       (* ';' *)
       IF matchToken(Token.Semicolon) THEN
@@ -423,80 +433,134 @@ END definition;
 (* --------------------------------------------------------------------------
  * private function constDefinition(astNode)
  * --------------------------------------------------------------------------
- * Parses rule constDefinition or constDeclaration depending on
- * moduleContext, constructs its AST node, passes the node back
+ * Parses rule constDefinition, constructs its AST node, passes the node back
  * in out-parameter astNode and returns the new lookahead symbol.
  *
  * constDefinition :=
- *   ( '[' ( COLLATION | TLIMIT ) ']' )? simpleConstDefinition ;
+ *   constBinding | constDeclaration
  *   ;
  *
- * simpleConstDefinition :=
- *   ident ( ':' typeIdent )? '=' constExpression
- *   ;
- *
- * alias constExpression = expression ;
- *
- * alias constDeclaration = simpleConstDefinition ;
- *
- * astNode: (CONSTDEF bindId constId typeId expr)
+ * astNode: (BIND constId expr) | (CONST constId typeId expr)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE constDefinition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  bindId, constId, typeId, expr : AstT;
   lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("constDefinition");
   
   lookahead := Lexer.lookaheadSym(lexer);
-
-  (* ( '[' ( COLLATION | TLIMIT ) ']' )? *)
-  IF moduleContext = Public THEN
-    IF lookahead.token = Token.LeftBracket THEN
-      (* '[' *)
-      lookahead := Lexer.consumeSym(lexer);
+  
+  (* constBinding | *)
+  IF lookahead.token = Token.LeftBracket THEN
+    lookahead := constBinding(astNode)
     
-      (* COLLATION | TLIMIT *)
-      IF matchToken(Token.StdIdent) THEN
-        bindableId := lookahead.lexeme;
-      
-        (* StdIdent=COLLATION *)
-        IF lookahead.lexeme = ResIdent.Collation THEN
-          lookahead := Lexer.consumeSym(lexer);
-          bindId := TO DO
-      
-        (* StdIdent=TLIMIT *)
-        ELSIF lookahead.lexeme = ResIdent.Tlimit THEN
-          lookahead := Lexer.consumeSym(lexer);
-          bindId := TO DO
-      
-        ELSE (* identifier not bindable *)
-          (* TO DO : error message *)
-          lookahead := Lexer.consumeSym(lexer)
-        END (* IF *)
-      END; (* IF *)
-    
-      (* ']' *)
-      IF matchToken(Token.RightBracket) THEN
-        lookahead := Lexer.consumeSym(lexer);
-      ELSE (* resync *)
-        lookahead :=
-          skipToMatchTokenOrSet(Token.StdIdent, FOLLOW(ConstDefinition))
-      END (* IF *)
-    END (* IF *)
+  (* constDeclaration *)
+  ELSE (* lookahead is identifier *)
+    lookahead := constDeclaration(astNode)
   END; (* IF *)
   
-  (* ident *)
+  RETURN lookahead
+END constDefinition;
+
+
+(* --------------------------------------------------------------------------
+ * private function constBinding(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule constBinding, constructs its AST node, passes the node back
+ * in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * constBinding :=
+ *   '[' ( StdIdent=COLLATION | StdIdent=TLIMIT ) ']' '=' constExpression
+ *   ;
+ *
+ * astNode: (BIND ident expr)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE constBinding ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  ident : LexemeT;
+  idNode, expr : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("constBinding");
+    
+  (* '[' *)
+  lookahead := Lexer.consumeSym(lexer);
+  
+  (* COLLATION | TLIMIT *)
   IF matchToken(Token.StdIdent) THEN
-    lookahead := ident(constId)
+    ident := lookahead.lexeme;
+    
+    IF (ident = ResIdent.Collation) OR (ident = ResIdent.Tlimit) THEN
+      lookahead := ident(idNode)
+      
+    ELSE (* identifier not bindable *)
+      (* TO DO : error message *)
+      lookahead := Lexer.consumeSym(lexer);
+      idNode := NIL
+    END (* IF *)
+  END; (* IF *)
+
+  (* ']' *)
+  IF matchToken(Token.RightBracket) THEN
+    lookahead := Lexer.consumeSym(lexer)
+  ELSE (* resync *)
+    lookahead := skipToMatchTokenOrSet(Token.Equal, FIRST(ConstExpression))
+  END; (* IF *)
+  
+  (* '=' *)
+  IF matchToken(Token.Equal) THEN
+    lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead :=
-      skipToMatchTokenOrTokenOrSet
-        (Token.Equal, Token.Colon, FIRST(Expression))
+      skipToMatchSetOrSet(FIRST(ConstExpression), FOLLOW(ConstBinding))
   END; (* IF *)
+  
+  (* constExpression *)
+  IF matchSet(ConstExpression) THEN
+    lookahead := constExpression(expr)
+  ELSE (* resync *)
+    lookahead := skipToMatchSet(FOLLOW(ConstBinding))
+  END; (* IF *)
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.newBinaryNode(AstNodeType.Bind, idNode, expr);
+  
+  RETURN lookahead
+END constBinding;
+
+
+(* --------------------------------------------------------------------------
+ * private function constDeclaration(astNode)
+ * --------------------------------------------------------------------------
+ * Parses rule constDeclaration, constructs its AST node, passes the node
+ * back in out-parameter astNode and returns the new lookahead symbol.
+ *
+ * constDeclaration :=
+ *   ident ( ':' typeIdent )? '=' constExpression
+ *   ;
+ *
+ * alias constExpression = expression ;
+ *
+ * astNode: (CONST constId typeId expr)
+ * --------------------------------------------------------------------------
+ *)
+PROCEDURE constDeclaration ( VAR astNode : AstT ) : SymbolT;
+
+VAR
+  constId, typeId, expr : AstT;
+  lookahead : SymbolT;
+  
+BEGIN
+  PARSER_DEBUG_INFO("constDeclaration");
+    
+  (* ident *)
+  lookahead := ident(constId);
   
   (* ( ':' typeIdent )? *)
   IF lookahead.token = Token.Colon THEN
@@ -516,21 +580,21 @@ BEGIN
     lookahead := Lexer.consumeSym(lexer)
   ELSE (* resync *)
     lookahead :=
-      skipToMatchSetOrSet(FIRST(Expression), FOLLOW(ConstDefinition)))
+      skipToMatchSetOrSet(FIRST(Expression), FOLLOW(constDeclaration)))
   END; (* IF *)
   
   (* constExpression *)
   IF matchSet(FIRST(Expression)) THEN
     lookahead := expression(expr)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(ConstDefinition))
+    lookahead := skipToMatchSet(FOLLOW(constDeclaration))
   END; (* IF *)
   
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.ConstDef, bindId, constId, typeId, expr);
-  
+  (* build const definition AST node and pass it back in defnNode *)
+  astNode := AST.new3aryNode(AstNodeType.Const, constId, typeId, expr);
+    
   RETURN lookahead
-END constDefinition;
+END constDeclaration;
 
 
 (* --------------------------------------------------------------------------
@@ -554,7 +618,6 @@ BEGIN
   PARSER_DEBUG_INFO("ident");
   
   lookahead := Lexer.lookaheadSym(lexer);
-  
   lexeme := lookahead.lexeme;
 
   (* StdIdent *)
@@ -776,13 +839,13 @@ BEGIN
   (* StdIdent | Qualident *)
   CASE lookahead.token OF
   
-    (* StdIdent *)
+    (* StdIdent | *)
     Token.StdIdent :
-    astNode := AST.NewTerminalNode(AstNodeType.Ident, lexeme)
+    astNode := AST.newTerminalNode(AstNodeType.Ident, lexeme)
     
     (* Qualident *)
   | Token.Qualident :
-    astNode := AST.NewTerminalNode(AstNodeType.Qualident, lexeme)
+    astNode := AST.newTerminalNode(AstNodeType.Qualident, lexeme)
   END; (* CASE *)
   
   lookahead := Lexer.consumeSym(lexer);
@@ -1120,7 +1183,8 @@ END arrayType;
 PROCEDURE recordType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  baseType, fieldListSeq : AstT;
+  baseType : AstT;
+  tmplist : AstQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -1152,11 +1216,12 @@ BEGIN
     baseType := AST.emptyNode()
   END; (* IF *)
   
+  AstQueue.New(tmplist);
+  
   (* fieldList ( ';' fieldList )* *)
   lookahead :=
     parseListWSeparator(fieldList, Token.Semicolon,
-      FIRST(FieldList), FOLLOW(FieldList),
-      AstNodeType.FieldListSeq, fieldListSeq);
+      FIRST(FieldList), FOLLOW(FieldList), tmplist);
   
   (* END *)
   IF matchToken(Token.End) THEN
@@ -1166,7 +1231,9 @@ BEGIN
   END; (* IF *)
     
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.RecordType, baseType, fieldListSeq);
+  astNode := AST.newVariadicNode(AstNodeType.RecordType, baseType, tmplist);
+  
+  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END recordType;
@@ -1384,13 +1451,14 @@ END opaqueType;
  *
  * alias returnedType = typeIdent ;
  *
- * astNode: (PROCTYPE formalTypeListNode qualidentNode)
+ * astNode: (PROCTYPE qualidentNode formalTypeNode+)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE procedureType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  formalTypeList, retType : AstT;
+  retType : AstT;
+  tmplist : AstQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -1404,12 +1472,13 @@ BEGIN
     (* '(' *)
     lookahead := Lexer.consumeSym(lexer);
     
+    AstQueue.New(tmplist);
+    
     (* formalType ( ',' formalType )* *)
     lookahead :=
       parseListWSeparator(formalType, Token.Comma,
-        FIRST(FormalType), FOLLOW(FormalType),
-        AstNodeType.FormalTypeList, formalTypeList);
-          
+        FIRST(FormalType), FOLLOW(FormalType), tmplist);
+        
     (* ')' *)
     IF matchToken(Token.RightParen) THEN
       lookahead := Lexer.consumeSym(lexer)
@@ -1432,7 +1501,9 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.ProcType, formalTypeList, retType);
+  astNode := AST.newVariadicNode(AstNodeType.ProcType, retType, tmplist);
+  
+  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END procedureType;
@@ -1481,7 +1552,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(nodeType, astNode);
+  astNode := AST.newNode(nodeType, astNode);
   
   RETURN lookahead
 END formalType;
@@ -1646,7 +1717,7 @@ BEGIN
   END; (* CASE *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.CastP, ftype)
+  astNode := AST.newNode(AstNodeType.CastP, ftype)
   
   RETURN lookahead
 END castingFormalType;
@@ -1736,7 +1807,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.VarDecl, idlist, typeId);
+  astNode := AST.newNode(AstNodeType.VarDecl, idlist, typeId);
   
   RETURN lookahead
 END varDefinition;
@@ -1757,17 +1828,22 @@ END varDefinition;
  *   ( ':' returnedType )?
  *   ;
  *
- * astNode: (PROC bindSpec procId fplist retType)
+ * procDefNode: (PROC procId retType formalParams* )
+ *
  * --------------------------------------------------------------------------
  *)
-PROCEDURE procedureHeader ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE procedureHeader
+  ( VAR bindSpec, procId, retType : AstT; VAR fplist : AstQueueT ) : SymbolT;
 
 VAR
-  bindSpec, procId, fpList, retType : AstT;
   lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("procedureHeader");
+  
+  IF AstQueue.count(fplist) # 0 THEN
+    AstQueue.Reset(fplist)
+  END; (* IF *)
     
   (* PROCEDURE *)
   lookahead := Lexer.consumeSym(lexer);
@@ -1783,7 +1859,7 @@ BEGIN
     ELSE (* resync *)
       lookahead :=
         skipToMatchTokenOrSet(Token.RightBracket, FIRST(ProcedureSignature));
-      bindSpec := AST.emptyNode()
+      bindSpec := NIL
     END; (* IF *)
     
     (* ']' *)
@@ -1794,7 +1870,7 @@ BEGIN
     END (* IF *)
     
   ELSE (* no binding specifier *)
-    bindSpec := AST.emptyNode()
+    bindSpec := NIL
   END; (* IF *)
   
   (* procedureSignature *)
@@ -1815,8 +1891,7 @@ BEGIN
       (* formalParams ( ';' formalParams )* *)
       lookahead :=
         parseListWSeparator(formalParams, Token.Semicolon,
-          FIRST(FormalParams), FOLLOW(FormalParams),
-          AstNodeType.FPList, fpList);
+          FIRST(FormalParams), FOLLOW(FormalParams), fplist);
       
       (* ')' *)
       IF matchToken(Token.RightParen) THEN
@@ -1825,9 +1900,6 @@ BEGIN
         lookahead :=
           skipToMatchTokenOrSet(Token.Colon, FOLLOW(ProcedureHeader))
       END (* IF *)
-      
-    ELSE (* no formal parameter list *)
-      fplist := AST.emptyNode()
     END; (* IF *)
     
     (* ( ':' returnedType )? *)
@@ -1849,10 +1921,7 @@ BEGIN
   ELSE (* resync *)
     lookahead := skipToMatchSet(FOLLOW(ProcedureHeader))
   END; (* IF *)
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.Proc, bindSpec, procId, fplist, retType);
-  
+      
   RETURN lookahead
 END procedureHeader;
 
@@ -2330,7 +2399,7 @@ END implementationModule;
  * astNode: (DECLLIST declNode1 declNode2 ... declNodeN)
  * --------------------------------------------------------------------------
  *)
-PROCEDURE declaration ( VAR astNode : AstT ) : SymbolT;
+PROCEDURE declaration ( VAR decllist : AstQueueT ) : SymbolT;
 
 VAR
   lookahead : SymbolT;
@@ -2348,8 +2417,7 @@ BEGIN
       (* ( constDefinition ';' )+ *)
       lookahead :=
         parseListWTerminator(constDefinition, Token.Semicolon,
-          FIRST(ConstDefinition), FOLLOW(ConstDefinition),
-          AstNodeType.DeclList, astNode)
+          FIRST(ConstDefinition), FOLLOW(ConstDefinition), decllist)
             
   (* TYPE *)
   | Token.Type :
@@ -2358,8 +2426,7 @@ BEGIN
       (* ( typeDeclaration ';' )+ *)
       lookahead :=
         parseListWTerminator(typeDeclaration, Token.Semicolon,
-          FIRST(TypeDeclaration), FOLLOW(TypeDeclaration),
-          AstNodeType.DeclList, astNode)
+          FIRST(TypeDeclaration), FOLLOW(TypeDeclaration), decllist)
    
   (* VAR ( varOrFieldDeclaration ';' )+ | *)
   | Token.Var :
@@ -2369,7 +2436,7 @@ BEGIN
       lookahead :=
         parseListWTerminator(varOrFieldDeclaration, Token.Semicolon,
           FIRST(VarOrFieldDeclaration), FOLLOW(VarOrFieldDeclaration),
-          AstNodeType.DeclList, astNode)
+          decllist)
   
   (* procedureHeader ';' block ident ';' | *)
   | Token.Procedure :
@@ -2525,7 +2592,8 @@ END octetSeqType;
 PROCEDURE indeterminateTarget ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  listseq, inField : AstT;
+  inField : AstT;
+  tmplist : AstQueueT;
   lookahead : SymbolT;
 
 BEGIN
@@ -2534,12 +2602,13 @@ BEGIN
   (* RECORD *)
   lookahead := Lexer.consumeSym(lexer);
   
+  AstQueue.New(tmplist);
+  
   (* ( fieldList ';' )* *)
   IF inFIRST(FieldList, lookahead.token) THEN
     lookahead :=
       parseListWTerminator(fieldList, Token.Semicolon,
-        FIRST(FieldList), FIRST(IndeterminateField),
-        AstNodeType.FieldListSeq, listseq)
+        FIRST(FieldList), FIRST(IndeterminateField), tmplist)
   END; (* IF *)
   
   (* indeterminateField *)
@@ -2557,7 +2626,9 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.InRec, listseq, inField);
+  astNode := AST.NewNode(AstNodeType.InRec, tmplist, inField);
+  
+  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END indeterminateTarget;
@@ -2668,7 +2739,7 @@ VAR
 BEGIN
   PARSER_DEBUG_INFO("procDeclaration");
     
-  (* procedureHeader *)
+  (* procedureHeader *) (* TO DO : refactor *)
   lookahead := procedureHeader(procHeader);
   procId := AST.subnodeForIndex(procHeader, 0);
   ident1 := AST.valueForIndex(procId, 0);
@@ -2730,8 +2801,7 @@ END procDeclaration;
  *   ;
  *
  * astNode:
- *  (ALIASDECL identNode qualidentNode) |
- *  (ALIASDECLLIST aliasDeclNode1 aliasDeclNode2 ... aliasDeclNodeN)
+ *  (UNQUALIFIED aliasDeclNode1 aliasDeclNode2 ... aliasDeclNodeN)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE aliasDeclaration ( VAR astNode : AstT ) : SymbolT;
@@ -2743,41 +2813,22 @@ VAR
 
 BEGIN
   PARSER_DEBUG_INFO("aliasDeclSection");
-  
-  AstQueue.New(tmplist);
-  
+    
   (* UNQUALIFIED *)
   lookahead := Lexer.consumeSym(lexer);
   
-  (* nameSelector *)
-  IF matchToken(Token.Qualident) THEN
-    lookahead := nameSelector(name);
-    AstQueue.Enqueue(tmplist, name)
-    
-    (* ( ',' nameSelector )* *)
-    WHILE lookahead.token = Token.Comma DO
-      (* ',' *)
-      lookahead := Lexer.consumeSym(lexer);
-      
-      (* nameSelector *)
-      IF matchToken(Token.Qualident) THEN
-        lookahead := nameSelector(name);
-        AstQueue.Enqueue(tmplist, name)
-        
-      ELSE (* resync *)
-        lookahead :=
-          skipToMatchTokenOrSetOrSet
-            (Token.Comma), FIRST(Declaration), FOLLOW(Declaration)
-      END (* IF *)
-    END; (* WHILE *)
-    
-  ELSE (* resync *)
-    lookahead := skipToMatchSetOrSet(FIRST(Declaration), FOLLOW(Declaration))
-  END; (* IF *)
+  AstQueue.New(tmplist);
+  
+  (* nameSelector ( ',' nameSelector )* *)
+  lookahead :=
+    parseListWSeparator(nameSelector, Token.Comma,
+      FIRST(NameSelector), FOLLOW(NameSelector), tmplist);
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewListNode(AstNodeType.AliasDeclList, tmplist)
-
+  astNode := AST.NewListNode(AstNodeType.Unqualified, tmplist)
+  
+  AstQueue.Release(tmplist);
+  
   RETURN lookahead
 END aliasDeclaration;
 
@@ -2840,16 +2891,23 @@ END nameSelector;
 PROCEDURE statementSequence ( VAR astNode : AstT ) : SymbolT;
 
 VAR
+  tmplist : AstQueueT;
   lookahead : SymbolT;
   
 BEGIN
   PARSER_DEBUG_INFO("statementSequence");
   
+  AstQueue.New(tmplist);
+  
   (* statement ( ';' statement )* *)
   lookahead :=
     parseListWSeparator(statement, Token.Semicolon,
-      FIRST(Statement), FOLLOW(Statement),
-      AstTypeNode.StmtSeq, astNode);
+      FIRST(Statement), FOLLOW(Statement), tmplist);
+  
+  (* build AST node and pass it back in astNode *)
+  astNode := AST.newVariadicNode(AstNodeType.StmtSeq, tmplist);
+  
+  AstQueue.Release(tmplist);
   
   RETURN lookahead
 END statementSequence;
@@ -2892,7 +2950,7 @@ BEGIN
   (* EXIT | *)
   | Token.Exit :
       lookahead := Lexer.consumeSym(lexer);
-      astNode := AST.NewNode(AstNodeType.Exit)
+      astNode := AST.new0aryNode(AstNodeType.Exit)
       
   (* forStatement | *)
   | Token.For : lookahead := forStatement(astNode)
@@ -2909,7 +2967,7 @@ BEGIN
   (* NOP | *)
   | Token.Nop :
       lookahead := Lexer.consumeSym(lexer);
-      astNode := AST.NewNode(AstNodeType.Nop)
+      astNode := AST.new0aryNode(AstNodeType.Nop)
       
   (* readStatement | *)
   | Token.Read : lookahead := readStatement(astNode)
@@ -5611,10 +5669,10 @@ END taskToDo;
  * ------------------------------------------------------------------------ *)
 
 (* --------------------------------------------------------------------------
- * private function parseListWSeparator(p, sep, first, follow, nodeType, ast)
+ * private function parseListWSeparator(p, separator, first, follow, list)
  * --------------------------------------------------------------------------
- * Parses a generic list rule, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
+ * Parses a generic list rule, appends the AST node of each production to the
+ * list and returns the new lookahead symbol.
  *
  * genericListWSeparator :=
  *   <production> ( <separator> <production> )*
@@ -5622,7 +5680,7 @@ END taskToDo;
  *
  * where <production> and <separator> are passed in as parameters.
  *
- * astNode: (<nodeType> <production-1> <production-2> ... <production-N>)
+ * list: (<production-1> <production-2> ... <production-N>)
  *
  * Usage:
  *
@@ -5634,8 +5692,7 @@ END taskToDo;
  *
  *  lookahead :=
  *    parseListWSeparator(expression, Token.Comma,
- *      FIRST(Expression), FOLLOW(Expression),
- *      AstNodeType.ExprList, astNode);
+ *      FIRST(Expression), FOLLOW(Expression), list;
  * --------------------------------------------------------------------------
  *)
 PROCEDURE parseListWSeparator
@@ -5643,12 +5700,10 @@ PROCEDURE parseListWSeparator
     separator   : TokenT;
     firstSet,
     followSet   : TokenSetT;
-    nodeType    : AstNodeType;
-    VAR astNode : AstT ) : SymbolT;
+    VAR list    : AstQueueT ) : SymbolT;
 
 VAR
   node : AstT;
-  tmplist : AstQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -5656,7 +5711,7 @@ BEGIN
   
   (* production *)
   lookahead := production(node);
-  AstQueue.Enqueue(tmplist, node);
+  AstQueue.Enqueue(list, node);
   
   (* ( separator production )* *)
   WHILE lookahead.token = separator DO
@@ -5666,25 +5721,22 @@ BEGIN
     (* production *)
     IF matchSet(firstSet) THEN
       lookahead := production(node);
-      AstQueue.Enqueue(tmplist, node)
+      AstQueue.Enqueue(list, node)
     
     ELSE (* resync *)
       lookahead := matchTokenOrSet(separator, followSet)
     END (* IF *)
   END; (* WHILE *)
   
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewListNode(nodeType, tmplist);
-  
   RETURN lookahead
 END parseListWSeparator;
 
 
 (* --------------------------------------------------------------------------
- * private function parseListWTerminator(p, t, first, follow, nodeType, ast)
+ * private function parseListWTerminator(p, terminator, first, follow, list)
  * --------------------------------------------------------------------------
- * Parses a generic list rule, constructs its AST node, passes the node back
- * in out-parameter astNode and returns the new lookahead symbol.
+ * Parses a generic list rule, appends the AST node of each production to the
+ * list and returns the new lookahead symbol.
  *
  * genericlistWTerminator :=
  *   ( <production> <terminator> )+
@@ -5692,7 +5744,7 @@ END parseListWSeparator;
  *
  * where <production> and <terminator> are passed in as parameters.
  *
- * astNode: (<nodeType> <production-1> <production-2> ... <production-N>)
+ * list: (<production-1> <production-2> ... <production-N>)
  *
  * Usage:
  *
@@ -5704,8 +5756,7 @@ END parseListWSeparator;
  *
  *  lookahead :=
  *    parseListWTerminator(constDefinition, Token.Semicolon,
- *      FIRST(ConstDefinition), FOLLOW(ConstDefinition),
- *      AstNodeType.DefList, astNode);
+ *      FIRST(ConstDefinition), FOLLOW(ConstDefinition), list);
  * --------------------------------------------------------------------------
  *)
 PROCEDURE parseListWTerminator
@@ -5713,12 +5764,10 @@ PROCEDURE parseListWTerminator
     terminator  : TokenT;
     firstSet,
     followSet   : TokenSetT;
-    nodeType    : AstNodeType;
-    VAR astNode : AstT ) : SymbolT;
+    VAR list    : AstQueueT ) : SymbolT;
 
 VAR
   node : AstT;
-  tmplist : AstQueueT;
   lookahead : SymbolT;
   
 BEGIN
@@ -5726,14 +5775,14 @@ BEGIN
   
   (* production *)
   lookahead := production(node);
-  AstQueue.Enqueue(tmplist, node);
+  AstQueue.Enqueue(list, node);
   
   (* ( production terminator )+ *)
   REPEAT
     (* production *)
     IF matchSet(firstSet) THEN
       lookahead := production(node);
-      AstQueue.Enqueue(tmplist, node)
+      AstQueue.Enqueue(list, node)
     ELSE (* resync *)
       lookahead := skipToMatchTokenOrSet(terminator, firstSet)
     END;
@@ -5745,10 +5794,7 @@ BEGIN
       lookahead := matchSet(followSet)
     END (* IF *)
   UNTIL NOT inFIRST(firstSet, lookahead.token);
-  
-  (* build AST node and pass it back in astNode *)
-  astNode := AST.NewListNode(nodeType, tmplist);
-  
+    
   RETURN lookahead
 END parseListWTerminator;
 
