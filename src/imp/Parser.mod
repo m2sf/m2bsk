@@ -440,7 +440,7 @@ END definition;
  *   constBinding | constDeclaration
  *   ;
  *
- * astNode: (BIND constId expr) | (CONST constId typeId expr)
+ * astNode: (BIND ident expr) | (CONST constId typeId expr)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE constDefinition ( VAR astNode : AstT ) : SymbolT;
@@ -624,7 +624,7 @@ BEGIN
   lookahead := Lexer.consumeSym(lexer)
     
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewTerminalNode(AstNodeType.Ident, lexeme);
+  astNode := AST.newTerminalNode(AstNodeType.Ident, lexeme);
   
   RETURN lookahead
 END ident;
@@ -640,13 +640,13 @@ END ident;
  *   ident '=' type
  *   ;
  *
- * astNode: (TYPEDEF identNode typeNode)
+ * astNode: (TYPE identNode typeNode)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE typeDefinition ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  typeId, typeDef : AstT;
+  typeId, typeDecl : AstT;
   lookahead : SymbolT;
   
 BEGIN
@@ -664,13 +664,14 @@ BEGIN
   
   (* type *)
   IF matchSet(FIRST(Type)) THEN
-    lookahead := type(Public, typeDef)
+    lookahead := type(Public, typeDecl)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(TypeDefinition))
+    lookahead := skipToMatchSet(FOLLOW(TypeDefinition));
+    typeDecl := NIL
   END; (* IF *)
         
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.TypeDef, typeId, typeDef);
+  astNode := AST.newBinaryNode(AstNodeType.Type, typeId, typeDecl);
   
   RETURN lookahead
 END typeDefinition;
@@ -694,7 +695,10 @@ END typeDefinition;
  *   procedureType )
  *   ;
  *
- * astNode: (TYPEDECL identNode typeNode)
+ * astNode: aliasTypeNode | derivedTypeNode | subrangeTypeNode |
+ *   enumTypeNode | setTypeNode | arrayTypeNode | recordTypeNode |
+ *   pointerTypeNode | opaqueTypeNode | octetSeqTypeNode |
+ *   indeterminateTypeNode | procedureTypeNode
  * --------------------------------------------------------------------------
  *)
 PROCEDURE type ( VAR astNode : AstT ) : SymbolT;
@@ -800,11 +804,12 @@ BEGIN
   IF matchSet(FIRST(Qualident)) THEN
     lookahead := qualident(baseType)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(AliasType))
+    lookahead := skipToMatchSet(FOLLOW(AliasType));
+    baseType := NIL
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.AliasType, baseType);
+  astNode := AST.newUnaryNode(AstNodeType.AliasType, baseType);
   
   RETURN lookahead
 END aliasType;
@@ -872,12 +877,13 @@ END qualident;
  *
  * alias upperBound, lowerBound = constExpression ;
  *
- * astNode: (SUBR lowerBound upperBound baseType)
+ * astNode: (SUBR baseType lowerBound upperBound)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE subrangeType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
+  baseType, lowerBound, upperBound : AstT;
   lookahead : SymbolT;
   
 BEGIN
@@ -890,7 +896,8 @@ BEGIN
   IF matchSet(FIRST(Expression)) THEN
     lookahead := expression(lowerBound)
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.DotDot, FIRST(Expression))
+    lookahead := skipToMatchTokenOrSet(Token.DotDot, FIRST(Expression));
+    lowerBound := NIL
   END; (* IF *)
   
   (* '..' *)
@@ -904,7 +911,8 @@ BEGIN
   IF matchSet(FIRST(Expression)) THEN
     lookahead := expression(upperBound)
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrToken(Token.RightBracket, Token.Of)
+    lookahead := skipToMatchTokenOrToken(Token.RightBracket, Token.Of);
+    upperBound := NIL
   END; (* IF *)
   
   (* ']' *)
@@ -924,13 +932,15 @@ BEGIN
   
   (* countableType *)
   IF matchSet(FIRST(Qualident)) THEN
-    lookahead := qualident(typeId)
+    lookahead := qualident(baseType)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(SubrangeType))
+    lookahead := skipToMatchSet(FOLLOW(SubrangeType));
+    baseType := NIL
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.Subr, lowerBound, upperBound, typeId);
+  astNode :=
+    AST.new3aryNode(AstNodeType.Subr, baseType, lowerBound, upperBound);
   
   RETURN lookahead
 END subrangeType;
@@ -950,13 +960,13 @@ END subrangeType;
  *
  * alias enumTypeIdent = typeIdent ;
  *
- * astNode: (ENUM baseType valueList)
+ * astNode: (ENUM baseType enumValues)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE enumType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  baseType, valueList : AstT;
+  baseType, enumValues : AstT;
   lookahead : SymbolT;
   
 BEGIN
@@ -974,7 +984,8 @@ BEGIN
     IF matchSet(FIRST(Qualident)) THEN
       lookahead := qualident(baseType)
     ELSE (* resync *)
-      lookahead := skipToMatchTokenOrSet(Token.Comma, FIRST(IdentList))
+      lookahead := skipToMatchTokenOrSet(Token.Comma, FIRST(IdentList));
+      baseType := NIL
     END; (* IF *)
     
     (* ',' *)
@@ -987,9 +998,10 @@ BEGIN
   
   (* identList *)
   IF matchSet(FIRST(IdentList)) THEN
-    lookahead := identList(valueList);
+    lookahead := identList(enumValues);
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.RightParen, FOLLOW(EnumType))
+    lookahead := skipToMatchTokenOrSet(Token.RightParen, FOLLOW(EnumType));
+    enumValues := NIL
   END; (* IF *)
   
   (* ')' *)
@@ -1000,7 +1012,7 @@ BEGIN
   END; (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.EnumType, baseType, valueList);
+  astNode := AST.newBinaryNode(AstNodeType.Enum, baseType, enumValues);
   
   RETURN lookahead
 END enumType;
@@ -1016,7 +1028,7 @@ END enumType;
  *   ident ( ',' ident )*
  *   ;
  *
- * astNode: (IDENTLIST "lexeme1" "lexeme2" ... "lexemeN" )
+ * astNode: (ID* "lexeme1" "lexeme2" ... "lexemeN" )
  * --------------------------------------------------------------------------
  *)
 PROCEDURE identList ( VAR astNode : AstT ) : SymbolT;
@@ -1052,7 +1064,7 @@ BEGIN
   END; (* WHILE *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewTerminalListNode(AstNodeType.IdentList, tmplist);
+  astNode := AST.newTerminalListNode(AstNodeType.IdentList, tmplist);
   LexQueue.Release(tmplist);
   
   RETURN lookahead
@@ -1071,13 +1083,13 @@ END identList;
  *
  * alias enumTypeIdent = typeIdent ;
  *
- * astNode: (SET elemType)
+ * astNode: (SET baseType)
  * --------------------------------------------------------------------------
  *)
 PROCEDURE setType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  elemType : AstT;
+  baseType : AstT;
   lookahead : SymbolT;
   
 BEGIN
@@ -1095,13 +1107,14 @@ BEGIN
   
   (* enumTypeIdent *)
   IF matchSet(FIRST(Qualident)) THEN
-    lookahead := qualident(elemType)
+    lookahead := qualident(baseType)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(SetType))
+    lookahead := skipToMatchSet(FOLLOW(SetType));
+    baseType := NIL
   END; (* IF *)
     
   (* build AST node and pass it back in ast *)
-  astNode := AST.NewNode(AstNodeType.SetType, elemType);
+  astNode := AST.newUnaryNode(AstNodeType.Set, baseType);
   
   RETURN lookahead
 END setType;
@@ -1119,13 +1132,13 @@ END setType;
  *
  * alias valueCount = constExpression ;
  *
- * astNode: (ARRAY valueCount baseType)
+ * astNode: (ARRAY baseType valueCount )
  * --------------------------------------------------------------------------
  *)
 PROCEDURE arrayType ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  valueCount, baseType : AstT;
+  baseType, valueCount : AstT;
   lookahead : SymbolT;
   
 BEGIN
@@ -1138,7 +1151,8 @@ BEGIN
   IF matchSet(FIRST(Expression)) THEN
     lookahead := expression(valueCount);
   ELSE (* resync *)
-    lookahead := skipToMatchTokenOrSet(Token.Of, FIRST(TypeIdent))
+    lookahead := skipToMatchTokenOrSet(Token.Of, FIRST(TypeIdent));
+    valueCount := NIL
   END; (* IF *)
   
   (* OF *)
@@ -1152,11 +1166,12 @@ BEGIN
   IF matchSet(FIRST(Qualident)) THEN
     lookahead := qualident(baseType)
   ELSE (* resync *)
-    lookahead := skipToMatchSet(FOLLOW(ArrayType))
+    lookahead := skipToMatchSet(FOLLOW(ArrayType));
+    baseType := NIL
   END (* IF *)
   
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.ArrayType, valueCount, baseType);
+  astNode := AST.newBinaryNode(AstNodeType.Array, baseType, valueCount);
   
   RETURN lookahead
 END arrayType;
@@ -1231,7 +1246,7 @@ BEGIN
   END; (* IF *)
     
   (* build AST node and pass it back in astNode *)
-  astNode := AST.newVariadicNode(AstNodeType.RecordType, baseType, tmplist);
+  astNode := AST.newVariadicNode(AstNodeType.Record, baseType, tmplist);
   
   AstQueue.Release(tmplist);
   
@@ -1295,7 +1310,7 @@ BEGIN
   END; (* CASE *)
     
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.FieldList, idlist, typeNode);
+  astNode := AST.newBinaryNode(AstNodeType.FieldList, idlist, typeNode);
   
   RETURN lookahead
 END fieldList;
@@ -1347,7 +1362,8 @@ BEGIN
     IF matchSet(FIRST(Qualident)) THEN
       lookahead := qualident(baseType)
     ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(PointerType))
+      lookahead := skipToMatchSet(FOLLOW(PointerType));
+      baseType := NIL
     END (* IF *)
     
   | Private :
@@ -1363,12 +1379,13 @@ BEGIN
       END (* IF *)
     
     ELSE (* resync *)
-      lookahead := skipToMatchSet(FOLLOW(PrivatePointerType))
+      lookahead := skipToMatchSet(FOLLOW(PrivatePointerType));
+      baseType := NIL
     END (* IF *)
   END; (* CASE *)
     
   (* build AST node and pass it back in astNode *)
-  astNode := AST.NewNode(AstNodeType.PointerType, baseType);
+  astNode := AST.NewNode(AstNodeType.Pointer, baseType);
   
   RETURN lookahead
 END pointerType;
