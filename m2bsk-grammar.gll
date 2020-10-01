@@ -86,15 +86,24 @@ definition :=
 /* Constant Definition */
 
 constDefinition :=
-  ( '[' ( COLLATION | TLIMIT ) ']' )? simpleConstDefinition ;
+  constBinding | constDeclaration
+  ;
+  
+constBinding :=
+  '[' ( COLLATION | TLIMIT ) ']' '=' constExpression ;
 
-simpleConstDefinition :=
+
+/* Constant Declaration */
+
+constDeclaration :=
   ident ( ':' typeIdent )? '=' constExpression
   ;
+
 
 /* Identifier */
 
 alias ident = StdIdent ;
+
 
 /* Constant Expression */
 
@@ -206,14 +215,6 @@ recordType :=
   ;
 
 
-/* Field List */
-
-fieldList :=
-  identList ':'
-    ( typeIdent | arrayType | subrangeType | procedureType |
-      OCTETSEQ '[' valueCount ']' ) ;
-
-
 /* Record Type To Extend */
 
 recTypeToExtend :=
@@ -295,14 +296,15 @@ variadicFormalType :=
 /* Procedure Header */
 
 procedureHeader :=
-  PROCEDURE ( '[' bindingSpecifier ']')? procedureSignature
+  PROCEDURE ( '[' bindingSpecifier ']' )? procedureSignature
   ;
   
 /* Binding Specifier */
 
 bindingSpecifier :=
   NEW ( argListFlag | capacityFlag )? | RETAIN | RELEASE |
-  READ allocFlag? | WRITE formatFlag? | bindableIdent ;
+  READ allocFlag? | WRITE formatFlag? | bindableIdent
+  ;
 
 /* Flags */
 
@@ -317,14 +319,14 @@ alias formatFlag = '#' ;
 
 /* Bindable Identifier */
 
-bindableIdent :=
+.bindableIdent :=
   Pervasive | Primitive
   ;
 
 
 /* Procedure Signature */
 
-procedureSignature :=
+.procedureSignature :=
   ident ( '(' formalParams ( ';' formalParams )* ')' )? ( ':' returnedType )?
   ;
 
@@ -380,18 +382,13 @@ possiblyEmptyBlock :=
 /* Declaration */
 
 declaration :=
-  CONST ( ident '=' constExpression ';' )+ |
+  CONST ( constDeclaration ';' )+ |
   TYPE ( typeDeclaration ';' )+ |
   VAR ( varDeclaration ';' )+ |
   procedureHeader ';' block ident ';' |
   aliasDeclaration ';' |
   toDoList ';'
   ;
-
-/* Constant Declaration */
-
-alias constDeclaration = simpleConstDefinition ;
-
 
 /* Type Declaration */
 
@@ -412,7 +409,7 @@ octetSeqType :=
 
 /* Private Pointer Type */
 
-pointerOrIndeterminateType :=
+privatePointerType :=
   POINTER TO ( determinateTarget | indeterminateTarget )
   ;
 
@@ -479,7 +476,7 @@ statement :=
 
 /* Memory Management Operation */
 
-memMgtOperation :=
+.memMgtOperation :=
   newStatement | retainStatement | releaseStatement
   ;
 
@@ -499,8 +496,8 @@ releaseStatement :=
 /* Update Or Procedure Call */
 
 updateOrProcCall :=
-  designator  ( IncOrDecSuffix | '(' expressionList ')' )? |
-  targetDesignator ':=' expression
+  designator ( IncOrDecSuffix | '(' expressionList ')' )? |
+  targetDesignator -> ':=' expression
   ;
 
 /* Increment Or Decrement Suffix */
@@ -508,7 +505,7 @@ updateOrProcCall :=
 .IncOrDecSuffix := '++' | '--' ;
 
 
-/* RETURN Or YIELD Statement */
+/* RETURN or YIELD Statement */
 
 returnStatement :=
   RETURN expression?
@@ -667,7 +664,7 @@ alias firstValue, lastValue = expression ;
 /* Designator */
 
 designator :=
-  qualident ( derefTail | subscriptTail)?
+  qualident ( derefTail | subscriptTail )?
   ;
 
 
@@ -800,6 +797,13 @@ sourceDesignator :=
   ;
 
 
+/* Function Call Tail */
+
+functionCallTail :=
+  '(' expressionList? ')'
+  ;
+
+
 /* Dereferenced Source Designator Tail */
 
 derefSourceTail :=
@@ -811,15 +815,8 @@ derefSourceTail :=
 
 bracketSourceTail :=
   '[' expression
-  ( ']' ( '.' sourceDesignator | functionCallTail | bracketSourceTail )? |
+  ( ']' ( '.' sourceDesignator | functionCallTail | derefSourceTail )? |
     '..' expression ']' )?
-  ;
-
-
-/* Function Call Tail */
-
-functionCallTail :=
-  '(' expressionList? ')'
   ;
 
 
