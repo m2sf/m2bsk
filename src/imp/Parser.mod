@@ -21,16 +21,16 @@ FROM String IMPORT StringT; (* alias for String.String *)
 FROM NonTerminals IMPORT FIRST, FOLLOW, inFIRST;
 
 
-(* Parse Procedure Type *)
+(* Parse Procedure Types *)
 
 TYPE ParseProc = PROCEDURE ( VAR AstT ) : SymbolT;
+
+TYPE ParseListProc = PROCEDURE ( VAR AstQueueT ) : SymbolT;
 
 
 (* Module Context Type *)
 
-TYPE ModuleContext = (
-  Public,    (* when parsing definition modules *)
-  Private ); (* when parsing program and implementation modules *)
+TYPE ModuleContext = ( Public (* .def *), Private (* .mod *) );
 
 
 (* Parser context *)
