@@ -209,15 +209,20 @@ lappend non_terminals definition {
 
 # (6) Constant Definition
 lappend non_terminals constDefinition {
-  line {optx [ {or /COLLATION /TLIMIT} ]} simpleConstDefinition
+  or constantBinding constDeclaration
 }
 
-# (6.1) Simple Constant Definition
-lappend non_terminals simpleConstDefinition {
+# (6.1) Constant Binding
+lappend non_terminals constantBinding {
+  line [ {or /COLLATION /TLIMIT} ] = constExpression
+}
+
+# (6.2) Constant Declaration
+lappend non_terminals constDeclaration {
   line ident {optx : typeIdent} = constExpression
 }
 
-# (6.2) Constant Expression
+# (6.3) Constant Expression
 lappend non_terminals constExpression {
   line expression
 }
@@ -492,11 +497,6 @@ lappend non_terminals declaration {
       {line aliasDeclaration ;}
       {line toDoList ;}
   }
-}
-
-# (33.1) Constant Declaration
-lappend non_terminals constDeclaration {
-  line simpleConstDefinition
 }
 
 # (34) Type Declaration
