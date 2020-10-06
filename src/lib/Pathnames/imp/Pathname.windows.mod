@@ -8,6 +8,22 @@ IMPORT Char, String, PathnamePolicy;
 
 IMPORT StringT; (* alias for String.String *)
 
+FROM Storage IMPORT DEALLOCATE;
+
+
+(* Pathname type *)
+
+TYPE Pathname = POINTER TO Descriptor;
+
+TYPE Descriptor = RECORD
+  fullPath,
+  dirPath,
+  fileName,
+  baseName,
+  suffix : StringT;
+  suffixType : SuffixType
+END; (* Descriptor *)
+
 
 (* Operations *)
 
@@ -49,7 +65,11 @@ END newFromComponents;
 PROCEDURE fullPath ( path : Pathname ) : StringT;
 
 BEGIN
-  (* TO DO *)
+  IF path = NIL THEN
+    RETURN NIL
+  ELSE
+    RETURN path^.fullPath
+  END (* IF *)
 END fullPath;
 
 (* --------------------------------------------------------------------------
@@ -61,7 +81,11 @@ END fullPath;
 PROCEDURE dirPath ( path : Pathname ) : StringT;
 
 BEGIN
-  (* TO DO *)
+  IF path = NIL THEN
+    RETURN NIL
+  ELSE
+    RETURN path^.dirPath
+  END (* IF *)
 END dirPath;
 
 (* --------------------------------------------------------------------------
@@ -73,7 +97,11 @@ END dirPath;
 PROCEDURE filename ( path : Pathname ) : StringT;
 
 BEGIN
-  (* TO DO *)
+  IF path = NIL THEN
+    RETURN NIL
+  ELSE
+    RETURN path^.filename
+  END (* IF *)
 END filename;
 
 (* --------------------------------------------------------------------------
@@ -85,7 +113,11 @@ END filename;
 PROCEDURE basename ( path : Pathname ) : StringT;
 
 BEGIN
-  (* TO DO *)
+  IF path = NIL THEN
+    RETURN NIL
+  ELSE
+    RETURN path^.basename
+  END (* IF *)
 END basename;
 
 (* --------------------------------------------------------------------------
@@ -97,7 +129,11 @@ END basename;
 PROCEDURE suffix ( path : Pathname ) : StringT;
 
 BEGIN
-  (* TO DO *)
+  IF path = NIL THEN
+    RETURN NIL
+  ELSE
+    RETURN path^.suffix
+  END (* IF *)
 END suffix;
 
 (* --------------------------------------------------------------------------
@@ -109,7 +145,11 @@ END suffix;
 PROCEDURE suffixType ( path : Pathname ) : SuffixType;
 
 BEGIN
-  (* TO DO *)
+  IF path = NIL THEN
+    RETURN NoSuffix
+  ELSE
+    RETURN path^.suffixType
+  END (* IF *)
 END suffixType;
 
 (* --------------------------------------------------------------------------
@@ -121,7 +161,13 @@ END suffixType;
 PROCEDURE Release ( VAR path : Pathname );
 
 BEGIN
-  (* TO DO *)
+  (* bail out if path invalid *)
+  IF path = NIL THEN
+    RETURN
+  END; (* IF *)
+  
+  DEALLOCATE(path);
+  path := NIL
 END Release;
 
 (* Operations on character arrays *)
