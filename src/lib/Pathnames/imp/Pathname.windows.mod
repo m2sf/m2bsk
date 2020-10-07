@@ -4,7 +4,7 @@ IMPLEMENTATION MODULE Pathname; (* Microsoft Windows version *)
 
 (* Microsoft Windows Pathname Parser for Modula-2 R10 Bootstrap Kernel *)
 
-IMPORT Char, String, PathnamePolicy;
+IMPORT ISO646, Char, String, PathnamePolicy;
 
 IMPORT StringT; (* alias for String.String *)
 
@@ -37,6 +37,11 @@ PROCEDURE NewFromOSPath
   ( VAR path : Pathname; osPath : ARRAY OF CHAR; VAR status : Status );
 
 BEGIN
+  IF (HIGH(osPath) = 0) OR osPath[0] = ISO646.NUL THEN
+    status := InvalidPath;
+    RETURN
+  END; (* IF *)
+
   (* TO DO *)
 END NewFromOSPath;
 
@@ -52,6 +57,11 @@ PROCEDURE newFromComponents
     dirpath, basename, suffix : StringT; VAR status : Status );
 
 BEGIN
+  IF (HIGH(dirpath) = 0) OR (HIGH(basename) = 0) OR dirpath[0] = ISO646.NUL THEN
+    status := Invalidpath;
+    RETURN
+  END (* IF *)
+
   (* TO DO *)
 END newFromComponents;
 
