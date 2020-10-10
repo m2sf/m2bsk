@@ -9,6 +9,7 @@ IMPORT ISO646, Char, String, PathnamePolicy;
 IMPORT StringT; (* alias for String.String *)
 
 FROM Storage IMPORT DEALLOCATE;
+FROM SYSTEM IMPORT TSIZE;
 
 (* Constants *)
 
@@ -56,7 +57,46 @@ BEGIN
   
   ALLOCATE(newPath, TSIZE(Descriptor));
 
-  (* TO DO *)
+  (* obtain dirpath string *)
+  IF dirpath.found AND dirpath.status = Success THEN
+    status := dirpath.status;
+    fullPathStart := dirpath.start;
+    newPath^.dirpath :=
+      String.forArraySlice(osPath, dirpath.start, dirpath.end)
+  ELSE
+    status := filename.status;
+    fullPathStart := filename.start;
+    newPath^.dirpath := NIL;
+  END; (* IF *)
+  
+  (* obtain filename string *)
+  IF filename.found AND filename.status = Success THEN
+    fullPathEnd := filename.end;
+    newPath^.filename :=
+      String.forArraySlice(osPath, filename.start, filename.end)
+  ELSE
+    fullPathEnd := dirpath.end;
+    newPath^.filename := NIL
+  END; (* IF *)
+  
+  (* obtain basename and suffix strings *)
+  IF suffix.found AND suffix.status = Success THEN
+    newPath^.basename :=
+      String.forArraySlice(osPath, filename.start, suffix.start - 2)
+    newPath^.suffix :=
+      String.forArraySlice(osPath, suffix.start, suffix.end);
+    newPath^.suffixType := suffixTypeForString(newPath^.suffix)
+  ELSE
+    newPath^.basename := newPath^.filename;
+    newPath^.suffix := NIL;
+    newPath^.suffixType := NoSuffix
+  END; (* IF *)
+  
+  (* obtain full path string *)
+  newPath^.fullPath :=
+    String.forArraySlice(osPath, fullPathStart, fullPathEnd);
+    
+  path := newPath;
 END NewFromOSPath;
 
 
@@ -269,7 +309,7 @@ END isValidFilename;
  * function parsePathname(path, startIndex, dirpath, basename, suffix)
  * --------------------------------------------------------------------------
  * pathname :=
- *   TODO
+ *   TO DO
  *   ;
  * ----------------------------------------------------------------------- *)
 
