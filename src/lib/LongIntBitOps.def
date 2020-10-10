@@ -1,0 +1,74 @@
+(*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE LongIntBitOps; (* Bit Operations on Type LONGINT *)
+
+
+CONST Bitwidth = TSIZE(LONGINT) * 8 - 1;
+
+TYPE BitIndex = CARDINAL [0..Bitwidth-1];
+
+
+(* ---------------------------------------------------------------------------
+ * function shl( i, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Returns i shifted left by shiftFactor.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE shl ( i : LONGINT; shiftFactor : BitIndex ) : LONGINT;
+
+
+(* ---------------------------------------------------------------------------
+ * function shr( i, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Returns i logically shifted right by shiftFactor.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE shr ( i : LONGINT; shiftFactor : BitIndex ) : LONGINT;
+
+
+(* ---------------------------------------------------------------------------
+ * function ashr( i, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Returns i arithmetically shifted right by shiftFactor.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ashr ( i : LONGINT; shiftFactor : BitIndex ) : LONGINT;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ShlWCarry( i, carryBits, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Left shifts i by bitIndex and passes the shifted out bits in carryBits.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ShlWCarry ( VAR i, carryBits : LONGINT; bitIndex : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * function bit( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if the bit at bitIndex of i is set, otherwise FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE bit ( i : LONGINT; bitIndex : BitIndex ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure SetBit( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Sets the bit at bitIndex of i.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetBit ( VAR i : LONGINT; bitIndex : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ClearBit( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bit at bitIndex of i.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearBit ( VAR i : LONGINT; bitIndex : BitIndex );
+
+
+END LongIntBitOps.
