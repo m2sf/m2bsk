@@ -47,6 +47,15 @@ BEGIN
     RETURN
   END; (* IF *)
 
+  charsProcessed := parsePathname(osPath, 0, dirpath, filename, suffix);
+  
+  IF NOT dirpath.found AND NOT filename.found THEN
+    status := dirpath.status;
+    RETURN
+  END; (* IF *)
+  
+  ALLOCATE(newPath, TSIZE(Descriptor));
+
   (* TO DO *)
 END NewFromOSPath;
 
@@ -214,8 +223,19 @@ END Release;
 
 PROCEDURE isValidOSPath ( osPath : ARRAY OF CHAR ) : BOOLEAN;
 
+VAR
+  valid : BOOLEAN;
+  index : CARDINAL;
+  
 BEGIN
-  (* TO DO *)
+  IF (HIGH(osPath) = 0) OR (osPath[0] = ISO646.NUL) THEN
+    RETURN FALSE
+  END; (* IF *)
+  
+  index := parsePathname(osPath, 0, valid, NIL);
+  
+  RETURN valid
+
 END isValidOSPath;
 
 (* --------------------------------------------------------------------------
@@ -226,8 +246,18 @@ END isValidOSPath;
 
 PROCEDURE isValidFilename ( filename : ARRAY OF CHAR ) : BOOLEAN;
 
+VAR
+  valid : BOOLEAN;
+  index : CARDINAL;
+  
 BEGIN
-  (* TO DO *)
+  IF (HIGH(filename) = 0) OR (filename[0] = ISO646.NUL) THEN
+    RETURN FALSE
+  END; (* IF *)
+  
+  index := parsePathComponent(filename, 0, valid, NIL);
+  
+  RETURN valid
 END isValidFilename;
 
 
@@ -235,5 +265,41 @@ END isValidFilename;
  * Private Operations                                                       *
  * ************************************************************************ *)
 
+ (* --------------------------------------------------------------------------
+ * function parsePathname(path, startIndex, dirpath, basename, suffix)
+ * --------------------------------------------------------------------------
+ * pathname :=
+ *   TODO
+ *   ;
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE parsePathname
+  ( VAR (* CONST *) path : ARRAY OF CHAR;
+    startIndex           : CARDINAL;
+    VAR dirpath,
+    basename,
+    suffix               : Result ) : CARDINAL;
+
+BEGIN
+  (* TO DO *)
+END parsePathname;
+
+(* --------------------------------------------------------------------------
+ * function parsePathComponent(path, index, invalid, suffixIndex)
+ * --------------------------------------------------------------------------
+ * pathComponent :=
+ *   '.'? pathSubComponent ( '.' pathSubComponent )*
+ *   ;
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE parsePathComponent
+  ( VAR path        : ARRAY OF CHAR;
+    index           : CARDINAL;
+    VAR valid       : BOOLEAN;
+    VAR suffixIndex : CARDINAL ) : CARDINAL;
+
+BEGIN
+  (* TO DO *)
+END parsePathComponent;
 
 END Pathname.
