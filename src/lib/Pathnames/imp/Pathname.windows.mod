@@ -10,6 +10,11 @@ IMPORT StringT; (* alias for String.String *)
 
 FROM Storage IMPORT DEALLOCATE;
 
+(* Constants *)
+
+CONST
+  dirsep = '\';
+
 
 (* Pathname type *)
 
@@ -56,13 +61,32 @@ PROCEDURE newFromComponents
   ( VAR path : Pathname;
     dirpath, basename, suffix : StringT; VAR status : Status );
 
+VAR
+  dirLength : CARDINAL;
+
 BEGIN
   IF (HIGH(dirpath) = 0) OR (HIGH(basename) = 0) OR dirpath[0] = ISO646.NUL THEN
     status := Invalidpath;
     RETURN
   END (* IF *)
 
-  (* TO DO *)
+  dirLength := HIGH(dirpath);
+
+  ALLOCATE(newPath, TSIZE(Descriptor));
+
+  IF dirpath[dirLength - 1] # dirsep THEN
+    newPath := String.forConcatenation(dirPath, 
+      String.forConcatenation(dirsep, 
+        String.forConcatenation(basename, suffix)
+      )    
+    );
+  ELSE
+    newPath := String.forConcatenation(dirPath, 
+      String.forConcatenation(basename, suffix)          
+    );
+  END (* IF *)  
+       
+  path := newPath;
 END newFromComponents;
 
 
@@ -205,5 +229,11 @@ PROCEDURE isValidFilename ( filename : ARRAY OF CHAR ) : BOOLEAN;
 BEGIN
   (* TO DO *)
 END isValidFilename;
+
+
+(* ************************************************************************ *
+ * Private Operations                                                       *
+ * ************************************************************************ *)
+
 
 END Pathname.
