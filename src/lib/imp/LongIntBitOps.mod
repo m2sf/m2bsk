@@ -2,6 +2,8 @@
 
 IMPLEMENTATION MODULE LongIntBitOps; (* Bit Operations on Type LONGINT *)
 
+(* Portable across all PIM and ISO dialects *)
+
 
 (* ---------------------------------------------------------------------------
  * function shl( i, shiftFactor )
