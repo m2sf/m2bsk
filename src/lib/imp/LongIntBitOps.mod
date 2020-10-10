@@ -85,7 +85,6 @@ END shl;
 
 PROCEDURE shr ( i : LONGINT; shiftFactor : BitIndex ) : LONGINT;
 
-
 VAR
   pivotalBit : BitIndex;
 
@@ -309,6 +308,10 @@ BEGIN
   powerOf2[Bitwidth-1] := MIN(LONGINT)
 END InitPow2Table;
 
+
+(* ---------------------------------------------------------------------------
+ * Module Initialisation
+ * ------------------------------------------------------------------------ *)
 
 BEGIN (* LongIntBitOps *)
   InitPow2Table
