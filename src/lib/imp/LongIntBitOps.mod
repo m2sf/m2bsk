@@ -48,7 +48,7 @@ BEGIN
     carryBits := i DIV powerOf2[pivotalBit];
     
     (* clear bits that will be shifted out to avoid overflow *)
-    ClearBitsInclAndAbove(i, pivotalBit);
+    ClearMSBtoN(i, pivotalBit);
     
     (* shift safely *)
     i := i * powerOf2[shiftFactor];
@@ -183,12 +183,12 @@ END ashr;
 
 
 (* ---------------------------------------------------------------------------
- * procedure ShlWCarry( i, carryBits, bitIndex )
+ * procedure SHLC( i, carryBits, bitIndex )
  * ---------------------------------------------------------------------------
  * Left shifts i by bitIndex and passes the shifted out bits in carryBits.
  * ------------------------------------------------------------------------ *)
 
-PROCEDURE ShlWCarry ( VAR i, carryBits : LONGINT; bitIndex : BitIndex );
+PROCEDURE SHLC ( VAR i, carryBits : LONGINT; bitIndex : BitIndex );
 
 VAR
   pivotalBit : BitIndex;
@@ -219,7 +219,7 @@ BEGIN
     END; (* IF *)
 
     (* clear bits that will be shifted out to avoid overflow *)
-    ClearBitsInclAndAbove(i, pivotalBit);
+    ClearMSBtoN(i, pivotalBit);
     
     (* shift safely *)
     i := i * powerOf2[shiftFactor];
@@ -233,7 +233,7 @@ BEGIN
   ELSE (* shiftFactor = Bitwidth *)
     carryBits := i; i := 0
   END (* IF *)
-END ShlWCarry;
+END SHLC;
 
 
 (* ---------------------------------------------------------------------------
@@ -281,6 +281,78 @@ BEGIN
     i := i - powerOf2[bitIndex]
   END (* IF *)
 END ClearBit;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ClearLSBtoN( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bits of i in range [0 .. bitIndex].
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearLSBtoN ( VAR i : LONGINT; bitIndex : BitIndex );
+
+BEGIN
+  (* clearing to MSB produces all zeroes *)
+  IF bitIndex = Bitwidth-1 THEN
+    i := 0;
+    RETURN
+  END; (* IF *)
+  
+  IF i >= 0 THEN
+    (* shift right and back to clear the low bits *)
+    i := shr(i, bitIndex + 1);
+    i := shl(i, bitIndex + 1);
+  ELSE (* i < 0 *)
+    (* clear high bit *)
+    i := i - MIN(LONGINT);
+    
+    (* shift right and back to clear the low bits *)
+    i := shr(i, bitIndex + 1);
+    i := shl(i, bitIndex + 1);
+    
+    (* restore high bit *)
+    i := i + MIN(LONGINT)
+  END (* IF *)
+END ClearLSBtoN;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ClearMSBtoN( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bits of i in range [bitIndex .. Bitwidth-1].
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearMSBtoN ( VAR i : LONGINT; bitIndex : BitIndex );
+
+VAR
+  mask : LONGINT;
+  
+BEGIN
+  (* clearing from bit 0 produces all zeroes *)
+  IF bitIndex = 0 THEN
+    i := 0;
+    RETURN
+  END; (* IF *)
+  
+  (* clear high bit *)
+  IF i < 0 THEN
+    i := i - MIN(LONGINT)
+  END; (* IF *)
+  
+  (* clearing from high bit leaves no more bits to clear *)
+  IF bitIndex = Bitwidth-1 THEN
+    RETURN
+  END; (* IF *)
+  
+  (* shift lower bits out to the right *)
+  mask := shr(i, bitIndex);
+  
+  (* shift them back, thereby clearing the low bits, obtaining a mask *)
+  mask := mask * powerOf2[bitIndex];
+  
+  (* subtract the mask, thereby clearing the high bits *)
+  i := i - mask
+END ClearMSBtoN;
 
 
 (* ---------------------------------------------------------------------------
