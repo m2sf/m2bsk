@@ -38,12 +38,12 @@ PROCEDURE ashr ( i : LONGINT; shiftFactor : BitIndex ) : LONGINT;
 
 
 (* ---------------------------------------------------------------------------
- * procedure ShlWCarry( i, carryBits, bitIndex )
+ * procedure SHLC( i, carryBits, bitIndex )
  * ---------------------------------------------------------------------------
- * Left shifts i by bitIndex and passes the shifted out bits in carryBits.
+ * Left-shifts i by bitIndex and passes the shifted out bits in carryBits.
  * ------------------------------------------------------------------------ *)
 
-PROCEDURE ShlWCarry ( VAR i, carryBits : LONGINT; bitIndex : BitIndex );
+PROCEDURE SHLC ( VAR i, carryBits : LONGINT; bitIndex : BitIndex );
 
 
 (* ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ PROCEDURE ClearLSBtoN ( VAR i : LONGINT; bitIndex : BitIndex );
 (* ---------------------------------------------------------------------------
  * procedure ClearMSBtoN( i, bitIndex )
  * ---------------------------------------------------------------------------
- * Clears the bits of i in range [bit_index .. Bitwidth-1].
+ * Clears the bits of i in range [bitIndex .. Bitwidth-1].
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE ClearMSBtoN ( VAR i : LONGINT; bitIndex : BitIndex );
