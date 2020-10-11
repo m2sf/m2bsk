@@ -1,8 +1,8 @@
 (*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
 
-IMPLEMENTATION MODULE LongIntBitOps; (* Bit Operations on Type LONGINT *)
+IMPLEMENTATION MODULE LongIntBitOps; (* portable *)
 
-(* Portable across all PIM and ISO dialects *)
+(* Bit Operations on Type LONGINT *)
 
 
 (* ---------------------------------------------------------------------------
