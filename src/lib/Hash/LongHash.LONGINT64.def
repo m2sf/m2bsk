@@ -1,0 +1,54 @@
+(*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE LongHash; (* 64-bit LONGINT version *)
+
+(* General Purpose 64-bit Hash Function *)
+
+
+FROM SYSTEM IMPORT TSIZE;
+
+
+(* ---------------------------------------------------------------------------
+ * 64-bit key type
+ * ------------------------------------------------------------------------ *)
+
+TYPE Key = LONGINT; (* requires 64-bit LONGINT *)
+
+
+(* ---------------------------------------------------------------------------
+ * Key bitwidth
+ * ------------------------------------------------------------------------ *)
+
+CONST Bitwidth = TSIZE(Key) * 8 - 1;
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  LongHash.SetInitialValue( hash )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetInitialValue ( VAR hash : Key );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  LongHash.ValueForNextChar( hash, ch )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ValueForNextChar ( VAR hash : Key; ch : CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  LongHash.SetFinalValue( hash )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetFinalValue ( VAR hash : Key );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  Hash.ValueForArray( hash, array )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ValueForArray
+  ( VAR hash : Key; VAR (* CONST *) array : ARRAY OF CHAR );
+
+
+END LongHash.

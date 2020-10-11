@@ -1,0 +1,55 @@
+(*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE LongHash; (* CARD64 version *)
+
+(* General Purpose 64-bit Hash Function *)
+
+
+FROM SYSTEM IMPORT TSIZE;
+FROM CARD64 IMPORT Card64T;
+
+
+(* ---------------------------------------------------------------------------
+ * 64-bit key type
+ * ------------------------------------------------------------------------ *)
+
+TYPE Key = Card64T;
+
+
+(* ---------------------------------------------------------------------------
+ * Key bitwidth
+ * ------------------------------------------------------------------------ *)
+
+CONST Bitwidth = TSIZE(Key) * 8 - 1;
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  LongHash.SetInitialValue( hash )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetInitialValue ( VAR hash : Key );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  LongHash.ValueForNextChar( hash, ch )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ValueForNextChar ( VAR hash : Key; ch : CHAR );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  LongHash.SetFinalValue( hash )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetFinalValue ( VAR hash : Key );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  Hash.ValueForArray( hash, array )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ValueForArray
+  ( VAR hash : Key; VAR (* CONST *) array : ARRAY OF CHAR );
+
+
+END LongHash.

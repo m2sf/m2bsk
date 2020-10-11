@@ -1,0 +1,53 @@
+(*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE Hash; (* 32-bit CARDINAL version *)
+
+(* General Purpose 32-bit Hash Function *)
+
+
+FROM SYSTEM IMPORT TSIZE;
+
+
+(* ---------------------------------------------------------------------------
+ * 32-bit key type
+ * ------------------------------------------------------------------------ *)
+
+TYPE Key = CARDINAL; (* requires 32-bit CARDINAL *)
+
+
+(* ---------------------------------------------------------------------------
+ * Key bitwidth
+ * ------------------------------------------------------------------------ *)
+
+CONST Bitwidth = TSIZE(Key) * 8 - 1;
+
+
+(* ---------------------------------------------------------------------------
+ * Initial value for incremental hash calculation
+ * ------------------------------------------------------------------------ *)
+
+CONST initialValue = 0;
+
+
+(* ---------------------------------------------------------------------------
+ * Function:  Hash.valueForNextChar( hash, ch )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE valueForNextChar ( hash : Key; ch : CHAR ) : Key;
+
+
+(* ---------------------------------------------------------------------------
+ * Function:  Hash.finalValue( hash )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE finalValue ( hash : Key ) : Key;
+
+
+(* ---------------------------------------------------------------------------
+ * Function:  Hash.valueForArray( array )
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE valueForArray ( VAR (* CONST *) array : ARRAY OF CHAR ) : Key;
+
+
+END Hash.
