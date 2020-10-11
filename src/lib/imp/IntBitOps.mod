@@ -1,0 +1,392 @@
+(*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
+
+IMPLEMENTATION MODULE IntBitOps; (* portable *)
+
+(* Bit Operations on Type INTEGER *)
+
+
+(* ---------------------------------------------------------------------------
+ * function shl( i, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Returns i shifted left by shiftFactor.
+ *
+ *             M S B                                           L S B
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *  bit index | n-1 | n-2 | n-3 |   . . .   |  3  |  2  |  1  |  0  |  before
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *                   /     /                       /     /     /
+ *                  /     /                       /     /     /
+ *                 /     /                       /     /     /     0
+ *                /     /                       /     /     /     /
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *  bit index | n-1 | n-2 | n-3 |   . . .   |  3  |  2  |  1  |  0  |  after
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE shl ( i : INTEGER; shiftFactor : BitIndex ) : INTEGER;
+
+VAR
+  carryBits : INTEGER;
+  pivotalBit : BitIndex;
+
+BEGIN
+  IF shiftFactor = 0 THEN
+    (* NOP *)
+    
+  (* shifting by 1 .. Bitwidth-1 *)
+  IF shiftFactor < Bitwidth THEN
+    
+    (* clear high bit *)
+    IF i < 0 THEN
+      i := i - MIN(INTEGER)
+    END; (* IF *)
+    
+    (* bit at position Bitwidth - shiftFactor is pivotal *)
+    pivotalBit := Bitwidth - shiftFactor;
+    
+    (* compute bits that will be shifted out of i *)
+    carryBits := i DIV powerOf2[pivotalBit];
+    
+    (* clear bits that will be shifted out to avoid overflow *)
+    ClearMSBtoN(i, pivotalBit);
+    
+    (* shift safely *)
+    i := i * powerOf2[shiftFactor];
+    
+    (* set high bit if pivotal bit is set *)
+    IF ODD(carryBits) THEN
+      i := i + MIN(INTEGER)    
+    END; (* IF *)
+    
+  (* shifting by Bitwidth *)
+  ELSE (* shiftFactor = Bitwidth *)
+    i := 0
+  END; (* IF *)
+  
+  RETURN i
+END shl;
+
+
+(* ---------------------------------------------------------------------------
+ * function shr( i, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Returns i logically shifted right by shiftFactor.
+ *
+ *             M S B                                           L S B
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *  bit index | n-1 | n-2 | n-3 |   . . .   |  3  |  2  |  1  |  0  |  before
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *                 \     \                       \     \     \
+ *                  \     \                       \     \     \
+ *             0     \     \                       \     \     \
+ *              \     \     \                       \     \     \
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *  bit index | n-1 | n-2 | n-3 |   . . .   |  3  |  2  |  1  |  0  |  after
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE shr ( i : INTEGER; shiftFactor : BitIndex ) : INTEGER;
+
+VAR
+  pivotalBit : BitIndex;
+
+BEGIN
+  IF shiftFactor = 0 THEN
+    (* NOP *)
+    
+  (* shifting by 1 .. Bitwidth-1 *)
+  IF shiftFactor < Bitwidth THEN
+    (* bit at position Bitwidth - shiftFactor is pivotal *)
+    pivotalBit := Bitwidth - shiftFactor;
+
+    IF i >= 0 THEN
+      (* shift *)
+      i := i DIV powerOf2[pivotalBit]
+      
+    ELSE (* i < 0 *)
+      (* clear high bit *)
+      i := i - MIN(INTEGER);
+            
+      (* shift by 1 and copy high bit to Bitwidth-2 *)
+      i := i DIV 2 + powerOf2[Bitwidth-2];
+      
+      (* shift by index of pivotal bit less the one already shifted *)
+      i := i DIV powerOf2[pivotalBit-1]
+    END (* IF *)
+    
+  (* shifting by Bitwidth *)
+  ELSE (* shiftFactor = Bitwidth *)
+    i := 0
+  END; (* IF *)
+  
+  RETURN i
+END shr;
+
+
+(* ---------------------------------------------------------------------------
+ * function ashr( i, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Returns i arithmetically shifted right by shiftFactor.
+ *
+ *             M S B                                           L S B
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *  bit index | n-1 | n-2 | n-3 |   . . .   |  3  |  2  |  1  |  0  |  before
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *               | \     \                       \     \     \
+ *               |  \     \                       \     \     \
+ *               |   \     \                       \     \     \
+ *               |    \     \                       \     \     \
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ *  bit index | n-1 | n-2 | n-3 |   . . .   |  3  |  2  |  1  |  0  |  after
+ *            +-----+-----+-----+           +-----+-----+-----+-----+
+ * ------------------------------------------------------------------------ *)
+     
+PROCEDURE ashr ( i : INTEGER; shiftFactor : BitIndex ) : INTEGER;
+
+VAR
+  pivotalBit : BitIndex;
+
+BEGIN
+  IF shiftFactor = 0 THEN
+    (* NOP *)
+    
+  (* shifting by 1 .. Bitwidth-1 *)
+  IF shiftFactor < Bitwidth THEN
+    (* bit at position Bitwidth - shiftFactor is pivotal *)
+    pivotalBit := Bitwidth - shiftFactor;
+
+    IF i >= 0 THEN
+      (* shift *)
+      i := i DIV powerOf2[pivotalBit]
+      
+    ELSE (* i < 0 *)
+      (* clear high bit *)
+      i := i - MIN(INTEGER);
+            
+      (* shift by 1 and copy high bit to Bitwidth-2 *)
+      i := i DIV 2 + powerOf2[Bitwidth-2];
+      
+      (* shift by index of pivotal bit less the one already shifted *)
+      i := i DIV powerOf2[pivotalBit-1];
+      
+      (* restore high bit *)
+      i := i + MIN(INTEGER)
+    END (* IF *)
+    
+  (* shifting by Bitwidth *)
+  ELSE (* shiftFactor = Bitwidth *)
+    i := 0
+  END; (* IF *)
+  
+  RETURN i
+END ashr;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure SHLC( i, carryBits, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Left shifts i by bitIndex and passes the shifted out bits in carryBits.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SHLC ( VAR i, carryBits : INTEGER; bitIndex : BitIndex );
+
+VAR
+  pivotalBit : BitIndex;
+
+BEGIN
+  (* shifting by 0 *)
+  IF shiftFactor = 0 THEN
+    carryBits := 0
+    
+  (* shifting by 1 .. Bitwidth-1 *)
+  ELSIF shiftFactor < Bitwidth THEN
+    (* bit at position Bitwidth - shiftFactor is pivotal *)
+    pivotalBit := Bitwidth - shiftFactor;
+    
+   (* compute bits that will be shifted out of i *)
+    IF i >= 0 THEN
+      carryBits := i DIV powerOf2[pivotalBit]
+
+    ELSE (* i < 0 *)
+      (* clear high bit *)
+      i := i - MIN(INTEGER);
+      
+      (* shift by 1 to restore high bit into overflow, ... *)
+      carryBits := i DIV 2 + powerOf2[Bitwidth-2];
+      
+      (* then shift by index of pivotal bit less the one already shifted *)
+      carryBits := carryBits DIV powerOf2[pivotalBit-1]
+    END; (* IF *)
+
+    (* clear bits that will be shifted out to avoid overflow *)
+    ClearMSBtoN(i, pivotalBit);
+    
+    (* shift safely *)
+    i := i * powerOf2[shiftFactor];
+    
+    (* set high bit if pivotal bit is set *)
+    IF ODD(carryBits) THEN
+      i := i + MIN(INTEGER)    
+    END (* IF *)
+    
+  (* shifting by Bitwidth *)
+  ELSE (* shiftFactor = Bitwidth *)
+    carryBits := i; i := 0
+  END (* IF *)
+END SHLC;
+
+
+(* ---------------------------------------------------------------------------
+ * function bit( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if the bit at bitIndex of i is set, otherwise FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE bit ( i : INTEGER; bitIndex : BitIndex ) : BOOLEAN;
+
+BEGIN
+  IF (i < 0) AND (bitIndex = Bitwidth-1) THEN
+    RETURN TRUE
+  ELSE (* general case *)
+    RETURN ODD(i DIV powerOf2[bitIndex])
+  END (* IF *)
+END bit;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure SetBit( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Sets the bit at bitIndex of i.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetBit ( VAR i : INTEGER; bitIndex : BitIndex );
+
+BEGIN
+  IF NOT bit(i, bitIndex) THEN
+    i := i + powerOf2[bitIndex]
+  END (* IF *)
+END SetBit;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ClearBit( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bit at bitIndex of i.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearBit ( VAR i : INTEGER; bitIndex : BitIndex );
+
+BEGIN
+  IF bit(i, bitIndex) THEN
+    i := i - powerOf2[bitIndex]
+  END (* IF *)
+END ClearBit;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ClearLSBtoN( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bits of i in range [0 .. bitIndex].
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearLSBtoN ( VAR i : INTEGER; bitIndex : BitIndex );
+
+BEGIN
+  (* clearing to MSB produces all zeroes *)
+  IF bitIndex = Bitwidth-1 THEN
+    i := 0;
+    RETURN
+  END; (* IF *)
+  
+  IF i >= 0 THEN
+    (* shift right and back to clear the low bits *)
+    i := shr(i, bitIndex + 1);
+    i := shl(i, bitIndex + 1);
+  ELSE (* i < 0 *)
+    (* clear high bit *)
+    i := i - MIN(INTEGER);
+    
+    (* shift right and back to clear the low bits *)
+    i := shr(i, bitIndex + 1);
+    i := shl(i, bitIndex + 1);
+    
+    (* restore high bit *)
+    i := i + MIN(INTEGER)
+  END (* IF *)
+END ClearLSBtoN;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ClearMSBtoN( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bits of i in range [bitIndex .. Bitwidth-1].
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearMSBtoN ( VAR i : INTEGER; bitIndex : BitIndex );
+
+VAR
+  mask : INTEGER;
+  
+BEGIN
+  (* clearing from bit 0 produces all zeroes *)
+  IF bitIndex = 0 THEN
+    i := 0;
+    RETURN
+  END; (* IF *)
+  
+  (* clear high bit *)
+  IF i < 0 THEN
+    i := i - MIN(INTEGER)
+  END; (* IF *)
+  
+  (* clearing from high bit leaves no more bits to clear *)
+  IF bitIndex = Bitwidth-1 THEN
+    RETURN
+  END; (* IF *)
+  
+  (* shift lower bits out to the right *)
+  mask := shr(i, bitIndex);
+  
+  (* shift them back, thereby clearing the low bits, obtaining a mask *)
+  mask := mask * powerOf2[bitIndex];
+  
+  (* subtract the mask, thereby clearing the high bits *)
+  i := i - mask
+END ClearMSBtoN;
+
+
+(* ---------------------------------------------------------------------------
+ * Powers of 2 table
+ * ------------------------------------------------------------------------ *)
+
+VAR
+  powerOf2 : ARRAY [0..MAX(BitIndex)] OF INTEGER;
+  
+
+(* ---------------------------------------------------------------------------
+ * private procedure InitPow2Table
+ * ---------------------------------------------------------------------------
+ * Initialises the powers of 2 table
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE InitPow2Table;
+
+VAR
+  index : BitIndex;
+  
+BEGIN
+  powerOf2[0] := 1;
+  FOR index := 1 TO Bitwidth-2 DO
+    powerOf2[index] := powerOf2[index-1] * 2
+  END; (* FOR *)
+  powerOf2[Bitwidth-1] := MIN(INTEGER)
+END InitPow2Table;
+
+
+(* ---------------------------------------------------------------------------
+ * Module Initialisation
+ * ------------------------------------------------------------------------ *)
+
+BEGIN (* IntBitOps *)
+  InitPow2Table
+END IntBitOps.
