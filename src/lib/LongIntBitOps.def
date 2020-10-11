@@ -1,6 +1,8 @@
 (*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
 
-DEFINITION MODULE LongIntBitOps; (* Bit Operations on Type LONGINT *)
+DEFINITION MODULE LongIntBitOps; (* portable *)
+
+(* Bit Operations on Type LONGINT *)
 
 
 CONST Bitwidth = TSIZE(LONGINT) * 8 - 1;
@@ -69,6 +71,24 @@ PROCEDURE SetBit ( VAR i : LONGINT; bitIndex : BitIndex );
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE ClearBit ( VAR i : LONGINT; bitIndex : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ClearLSBtoN( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bits of i in range [0 .. bitIndex].
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearLSBtoN ( VAR i : LONGINT; bitIndex : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * procedure ClearMSBtoN( i, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bits of i in range [bit_index .. Bitwidth-1].
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearMSBtoN ( VAR i : LONGINT; bitIndex : BitIndex );
 
 
 END LongIntBitOps.
