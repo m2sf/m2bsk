@@ -248,7 +248,6 @@ BEGIN
   powerOf10[0].highBits := 0;
   powerOf10[0].lowBits := 1;
   
-  
   (* remainder: element[n] := 10 * element[n-1] *)
   FOR index := 1 TO maxDecDigits[Bitwidth DIV 8] DO
     value := powerOf10[index-1];
