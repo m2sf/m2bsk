@@ -2,7 +2,7 @@
 
 The 64-bit Cardinal library consists of three modules
 
-* Module `CARD64` provides the type definition and arithmetic operations
+* Module `CARD64` provides the type definition, relational and arithmetic operations
 * Module `Card64BitOps` provides bitwise operations on the type
 * Module `Card64Math` provides extended math operations
 
