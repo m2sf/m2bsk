@@ -5,7 +5,15 @@ DEFINITION MODULE Card64Math; (* universal version *)
 (* CARD64 Math Library *)
 
 
+FROM SYSTEM IMPORT TSIZE;
 FROM CARD64 IMPORT Card64T;
+
+
+(* ---------------------------------------------------------------------------
+ * Bitwidth
+ * ------------------------------------------------------------------------ *)
+
+CONST Bitwidth = TSIZE(Card64T) * 8;
 
 
 (* --------------------------------------------------------------------------
@@ -14,7 +22,9 @@ FROM CARD64 IMPORT Card64T;
  * Passes the power of 2 for argument n in result.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE Pow2 ( VAR result : Card64T; n : CARDINAL );
+TYPE Pow2Arg = CARDINAL [0 .. Bitwidth-1];
+
+PROCEDURE Pow2 ( VAR result : Card64T; n : Pow2Arg );
 
 
 (* --------------------------------------------------------------------------
@@ -23,7 +33,7 @@ PROCEDURE Pow2 ( VAR result : Card64T; n : CARDINAL );
  * Passes the integral part of the logarithm of 2 for argument n in result.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE Log2 ( VAR result : Card64T; n : CARDINAL );
+PROCEDURE Log2 ( VAR result : Card64T; n : Card64T );
 
 
 (* --------------------------------------------------------------------------
@@ -32,7 +42,9 @@ PROCEDURE Log2 ( VAR result : Card64T; n : CARDINAL );
  * Passes the power of 10 for argument n in result.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE Pow10 ( VAR result : Card64T; n : CARDINAL );
+TYPE Pow10Arg = CARDINAL [0 .. 18];
+
+PROCEDURE Pow10 ( VAR result : Card64T; n : Pow10Arg );
 
 
 (* --------------------------------------------------------------------------
@@ -41,7 +53,7 @@ PROCEDURE Pow10 ( VAR result : Card64T; n : CARDINAL );
  * Passes the integral part of the logarithm of 10 for argument n in result.
  * ----------------------------------------------------------------------- *)
 
-PROCEDURE Log10 ( VAR result : Card64T; n : CARDINAL );
+PROCEDURE Log10 ( VAR result : Card64T; n : Card64T );
 
 
 (* --------------------------------------------------------------------------
