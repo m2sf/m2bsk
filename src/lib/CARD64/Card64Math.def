@@ -1,0 +1,65 @@
+(*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE Card64Math; (* universal version *)
+
+(* CARD64 Math Library *)
+
+
+FROM CARD64 IMPORT Card64T;
+
+
+(* --------------------------------------------------------------------------
+ * Procedure: Card64Math.Pow2(n)
+ * --------------------------------------------------------------------------
+ * Passes the power of 2 for argument n in result.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE Pow2 ( VAR result : Card64T; n : CARDINAL );
+
+
+(* --------------------------------------------------------------------------
+ * Procedure: Card64Math.Log2(n)
+ * --------------------------------------------------------------------------
+ * Passes the integral part of the logarithm of 2 for argument n in result.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE Log2 ( VAR result : Card64T; n : CARDINAL );
+
+
+(* --------------------------------------------------------------------------
+ * Procedure: Card64Math.Pow10(n)
+ * --------------------------------------------------------------------------
+ * Passes the power of 10 for argument n in result.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE Pow10 ( VAR result : Card64T; n : CARDINAL );
+
+
+(* --------------------------------------------------------------------------
+ * Procedure: Card64Math.Log10(n)
+ * --------------------------------------------------------------------------
+ * Passes the integral part of the logarithm of 10 for argument n in result.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE Log10 ( VAR result : Card64T; n : CARDINAL );
+
+
+(* --------------------------------------------------------------------------
+ * Function:  Card64Math.addOverflows(n, m)
+ * --------------------------------------------------------------------------
+ * Returns TRUE if operation n + m overflows, else FALSE.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE addOverflows ( n, m : Card64T ) : BOOLEAN;
+
+
+(* --------------------------------------------------------------------------
+ * Procedure:  Card64T.TwosComplement(n)
+ * --------------------------------------------------------------------------
+ * Passes the two's complement of n in n.
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE TwosComplement ( VAR n : Card64T );
+
+
+END Card64Math.

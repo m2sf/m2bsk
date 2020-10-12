@@ -1,0 +1,93 @@
+(*!m2pim*) (* Copyright (c) 2020 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE Card64BitOps; (* universal version *)
+
+(* Bit Operations on Type CARD64 *)
+
+
+FROM SYSTEM IMPORT TSIZE;
+FROM CARD64 IMPORT Card64T;
+
+
+(* ---------------------------------------------------------------------------
+ * Bit Index Type
+ * ------------------------------------------------------------------------ *)
+
+CONST Bitwidth = TSIZE(Card64T) * 8;
+
+TYPE BitIndex = CARDINAL [0..Bitwidth-1];
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  Shl( n, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Passes n shifted left by shiftFactor in n.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Shl ( VAR n : Card64T; shiftFactor : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  Shr( n, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Passes n logically shifted right by shiftFactor in n.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Shr ( VAR n : Card64T; shiftFactor : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  AShr( n, shiftFactor )
+ * ---------------------------------------------------------------------------
+ * Passes n arithmetically shifted right by shiftFactor in n.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE AShr ( VAR n : Card64T; shiftFactor : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * Function:  bit( n, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Returns TRUE if the bit at bitIndex of n is set, otherwise FALSE.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE bit ( n : Card64T; bitIndex : BitIndex ) : BOOLEAN;
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  SetBit( n, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Sets the bit at bitIndex of n.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetBit ( VAR n : Card64T; bitIndex : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  ClearBit( n, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bit at bitIndex of n.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearBit ( VAR n : Card64T; bitIndex : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  ClearLSBtoN( n, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bits of n in range [0 .. bitIndex].
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearLSBtoN ( VAR n : Card64T; bitIndex : BitIndex );
+
+
+(* ---------------------------------------------------------------------------
+ * Procedure:  ClearMSBtoN( n, bitIndex )
+ * ---------------------------------------------------------------------------
+ * Clears the bits of n in range [bitIndex .. Bitwidth-1].
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE ClearMSBtoN ( VAR n : Card64T; bitIndex : BitIndex );
+
+
+END Card64BitOps.
