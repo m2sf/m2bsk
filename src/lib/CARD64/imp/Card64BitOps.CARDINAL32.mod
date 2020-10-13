@@ -57,27 +57,27 @@ BEGIN
     pivotalBit := HalfBitwidth - shiftFactor;
     
     (* remember bits that will be shifted out of lowBits *)
-    carryBits := n.lowBits DIV pivotalBit;
+    carryBits := n.lowBits DIV powerOf2[pivotalBit];
     
     (* shift lowBits *)
     
     (* clear bits including and above pivotal bit to avoid overflow *)
-    IF n.lowBits >= pow2(pivotalBit) THEN
+    IF n.lowBits >= powerOf2[pivotalBit] THEN
       ClearMSBtoN(n.lowBits, pivotalBit)
     END; (* IF *)
     
     (* safely shift lowBits *)
-    n.lowBits := n.lowBits * pow2(shiftFactor);
+    n.lowBits := n.lowBits * powerOf2[shiftFactor];
     
     (* shift highBits *)
     
     (* clear bits including and above pivotal bit to avoid overflow *)
-    IF n.highBits >= pow2(pivotalBit) THEN
-      ClearBitsInclAndAbove(n.highBits, pivotalBit)
+    IF n.highBits >= powerOf2[pivotalBit] THEN
+      ClearMSBtoN(n.highBits, pivotalBit)
     END; (* IF *)
     
     (* safely shift highBits *)
-    n.highBits := n.highBits * pow2(shiftFactor);
+    n.highBits := n.highBits * powerOf2[shiftFactor];
     
     (* add the carry bits shifted out of lowBits *)
     n.highBits := n.highBits + carryBits;
@@ -96,12 +96,12 @@ BEGIN
     (* shift highBits *)
     
     (* clear bits including and above pivotal bit to avoid overflow *)
-    IF n.highBits >= pow2(pivotalBit) THEN
+    IF n.highBits >= powerOf2[pivotalBit] THEN
       ClearMSBtoN(n.highBits, pivotalBit)
     END; (* IF *)
     
     (* safely shift highBits *)
-    n.highBits := n.highBits * pow2((shiftFactor MOD HalfBitwidth));
+    n.highBits := n.highBits * powerOf2[shiftFactor MOD HalfBitwidth];
     RETURN
     
   (* shifting by Bitwidth or more *)
@@ -146,13 +146,13 @@ BEGIN
     pivotalBit := HalfBitwidth - shiftFactor;
     
     (* remember bits that will be shifted out of highBits *)
-    carryBits := n.highBits * pow2(pivotalBit);
+    carryBits := n.highBits * powerOf2[pivotalBit];
     
     (* shift lowBits *)
-    n.lowBits := n.lowBits DIV pow2(shiftFactor);
+    n.lowBits := n.lowBits DIV powerOf2[shiftFactor];
     
     (* shift highBits *)
-    n.highBits := n.highBits DIV pow2(shiftFactor);
+    n.highBits := n.highBits DIV powerOf2[shiftFactor];
     
     (* add the bits shifted out of highBits to lowBits *)
     n.lowBits := n.lowBits + carryBits;
@@ -169,7 +169,7 @@ BEGIN
     pivotalBit := HalfBitwidth - shiftFactor;
     
     (* shift lowBits *)
-    n.lowBits := n.lowBits DIV pow2(pivotalBit);
+    n.lowBits := n.lowBits DIV powerOf2[pivotalBit];
     RETURN
     
   (* shifting by Bitwidth or more *)
@@ -206,11 +206,11 @@ PROCEDURE bit ( n : Card64T; bitIndex : BitIndex ) : BOOLEAN;
 BEGIN
   (* bitIndex falls into lowBits *)
   IF bitIndex < HalfBitwidth THEN
-    RETURN ODD(n.lowBits DIV powerOf2[bitIndex].lowBits)
+    RETURN ODD(n.lowBits DIV powerOf2[bitIndex])
     
   (* bitIndex falls into highBits *)
   ELSE (* bitIndex >= HalfBitwidth *)
-    RETURN ODD(n.highBits DIV powerOf2[bitIndex-HalfBitwidth].lowBits)
+    RETURN ODD(n.highBits DIV powerOf2[bitIndex-HalfBitwidth])
   END (* IF *)
 END bit;
 
@@ -227,13 +227,13 @@ BEGIN
   (* bitIndex falls into lowBits *)
   IF bitIndex < HalfBitwidth THEN
     IF NOT ODD(n.lowBits DIV powerOf2[bitIndex]) THEN
-      n.lowBits := n.lowBits + powerOf2[bitIndex].lowBits
+      n.lowBits := n.lowBits + powerOf2[bitIndex]
     END (* IF *)
     
   (* bitIndex falls into highBits *)
   ELSE (* bitIndex >= HalfBitwidth *)
     IF NOT ODD(n.highBits DIV powerOf2[bitIndex-HalfBitwidth]) THEN
-      n.highBits := n.highBits + powerOf2[bitIndex-HalfBitwidth].lowBits
+      n.highBits := n.highBits + powerOf2[bitIndex-HalfBitwidth]
     END (* IF *)
   END (* IF *)
 END SetBit;
@@ -251,13 +251,13 @@ BEGIN
   (* bitIndex falls into lowBits *)
   IF bitIndex < HalfBitwidth THEN
     IF ODD(n.lowBits DIV powerOf2[bitIndex]) THEN
-      n.lowBits := n.lowBits - powerOf2[bitIndex].lowBits
+      n.lowBits := n.lowBits - powerOf2[bitIndex]
     END (* IF *)
     
   (* bitIndex falls into highBits *)
   ELSE (* bitIndex >= HalfBitwidth *)
     IF ODD(n.highBits DIV powerOf2[bitIndex-HalfBitwidth]) THEN
-      n.highBits := n.highBits - powerOf2[bitIndex-HalfBitwidth].lowBits
+      n.highBits := n.highBits - powerOf2[bitIndex-HalfBitwidth]
     END (* IF *)
   END (* IF *)
 END SetBit;
@@ -284,8 +284,45 @@ END ClearLSBtoN;
 
 PROCEDURE ClearMSBtoN ( VAR n : Card64T; bitIndex : BitIndex );
 
+VAR
+  mask : CARDINAL;
+  
 BEGIN
-  (* TO DO *)
+  IF bitIndex > HalfBitwidth THEN
+    
+    (* shift bits [0..bitIndex-1] of n.highBits out to the right *)
+    mask := n.highBits DIV powerOf2[bitIndex-HalfBitwidth];
+    
+    (* shift them back, thereby clearing them, obtaining a mask *)
+    mask := mask * powerOf2[bitIndex-HalfBitwidth];
+    
+    (* subtract the mask, thereby clearing the higher bits *)
+    n.highBits := n.highBits - mask
+    
+    (* n.lowBits remain unaffected *)
+    
+  ELSIF bitIndex = HalfBitwidth THEN
+    n.highBits := 0
+    
+    (* n.lowBits remain unaffected *)
+    
+  ELSIF (* bitIndex < HalfBitwidth AND *) bitIndex > 0 THEN
+    (* all bits in n.highBits are cleared *)
+    n.highBits := 0;
+    
+    (* shift bits [0..bitIndex-1] of n.lowBits out to the right *)
+    mask := n.lowBits DIV powerOf2[bitIndex];
+    
+    (* shift them back, thereby clearing them, obtaining a mask *)
+    mask := mask * powerOf2[bitIndex];
+    
+    (* subtract the mask, thereby clearing the higher bits *)
+    n.lowBits := n.lowBits - mask
+        
+  ELSE (* bitIndex = 0 *)
+    n.highBits := 0;
+    n.lowBits := 0
+  END (* IF *)
 END ClearMSBtoN;
 
 
@@ -293,7 +330,32 @@ END ClearMSBtoN;
  * Private Operations                                                       *
  * ************************************************************************ *)
 
-(* TO DO *)
+(* ---------------------------------------------------------------------------
+ * Powers of 2 table
+ * ------------------------------------------------------------------------ *)
+
+VAR
+  powerOf2 : ARRAY [0..MAX(BitIndex)] OF CARDINAL;
+  
+
+(* ---------------------------------------------------------------------------
+ * private procedure InitPow2Table
+ * ---------------------------------------------------------------------------
+ * Initialises the powers of 2 table
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE InitPow2Table;
+
+VAR
+  index : BitIndex;
+  
+BEGIN
+  powerOf2[0] := 1;
+  FOR index := 1 TO Bitwidth-2 DO
+    powerOf2[index] := powerOf2[index-1] * 2
+  END; (* FOR *)
+  powerOf2[Bitwidth-1] := MAX(CARDINAL)
+END InitPow2Table;
 
 
 (* ---------------------------------------------------------------------------
@@ -301,5 +363,5 @@ END ClearMSBtoN;
  * ------------------------------------------------------------------------ *)
 
 BEGIN (* Card64BitOps *)
-  (* TO DO *)
+  InitPow2Table
 END Card64BitOps.
