@@ -271,8 +271,32 @@ END SetBit;
 
 PROCEDURE ClearLSBtoN ( VAR n : Card64T; bitIndex : BitIndex );
 
+VAR
+  mask : CARDINAL;
+  
 BEGIN
-  (* TO DO *)
+  IF bitIndex >= HalfBitwidth THEN
+        
+    (* clear bits 0 .. bitIndex-HalfBitwidth of n.highBits *)
+    
+    (* clear n.lowBits *)
+    n.lowBits := 0
+    
+  ELSIF (* bitIndex < HalfBitwidth AND *) bitIndex > 0 THEN
+    
+    (* n.highBits remain unaffected *)
+    
+    (* clear bits 0 .. bitIndex of n.lowBits *)
+    
+  ELSE (* bitIndex = 0 *)
+  
+    (* n.highBits remain unaffected *)
+  
+    (* clear bit 0 *)
+    IF ODD(n.lowBits) THEN
+      n.lowBits := n.lowBits - 1
+    END (* IF *)
+  END (* IF *)
 END ClearLSBtoN;
 
 
