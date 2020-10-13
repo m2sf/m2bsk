@@ -275,6 +275,8 @@ BEGIN
   IF bitIndex >= HalfBitwidth THEN
         
     (* clear bits 0 .. bitIndex-HalfBitwidth of n.highBits *)
+    n.highBits := n.highBits DIV powerOf2[bitIndex-HalfBitwidth+1];
+    n.highBits := n.highBits * powerOf2[bitIndex-HalfBitwidth+1]    
     
     (* clear n.lowBits *)
     n.lowBits := 0
