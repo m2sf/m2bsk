@@ -192,7 +192,7 @@ PROCEDURE AShr ( VAR n : Card64T; shiftFactor : BitIndex );
 
 BEGIN
   (* TO DO *)
-END ClearLSBtoN;
+END AShr;
 
 
 (* ---------------------------------------------------------------------------
