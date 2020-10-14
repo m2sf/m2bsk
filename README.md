@@ -69,7 +69,7 @@ M2BSK will run on any operating system with target support by the host-compiler.
 ### Development Languages ###
 
 * M2BSK itself is written in classic Modula-2
-* The syntax diagram generator script is written in TCL/TK
+* The syntax diagram generator script is written in TCL/TK (not required to build M2BSK)
 * Build configuration scripts are written in the prevalent shell language of the hosting platform
 
 ### Collaboration ###
