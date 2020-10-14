@@ -24,6 +24,13 @@ FROM CARD64 IMPORT Card64T;
 CONST HalfBitwidth = Bitwidth DIV 2;
 
 
+(* --------------------------------------------------------------------------
+ * Largest Cardinal of Bitwidth-1
+ * ----------------------------------------------------------------------- *)
+
+CONST HalfCard = MAX(CARDINAL) DIV 2 - 1;
+
+
 (* ---------------------------------------------------------------------------
  * Procedure:  Shl( n, shiftFactor )
  * ---------------------------------------------------------------------------
@@ -190,8 +197,82 @@ END Shr;
 
 PROCEDURE AShr ( VAR n : Card64T; shiftFactor : BitIndex );
 
+VAR
+  mask : CARDINAL;
+  pivotalBit : BitIndex;
+
 BEGIN
-  (* TO DO *)
+  IF n.highBits > HalfCard THEN
+    
+    (* shifting by 0 *)
+    IF shiftFactor = 0 THEN
+      (* NOP *)
+      
+    (* shifting by 1 .. Bitwidth/2 *)
+    ELSIF shiftFactor < HalfBitwidth THEN
+      
+      (* bit at position HalfBitwidth - shiftFactor is pivotal *)
+      pivotalBit := HalfBitwidth - shiftFactor;
+      
+      (* compute mask to set high bits *)
+      mask := MAX(CARDINAL) DIV powerOf2[pivotalBit];
+      mask := mask * powerOf2[pivotalBit];
+      
+      (* clear high bit *)
+      n.highBits := n.highBits - HalfCard;
+      
+      (* shift logically *)
+      Shr(n, shiftFactor);
+      
+      (* add mask to n.highBits,
+         having the effect of filling in 1 from the left *)
+      n.highBits := n.highBits + mask      
+      
+    (* shifting by Bitwidth/2 *)
+    ELSIF shiftFactor = HalfBitwidth THEN
+      
+      (* n.highBits are shifted into n.lowBits *)
+      n.lowBits := n.highBits;
+      
+      (* high bit is copied into all of the bits of n.highBits *)
+      n.highBits := MAX(CARDINAL)
+      
+    (* shifting by Bitwidth/2+1 .. Bitwidth-1 *)
+    ELSIF (shiftFactor > HalfBitwidth) AND (shiftFactor < Bitwidth) THEN
+      
+      (* bit at position Bitwidth - shiftFactor is pivotal *)
+      pivotalBit := Bitwidth - shiftFactor;
+      
+      (* compute mask to set high bits *)
+      mask := MAX(CARDINAL) DIV powerOf2[pivotalBit];
+      mask := mask * powerOf2[pivotalBit];
+      
+      (* clear high bit *)
+      n.highBits := n.highBits - HalfCard;
+      
+      (* shift logically *)
+      Shr(n, shiftFactor);
+      
+      (* add mask to n.lowBits,
+         having the effect of filling in 1 from the left *)
+      n.lowBits := n.lowBits + mask;
+      
+      (* set all bits in n.highBits *)
+      n.highBits := MAX(CARDINAL)
+      
+    (* shifting by Bitwidth *)
+    ELSE (* shiftFactor = Bitwidth *)
+      
+      (* high bit is copied into all bits *)
+      n.lowBits := MAX(CARDINAL);
+      n.highBits := MAX(CARDINAL)
+    END (* IF *)
+    
+  ELSE (* high bit is not set and has no effect *)
+    
+    (* simply shift logically *)
+    Shr(n, shiftFactor)
+  END (* IF *)
 END AShr;
 
 
