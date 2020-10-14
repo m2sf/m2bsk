@@ -24,13 +24,6 @@ FROM CARD64 IMPORT Card64T;
 CONST HalfBitwidth = Bitwidth DIV 2;
 
 
-(* --------------------------------------------------------------------------
- * Largest Cardinal of Bitwidth-1
- * ----------------------------------------------------------------------- *)
-
-CONST HalfCard = MAX(CARDINAL) DIV 2 - 1;
-
-
 (* ---------------------------------------------------------------------------
  * Procedure:  Shl( n, shiftFactor )
  * ---------------------------------------------------------------------------
@@ -194,6 +187,8 @@ END Shr;
  * ---------------------------------------------------------------------------
  * Passes n arithmetically shifted right by shiftFactor in n.
  * ------------------------------------------------------------------------ *)
+
+CONST HalfCard = MAX(CARDINAL) DIV 2 + 1; (* 0x80'00'00'00 *)
 
 PROCEDURE AShr ( VAR n : Card64T; shiftFactor : BitIndex );
 
