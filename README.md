@@ -44,9 +44,15 @@ M2BSK is licensed under the GNU Lesser General Public License (LGPL) both v.2.1 
 
 ### Prerequisites ###
 
-The compiler is written in a subset of the third and fourth editions of Niklaus Wirth's "Programming in Modula-2" that represents an intersection with ISO Modula-2 (IS 10514-1). Therefore any Modula-2 compiler that supports PIM3, PIM4 or ISO Modula-2 should be able to compile the sources.
+The compiler is written in a subset of the third and fourth editions of Niklaus Wirth's "Programming in Modula-2" that represents an intersection with ISO Modula-2 (IS 10514-1) in order to facilitate compilation with any classic Modula-2 compiler, regardless of dialect and platform.
 
-The following libraries from Wirth's "Programming in Modula-2" are required.
+However, the host compiler needs to support **one** of the following memory models:
+
+* 16-bit `CARDINAL` type and 32-bit `LONGINT` type
+* 32-bit `CARDINAL` type and 32-bit `LONGINT` type
+* 32-bit `CARDINAL` type and 64-bit `LONGINT` type
+
+Furthermore, the following libraries from Wirth's "Programming in Modula-2" are required.
 
 * Storage
 * Terminal
