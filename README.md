@@ -66,6 +66,12 @@ These libraries should be part of any PIM Modula-2 compiler's library. For use w
 
 M2BSK will run on any operating system with target support by the host-compiler.
 
+### Development Languages ###
+
+* M2BSK itself is written in classic Modula-2
+* The syntax diagram generator script is written in TCL/TK
+* Build configuration scripts are written in the prevalent shell language of the hosting platform
+
 ### Collaboration ###
 
 If you would like to contribute to the project, please get in touch by email
