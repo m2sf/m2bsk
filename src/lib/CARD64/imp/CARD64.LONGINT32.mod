@@ -53,7 +53,7 @@ END FromInt;
  * Passes the Card64T value of non-negative LONGINT i in result.
  * ----------------------------------------------------------------------- *)
 
-TYPE LongPosInt = INTEGER [0 .. MAX(LONGINT)];
+TYPE LongPosInt = LONGINT [0 .. MAX(LONGINT)];
 
 PROCEDURE FromLongInt ( VAR result : Card64T; i : LongPosInt );
 
