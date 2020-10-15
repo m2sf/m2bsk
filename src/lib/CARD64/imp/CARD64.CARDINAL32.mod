@@ -249,7 +249,7 @@ BEGIN
   prod.highBits := 0;
   prod.lowBits := 0;
   
-  FOR bitIndex := 0 TO Bitwidth DO
+  FOR bitIndex := 0 TO Bitwidth-1 DO
     (* test LSB of m and add n to prod if set *)
     IF ODD(m.lowBits) THEN
       Add(prod, n)
