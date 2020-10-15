@@ -85,9 +85,11 @@ END SetZero;
 
 PROCEDURE SetMax ( VAR result : Card64T );
 
+CONST AllBitsSet = (-1);
+
 BEGIN
-  result.highBits := MAX(CARDINAL);
-  result.lowBits := MAX(CARDINAL)
+  result.highBits := AllBitsSet;
+  result.lowBits := AllBitsSet
 END SetZero;
 
 
