@@ -123,17 +123,28 @@ BEGIN
 
   ALLOCATE(newPath, TSIZE(Descriptor));
 
+  (* store what we were given *)
+  newPath^.dirpath := dirpath;  
+  newPath^.basename := basename;
+  newPath^.suffix := suffix;
+
+  (* set the suffix type *)
+  newPath^.suffixType := suffixTypeForString(newPath^.suffix)
+
+  (* construct the filename *)
+  newPath^.filename := String.forConcatenation(basename, suffix);
+  
+  (* construct the full path *)
   IF dirpath[dirLength - 1] # dirsep THEN
-    newPath := String.forConcatenation(dirPath, 
-      String.forConcatenation(dirsep, 
-        String.forConcatenation(basename, suffix)
-      )    
+    newPath^.fullpath := String.forConcatenation(newPath^.dirPath, 
+      String.forConcatenation(dirsep, newPath^.filename)    
     );
   ELSE
-    newPath := String.forConcatenation(dirPath, 
-      String.forConcatenation(basename, suffix)          
-    );
-  END (* IF *)  
+    newPath^.fullpath := String.forConcatenation(newPath^.dirPath, newPath^.filename);
+  END (* IF *)     
+
+  (* if we've made it this far without RETURNing, then we have a success)
+  newPath^.status := Success;
        
   path := newPath;
 END newFromComponents;
@@ -341,5 +352,18 @@ PROCEDURE parsePathComponent
 BEGIN
   (* TO DO *)
 END parsePathComponent;
+
+ (* --------------------------------------------------------------------------
+ * function suffixTypeForString(suffix)
+ * --------------------------------------------------------------------------
+ *   TO DO
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE suffixTypeForString
+  ( suffix          : StringT ) : SuffixType;
+
+BEGIN
+  (* TO DO *)
+END suffixTypeForString;
 
 END Pathname.
