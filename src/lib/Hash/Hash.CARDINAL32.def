@@ -19,14 +19,14 @@ TYPE Key = CARDINAL; (* requires 32-bit CARDINAL *)
  * Key bitwidth
  * ------------------------------------------------------------------------ *)
 
-CONST Bitwidth = TSIZE(Key) * 8 - 1;
+CONST Bitwidth = TSIZE(Key) * 8;
 
 
 (* ---------------------------------------------------------------------------
  * Initial value for incremental hash calculation
  * ------------------------------------------------------------------------ *)
 
-CONST initialValue = 0;
+CONST InitialValue = 0;
 
 
 (* ---------------------------------------------------------------------------
