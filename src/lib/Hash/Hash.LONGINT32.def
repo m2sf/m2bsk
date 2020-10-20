@@ -19,14 +19,14 @@ TYPE Key = LONGINT (* requires 32-bit LONGINT *)
  * Key bitwidth
  * ------------------------------------------------------------------------ *)
 
-CONST Bitwidth = TSIZE(Key) * 8 - 1;
+CONST Bitwidth = TSIZE(Key) * 8;
 
 
 (* ---------------------------------------------------------------------------
  * Initial value for incremental hash calculation
  * ------------------------------------------------------------------------ *)
 
-CONST initialValue = 0;
+CONST InitialValue = 0;
 
 
 (* ---------------------------------------------------------------------------
