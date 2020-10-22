@@ -1,10 +1,10 @@
-(*!m2pim*) (* Copyright (c) 2017 Modula-2 Software Foundation *)
+(*!m2pim*) (* Copyright (c) 2017, 2020 Modula-2 Software Foundation *)
 
 DEFINITION MODULE Infile; (* PIM version *)
 
 (* I/O library for reading text files with line and column counters *)
 
-IMPORT BuildParams, BasicFileIO;
+IMPORT BuildParams, BasicFileIO, Hash;
 
 FROM String IMPORT StringT; (* alias for String.String *)
 
@@ -23,6 +23,16 @@ CONST MaxLineLength = BuildParams.InfileMaxLineLength;
 TYPE Infile; (* OPAQUE *)
 
 TYPE InfileT = Infile; (* for unqualified use *)
+
+
+(* ---------------------------------------------------------------------------
+ * Mode type for digest computation
+ * ------------------------------------------------------------------------ *)
+
+TYPE DigestMode =
+  ( NoDigest,    (* digest will not be updated at all *) 
+    Printables,  (* only printable characters update digest *)
+    Quotables ); (* any non-control characters update digest *)
 
 
 (* ---------------------------------------------------------------------------
@@ -57,8 +67,9 @@ PROCEDURE Close ( VAR infile : Infile );
 (* ---------------------------------------------------------------------------
  * function consumeChar(infile)
  * ---------------------------------------------------------------------------
- * Consumes the current lookahead character in infile. Returns the resulting
- * new lookahead character without consuming it.
+ * Consumes the current lookahead character in infile, updates infile's digest
+ * value depending on its current digest mode setting,  and returns the
+ * resulting new lookahead character without consuming it.
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE consumeChar ( infile : Infile ) : CHAR;
@@ -116,6 +127,24 @@ PROCEDURE line ( infile : Infile ) : CARDINAL;
  * ------------------------------------------------------------------------ *)
 
 PROCEDURE column ( infile : Infile ) : CARDINAL;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure SetDigestMode(infile, mode)
+ * ---------------------------------------------------------------------------
+ * Changes the current digest mode of infile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE SetDigestMode ( infile : Infile; mode : DigestMode );
+
+
+(* ---------------------------------------------------------------------------
+ * function digest(infile)
+ * ---------------------------------------------------------------------------
+ * Returns the incrementally computed digest value of infile.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE digest ( infile : Infile ) : Hash.Key;
 
 
 (* ---------------------------------------------------------------------------
