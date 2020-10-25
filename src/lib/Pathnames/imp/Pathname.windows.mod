@@ -320,7 +320,16 @@ END isValidFilename;
  * function parsePathname(path, startIndex, dirpath, basename, suffix)
  * --------------------------------------------------------------------------
  * pathname :=
- *   TO DO
+ *  ( server | device )? rootPath | ( '.' | parentPath ) rootPath? |
+ *  filenameOnly
+ *  ;
+ *
+ * server :=
+ *   '\\' ComponentLeadChar+
+ *   ;
+ *
+ * device :=
+ *   ( 'a' .. 'z' | 'A' .. 'Z' ) ':'
  *   ;
  * ----------------------------------------------------------------------- *)
 
@@ -338,8 +347,18 @@ END parsePathname;
 (* --------------------------------------------------------------------------
  * function parsePathComponent(path, index, invalid, suffixIndex)
  * --------------------------------------------------------------------------
+ * Verifies a substring of path starting at the given index against the EBNF
+ * rule for pathComponent (see below) and returns the index of the character
+ * that follows the last matched character.  If the substring does not match,
+ * processing stops at the first mismatched character and true is passed in
+ * out-parameter invalid, otherwise false.  Upon success, the index of the
+ * last found period within the matched substring is passed in out-parameter
+ * last_period, unless it is NULL.  Value NO_PERIOD_FOUND indicates that no
+ * period was found within the matched substring.
+ * --------------------------------------------------------------------------
  * pathComponent :=
- *   '.'? pathSubComponent ( '.' pathSubComponent )*
+ *   [# '.'? #] pathSubComponent
+ *   ( '.' pathSubComponent [# ( '.' pathSubComponent )* #] )?
  *   ;
  * ----------------------------------------------------------------------- *)
 
