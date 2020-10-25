@@ -341,7 +341,45 @@ PROCEDURE parsePathname
     suffix               : Result ) : CARDINAL;
 
 BEGIN
+
+  (* server? rootPath *)
+  IF (dirpath[startIndex] = DIRSEP) THEN
+    
+    (* server? *)
+    IF (dirpath[startIndex+1] = DIRSEP) THEN
+      (* '\\' *)
+      startIndex := startIndex + 2;
+
+      (* ComponentLeadChar+ *)
+      IF (isPathComponenteLeadChar(dirpath[startIndex])) THEN
+        startIndex := startIndex + 1;
+        WHILE (isPathComponenteLeadChar(dirpath[startIndex])) DO
+          startIndex := startIndex + 1;
+        END; (* WHILE *)
+      ELSE (* invalid path *)
+        (* TO DO *)
+      END; (* IF *)
+    END; (* IF *)
+    (* rootPath *)
+    (* TO DO *)
+  
+  (* device rootPath *)
+  ELSE
+    IF ((dirpath[startIndex+1] = ':') AND (isLetter(dirpath[startIndex]))) THEN
+      (* ( 'a' .. 'z' | 'A' .. 'Z' ) ':' *)
+      startIndex := startIndex + 2;  
+
+      (* rootPath*)
+      IF (dirpath[startIndex] = DIRSEP) THEN
+        (* TO DO *)
+      ELSE (* invalid path *)
+        (* TO DO *)
+      END; (* IF *)
+    END; (* IF *)
+  END; (* IF *)
+  
   (* TO DO *)
+
 END parsePathname;
 
 (* --------------------------------------------------------------------------
@@ -384,5 +422,20 @@ PROCEDURE suffixTypeForString
 BEGIN
   (* TO DO *)
 END suffixTypeForString;
+
+ (* -------------------------------------------------------------------------
+ * function isPathComponentLeadChar(ch)
+ * --------------------------------------------------------------------------
+ * PathComponentFirstChar :=
+ *   'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_'
+ *   ;
+ * ----------------------------------------------------------------------- *)
+
+  PROCEDURE isPathComponentLeadChar
+    ( ch            : CHAR ) : BOOLEAN;
+  
+  BEGIN
+    RETURN (isAlphaNum(ch) OR ch = '_')    
+  END isPathComponentLeadChar;
 
 END Pathname.
