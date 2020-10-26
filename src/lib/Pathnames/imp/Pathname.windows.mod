@@ -316,7 +316,7 @@ END isValidFilename;
  * Private Operations                                                       *
  * ************************************************************************ *)
 
- (* --------------------------------------------------------------------------
+(* --------------------------------------------------------------------------
  * function parsePathname(path, startIndex, dirpath, basename, suffix)
  * --------------------------------------------------------------------------
  * pathname :=
@@ -343,10 +343,10 @@ PROCEDURE parsePathname
 BEGIN
 
   (* server? rootPath *)
-  IF (dirpath[startIndex] = DIRSEP) THEN
+  IF (dirpath[startIndex] = dirsep) THEN
     
     (* server? *)
-    IF (dirpath[startIndex+1] = DIRSEP) THEN
+    IF (dirpath[startIndex+1] = dirsep) THEN
       (* '\\' *)
       startIndex := startIndex + 2;
 
@@ -364,22 +364,56 @@ BEGIN
     (* TO DO *)
   
   (* device rootPath *)
-  ELSE
-    IF ((dirpath[startIndex+1] = ':') AND (isLetter(dirpath[startIndex]))) THEN
+  ELSIF ((dirpath[startIndex+1] = ':') AND (isLetter(dirpath[startIndex]))) THEN
       (* ( 'a' .. 'z' | 'A' .. 'Z' ) ':' *)
       startIndex := startIndex + 2;  
 
       (* rootPath*)
-      IF (dirpath[startIndex] = DIRSEP) THEN
+      IF (dirpath[startIndex] = dirsep) THEN
         (* TO DO *)
       ELSE (* invalid path *)
         (* TO DO *)
       END; (* IF *)
     END; (* IF *)
+
+  (* leading period *)
+  ELSIF (dirpath[startIndex] = '.') THEN
+    (* '.' *)
+    IF (dirpath[startIndex+1] = ISO646.NUL) THEN
+      startIndex := startIndex+1;    
+    (* '.' rootPath *)
+    ELSIF (dirpath[startIndex+1] = dirsep) THEN
+      (* TO DO *)
+    (* '..' ( '\' '..' )* rootPath? *)
+    ELSIF (dirpath[startIndex+1] = '.') THEN
+      /* '..' ( '\' '..' )* */
+      startIndex = parseParentPath(dirpath, startIndex);
+      
+      (* rootPath? *)
+      IF (dirpath[startIndex] = dirsep) THEN
+        (* TO DO *)
+      END; (* IF *)    
+    END; (* IF *)
+    (* TO DO *)
+
+  (* filenameOnly *)
+  ELSIF (isPathComponentLeadChar(dirpath[startIndex])) THEN
+    (* TO DO *)
+
+  (* invalid pathname *)
+  ELSE
+    (* TO DO *)
   END; (* IF *)
   
+  (* pathname should end here, otherwise it is invalid *)
+  IF (dirpath[startIndex] # ISO646.NUL) THEN
+    (* TO DO *)
+  END; (* IF *)
+  
+  (* if successful, pass back filename index *)
   (* TO DO *)
-
+  
+  RETURN startIndex
 END parsePathname;
 
 (* --------------------------------------------------------------------------
@@ -410,7 +444,33 @@ BEGIN
   (* TO DO *)
 END parsePathComponent;
 
- (* --------------------------------------------------------------------------
+(* --------------------------------------------------------------------------
+ * function parseParentPath(path, index)
+ * --------------------------------------------------------------------------
+ * parentPath :=
+ *   '..' ( '\' '..' )*
+ *   ;
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE parseParentPath
+  ( path            : ARRAY OF CHAR;
+    index           : CARDINAL) : CARDINAL;
+
+  BEGIN
+  
+  (* '..' *)
+  index := index + 2;
+  
+  (* ( '\' '..' )* *)
+  WHILE ((path[index] = dirsep) AND
+         (path[index+1] = '.') AND (path[index+2] = '.')) DO
+    index := index + 3;
+  END; (* WHILE *)
+  
+  RETURN index
+END parseParentPath;
+
+(* --------------------------------------------------------------------------
  * function suffixTypeForString(suffix)
  * --------------------------------------------------------------------------
  *   TO DO
@@ -423,7 +483,7 @@ BEGIN
   (* TO DO *)
 END suffixTypeForString;
 
- (* -------------------------------------------------------------------------
+(* --------------------------------------------------------------------------
  * function isPathComponentLeadChar(ch)
  * --------------------------------------------------------------------------
  * PathComponentFirstChar :=
