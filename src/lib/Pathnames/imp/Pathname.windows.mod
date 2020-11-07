@@ -361,7 +361,7 @@ BEGIN
       END; (* IF *)
     END; (* IF *)
     (* rootPath *)
-    (* TO DO *)
+    startIndex := parseRootPath(dirpath, startIndex);
   
   (* device rootPath *)
   ELSIF ((dirpath[startIndex+1] = ':') AND (isLetter(dirpath[startIndex]))) THEN
@@ -370,7 +370,7 @@ BEGIN
 
       (* rootPath*)
       IF (dirpath[startIndex] = dirsep) THEN
-        (* TO DO *)
+        startIndex := parseRootPath(dirpath, startIndex);
       ELSE (* invalid path *)
         (* TO DO *)
       END; (* IF *)
@@ -383,7 +383,7 @@ BEGIN
       startIndex := startIndex+1;    
     (* '.' rootPath *)
     ELSIF (dirpath[startIndex+1] = dirsep) THEN
-      (* TO DO *)
+      startIndex := parseRootPath(dirpath, startIndex);
     (* '..' ( '\' '..' )* rootPath? *)
     ELSIF (dirpath[startIndex+1] = '.') THEN
       /* '..' ( '\' '..' )* */
@@ -391,7 +391,7 @@ BEGIN
       
       (* rootPath? *)
       IF (dirpath[startIndex] = dirsep) THEN
-        (* TO DO *)
+        startIndex := parseRootPath(dirpath, startIndex);
       END; (* IF *)    
     END; (* IF *)
     (* TO DO *)
@@ -415,6 +415,67 @@ BEGIN
   
   RETURN startIndex
 END parsePathname;
+
+(* --------------------------------------------------------------------------
+ * function parseRootPath()
+ * --------------------------------------------------------------------------
+ * Verifies a substring of path starting at the given index against the EBNF
+ * rule for rootPath (see below) and returns the index of the character that
+ * follows the last matched character.  If the substring does not match,
+ * processing stops at the first mismatched character and true is passed in
+ * out-parameter invalid, otherwise false.  Upon success, the index of the
+ * last found directory separator within the matched substring is passed in
+ * out-parameter last_dirsep, unless it is NULL.  Value NO_DIRSEP_FOUND
+ * indicates that no such separator was found within the matched substring.
+ * --------------------------------------------------------------------------
+ * rootPath :=
+ *   '\' ( pathComponent '\' )* pathComponent?
+ *   ;
+ * ----------------------------------------------------------------------- *)
+
+PROCEDURE parseRootPath
+  ( VAR path        : ARRAY OF CHAR;
+    index,          : CARDINAL ) : CARDINAL;
+
+BEGIN
+  (* intermediate filename index *)
+  (* TO DO *)
+    
+  (* '\' *)
+  index := index + 1;
+
+  (* ( pathComponent '\' )* pathComponent? *)
+  WHILE (((PathCompMayContainPeriod = TRUE) AND (path[index] = '.')) OR
+         (isPathComponentLeadChar(path[index]))) DO
+    
+    (* possibly a filename, remember position *)
+    (* TO DO *)
+    
+    (* pathComponent *)
+    (* TO DO *)
+    
+    (* bail if error occurred *)
+    (* TO DO *)
+    
+    (* '\' *)
+    IF (path[index] = dirsep) THEN
+      (* last path component was not a filename *)
+      (* TO DO *)
+      index := index + 1;
+    (* pathComponent? *)
+    ELSIF (path[index] = ISO646.NUL) {
+      EXIT;
+    END; (* IF *)
+  END; (* WHILE *)
+  
+  (* pass back index of last path component *)
+  (* TO DO *)
+  
+  (* pass back validity *)
+  (* TO DO *)
+
+  RETURN index
+END ParseRootPath;
 
 (* --------------------------------------------------------------------------
  * function parsePathComponent(path, index, invalid, suffixIndex)
