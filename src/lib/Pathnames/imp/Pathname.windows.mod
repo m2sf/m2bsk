@@ -15,6 +15,7 @@ FROM SYSTEM IMPORT TSIZE;
 
 CONST
   dirsep = '\';
+  nofilenamefound = -1;
 
 
 (* Pathname type *)
@@ -340,7 +341,13 @@ PROCEDURE parsePathname
     basename,
     suffix               : Result ) : CARDINAL;
 
+VAR
+  filenamePos   : Integer;
+
 BEGIN
+
+  (* intermediate filename position *)
+  filenamePos := nofilenamefound;
 
   (* server? rootPath *)
   IF (dirpath[startIndex] = dirsep) THEN
@@ -361,7 +368,7 @@ BEGIN
       END; (* IF *)
     END; (* IF *)
     (* rootPath *)
-    startIndex := parseRootPath(dirpath, startIndex);
+    startIndex := parseRootPath(dirpath, startIndex, filenamePos);
   
   (* device rootPath *)
   ELSIF ((dirpath[startIndex+1] = ':') AND (isLetter(dirpath[startIndex]))) THEN
@@ -370,7 +377,7 @@ BEGIN
 
       (* rootPath*)
       IF (dirpath[startIndex] = dirsep) THEN
-        startIndex := parseRootPath(dirpath, startIndex);
+        startIndex := parseRootPath(dirpath, startIndex, filenamePos);
       ELSE (* invalid path *)
         (* TO DO *)
       END; (* IF *)
@@ -383,7 +390,7 @@ BEGIN
       startIndex := startIndex+1;    
     (* '.' rootPath *)
     ELSIF (dirpath[startIndex+1] = dirsep) THEN
-      startIndex := parseRootPath(dirpath, startIndex);
+      startIndex := parseRootPath(dirpath, startIndex, filenamePos);
     (* '..' ( '\' '..' )* rootPath? *)
     ELSIF (dirpath[startIndex+1] = '.') THEN
       /* '..' ( '\' '..' )* */
@@ -391,13 +398,14 @@ BEGIN
       
       (* rootPath? *)
       IF (dirpath[startIndex] = dirsep) THEN
-        startIndex := parseRootPath(dirpath, startIndex);
-      END; (* IF *)    
+        startIndex := parseRootPath(dirpath, startIndex, filenamePos);
+      END; (* IF *)      
     END; (* IF *)
     (* TO DO *)
 
   (* filenameOnly *)
   ELSIF (isPathComponentLeadChar(dirpath[startIndex])) THEN
+    filenamePos := startIndex;
     (* TO DO *)
 
   (* invalid pathname *)
@@ -435,11 +443,12 @@ END parsePathname;
 
 PROCEDURE parseRootPath
   ( VAR path        : ARRAY OF CHAR;
-    index,          : CARDINAL ) : CARDINAL;
+    index,          : CARDINAL 
+    VAR filenamePos : INTEGER) : CARDINAL;
 
 BEGIN
   (* intermediate filename index *)
-  (* TO DO *)
+  filenamePos := nofilenamefound;
     
   (* '\' *)
   index := index + 1;
@@ -449,7 +458,7 @@ BEGIN
          (isPathComponentLeadChar(path[index]))) DO
     
     (* possibly a filename, remember position *)
-    (* TO DO *)
+    filenamePos := index;
     
     (* pathComponent *)
     (* TO DO *)
