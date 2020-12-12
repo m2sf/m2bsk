@@ -343,6 +343,7 @@ PROCEDURE parsePathname
 
 VAR
   filenamePos   : Integer;
+  invalid       : BOOLEAN; (* TO DO - M2C passes back *)
 
 BEGIN
 
@@ -364,7 +365,8 @@ BEGIN
           startIndex := startIndex + 1;
         END; (* WHILE *)
       ELSE (* invalid path *)
-        (* TO DO *)
+        invalid := TRUE;
+        return startIndex;
       END; (* IF *)
     END; (* IF *)
     (* rootPath *)
@@ -379,7 +381,8 @@ BEGIN
       IF (dirpath[startIndex] = dirsep) THEN
         startIndex := parseRootPath(dirpath, startIndex, filenamePos);
       ELSE (* invalid path *)
-        (* TO DO *)
+        invalid := TRUE;
+        return startIndex;
       END; (* IF *)
     END; (* IF *)
 
@@ -400,27 +403,39 @@ BEGIN
       IF (dirpath[startIndex] = dirsep) THEN
         startIndex := parseRootPath(dirpath, startIndex, filenamePos);
       END; (* IF *)      
+    END; (* ELSIF *)
+    (* '.' filename *)
+    ELSIF (IS_PATH_COMPONENT_LEAD_CHAR(path[index+1])) {
+      filenamePos := startIndex;
+      startIndex := parsePathComponent(dirpath, startIndex, invalid, NIL);
+    END; (* ELSIF *)
+    ELSE /* invalid pathname */ {
+      invalid := TRUE;
+      return startIndex;
     END; (* IF *)
-    (* TO DO *)
+  END; (* IF *)
 
   (* filenameOnly *)
   ELSIF (isPathComponentLeadChar(dirpath[startIndex])) THEN
     filenamePos := startIndex;
-    (* TO DO *)
+    startIndex := parsePathComponent(dirpath, startIndex, invalid, NIL);
 
   (* invalid pathname *)
   ELSE
-    (* TO DO *)
+    invalid := TRUE;
+    return startIndex;
   END; (* IF *)
   
   (* pathname should end here, otherwise it is invalid *)
   IF (dirpath[startIndex] # ISO646.NUL) THEN
-    (* TO DO *)
+    invalid := TRUE;
   END; (* IF *)
   
   (* if successful, pass back filename index *)
+  IF NOT invalid THEN
   (* TO DO *)
-  
+  END; (* IF *)
+
   RETURN startIndex
 END parsePathname;
 
