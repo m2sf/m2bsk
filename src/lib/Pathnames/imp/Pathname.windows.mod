@@ -433,7 +433,7 @@ BEGIN
   
   (* if successful, pass back filename index *)
   IF NOT invalid THEN
-  (* TO DO *)
+    (* TO DO - M2C writes out index and pos params here*)
   END; (* IF *)
 
   RETURN startIndex
@@ -461,6 +461,9 @@ PROCEDURE parseRootPath
     index,          : CARDINAL 
     VAR filenamePos : INTEGER) : CARDINAL;
 
+VAR
+  invalid           : BOOLEAN; (* TO DO - M2C passes back *)
+
 BEGIN
   (* intermediate filename index *)
   filenamePos := nofilenamefound;
@@ -476,15 +479,17 @@ BEGIN
     filenamePos := index;
     
     (* pathComponent *)
-    (* TO DO *)
+    index := parsePathComponent(path, index, invalid, NIL);
     
     (* bail if error occurred *)
-    (* TO DO *)
+    IF invalid = TRUE THEN
+      return index;
+    END; (* IF *)
     
     (* '\' *)
     IF (path[index] = dirsep) THEN
       (* last path component was not a filename *)
-      (* TO DO *)
+      filenamePos := nofilenamefound;
       index := index + 1;
     (* pathComponent? *)
     ELSIF (path[index] = ISO646.NUL) {
@@ -493,10 +498,10 @@ BEGIN
   END; (* WHILE *)
   
   (* pass back index of last path component *)
-  (* TO DO *)
+  (* TO DO - M2C writes out index and pos params here*)
   
   (* pass back validity *)
-  (* TO DO *)
+  invalid := FALSE;
 
   RETURN index
 END ParseRootPath;
