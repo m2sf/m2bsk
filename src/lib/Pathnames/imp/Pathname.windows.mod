@@ -144,7 +144,7 @@ BEGIN
     newPath^.fullpath := String.forConcatenation(newPath^.dirPath, newPath^.filename);
   END (* IF *)     
 
-  (* if we've made it this far without RETURNing, then we have a success)
+  (* if we've made it this far without RETURNing, then we have a success *)
   newPath^.status := Success;
        
   path := newPath;
