@@ -14,8 +14,8 @@ FROM SYSTEM IMPORT TSIZE;
 (* Constants *)
 
 CONST
-  dirsep = '\';
-  nofilenamefound = -1;
+  DirSep = '\';
+  NoFileNameFound = -1;
 
 
 (* Pathname type *)
@@ -348,13 +348,13 @@ VAR
 BEGIN
 
   (* intermediate filename position *)
-  filenamePos := nofilenamefound;
+  filenamePos := NoFileNameFound;
 
   (* server? rootPath *)
-  IF (dirpath[startIndex] = dirsep) THEN
+  IF (dirpath[startIndex] = DirSep) THEN
     
     (* server? *)
-    IF (dirpath[startIndex+1] = dirsep) THEN
+    IF (dirpath[startIndex+1] = DirSep) THEN
       (* '\\' *)
       startIndex := startIndex + 2;
 
@@ -466,7 +466,7 @@ VAR
 
 BEGIN
   (* intermediate filename index *)
-  filenamePos := nofilenamefound;
+  filenamePos := NoFileNameFound;
     
   (* '\' *)
   index := index + 1;
@@ -487,7 +487,7 @@ BEGIN
     END; (* IF *)
     
     (* '\' *)
-    IF (path[index] = dirsep) THEN
+    IF (path[index] = DirSep) THEN
       (* last path component was not a filename *)
       filenamePos := nofilenamefound;
       index := index + 1;
@@ -552,7 +552,7 @@ PROCEDURE parseParentPath
   index := index + 2;
   
   (* ( '\' '..' )* *)
-  WHILE ((path[index] = dirsep) AND
+  WHILE ((path[index] = DirSep) AND
          (path[index+1] = '.') AND (path[index+2] = '.')) DO
     index := index + 3;
   END; (* WHILE *)
