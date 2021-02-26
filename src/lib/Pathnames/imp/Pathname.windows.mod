@@ -14,7 +14,7 @@ FROM SYSTEM IMPORT TSIZE;
 (* Constants *)
 
 CONST
-  DirSep = '\';
+  DirSep = CHR(92); (* ASCII backslash *)
   NoFileNameFound = -1;
 
 
@@ -396,7 +396,7 @@ BEGIN
       startIndex := parseRootPath(dirpath, startIndex, filenamePos);
     (* '..' ( '\' '..' )* rootPath? *)
     ELSIF (dirpath[startIndex+1] = '.') THEN
-      /* '..' ( '\' '..' )* */
+      (* '..' ( '\' '..' )* *)
       startIndex = parseParentPath(dirpath, startIndex);
       
       (* rootPath? *)
@@ -409,7 +409,7 @@ BEGIN
       filenamePos := startIndex;
       startIndex := parsePathComponent(dirpath, startIndex, invalid, NIL);
     END; (* ELSIF *)
-    ELSE /* invalid pathname */ {
+    ELSE (* invalid pathname *) 
       invalid := TRUE;
       return startIndex;
     END; (* IF *)
