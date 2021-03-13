@@ -16,7 +16,7 @@ FROM SYSTEM IMPORT TSIZE;
 CONST
   DirSep = CHR(92); (* ASCII backslash *)
   NoFileNameFound = -1;
-
+  NoSuffixFound = -1;
 
 (* Pathname type *)
 
@@ -530,7 +530,16 @@ PROCEDURE parsePathComponent
     VAR valid       : BOOLEAN;
     VAR suffixIndex : CARDINAL ) : CARDINAL;
 
+VAR
+  suffixPos         : CARDINAL;          
+
 BEGIN
+  (* intermediate suffix index *)
+  suffixPos := NoSuffixFound;
+
+  (* pathSubComponent *)
+  
+     
   (* TO DO *)
 END parsePathComponent;
 
