@@ -336,14 +336,14 @@ END isValidFilename;
 
 PROCEDURE parsePathname
   ( VAR (* CONST *) path : ARRAY OF CHAR;
-    startIndex           : CARDINAL;
+    VAR startIndex       : CARDINAL;
     VAR dirpath,
     basename,
     suffix               : Result ) : CARDINAL;
 
 VAR
   filenamePos   : Integer;
-  invalid       : BOOLEAN; (* TO DO - M2C passes back *)
+  invalid       : BOOLEAN;
 
 BEGIN
 
@@ -433,7 +433,7 @@ BEGIN
   
   (* if successful, pass back filename index *)
   IF NOT invalid THEN
-    (* TO DO - M2C writes out index and pos params here*)
+    startIndex := filenamePOS;
   END; (* IF *)
 
   RETURN startIndex
@@ -458,11 +458,11 @@ END parsePathname;
 
 PROCEDURE parseRootPath
   ( VAR path        : ARRAY OF CHAR;
-    index,          : CARDINAL 
+    VAR index,      : CARDINAL 
     VAR filenamePos : INTEGER) : CARDINAL;
 
 VAR
-  invalid           : BOOLEAN; (* TO DO - M2C passes back *)
+  invalid           : BOOLEAN;
 
 BEGIN
   (* intermediate filename index *)
@@ -498,8 +498,8 @@ BEGIN
   END; (* WHILE *)
   
   (* pass back index of last path component *)
-  (* TO DO - M2C writes out index and pos params here*)
-  
+  index := filenamePos;
+      
   (* pass back validity *)
   invalid := FALSE;
 
