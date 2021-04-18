@@ -505,7 +505,25 @@ BEGIN
 
   RETURN index
 END ParseRootPath;
+      
+(* --------------------------------------------------------------------------
+ * function parsePathSubcomponent(path, index)
+ * --------------------------------------------------------------------------
+ * pathSubComponent :=
+ *   ComponentLeadChar ComponentChar* ( ' ' ComponentChar+ )*
+ *   ;
+ * ----------------------------------------------------------------------- *)
+PROCEDURE parsePathSubcomponent
+  ( path            : ARRAY OF CHAR; (* in *)
+    index           : CARDINAL;      (* in *)
+    VAR invalid     : BOOLEAN;       (* out, may not be NIL *)
+    ) : CARDINAL;
 
+  (* TO DO *)
+          
+END parsePathSubcomponent; 
+      
+      
 (* --------------------------------------------------------------------------
  * function parsePathComponent(path, index, invalid, suffixIndex)
  * --------------------------------------------------------------------------
@@ -527,7 +545,7 @@ END ParseRootPath;
 PROCEDURE parsePathComponent
   ( VAR path        : ARRAY OF CHAR;
     index           : CARDINAL;
-    VAR valid       : BOOLEAN;
+    VAR invalid       : BOOLEAN;
     VAR suffixIndex : CARDINAL ) : CARDINAL;
 
 VAR
@@ -538,9 +556,20 @@ BEGIN
   suffixPos := NoSuffixFound;
 
   (* pathSubComponent *)
-  
-     
+  IF isPathComponentLeadChar(path[index]) THEN
+    index := parsePathSubcomponent(path, index, invalid);
+
+    (* bail if error occurred *)
+    IF invalid THEN
+      RETURN index;
+    END; (* IF *)
+  ELSE (* invalid path *)
+    invalid := TRUE;
+    RETURN index;   
+  END (* IF *)
+       
   (* TO DO *)
+  
 END parsePathComponent;
 
 (* --------------------------------------------------------------------------
