@@ -482,7 +482,7 @@ END constDefinition;
 PROCEDURE constBinding ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  ident : LexemeT;
+  ident : StringT;
   idNode, expr : AstT;
   lookahead : SymbolT;
   
@@ -611,7 +611,7 @@ END constDeclaration;
 PROCEDURE ident ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lexeme : LexemeT;
+  lexeme : StringT;
   lookahead : SymbolT;
   
 BEGIN
@@ -831,7 +831,7 @@ END aliasType;
 PROCEDURE qualident ( VAR astNode : AstT ) : SymbolT;
 
 VAR
-  lexeme : LexemeT;
+  lexeme : StringT;
   lookahead : SymbolT;
 
 BEGIN
