@@ -4,7 +4,7 @@ DEFINITION MODULE LexQueue;
 
 (* Lexeme Queue for Modula-2 R10 Bootstrap Kernel *)
 
-FROM Lexeme IMPORT LexemeT;
+FROM String IMPORT StringT;
 
 
 TYPE LexQueue; (* OPAQUE *)
@@ -18,20 +18,20 @@ PROCEDURE New ( VAR queue : LexQueue );
 (* Allocates a new empty queue object and passes it back in queue.
    Passes NIL if the allocation failed. *)
 
-PROCEDURE enqueue ( queue : LexQueue; lexeme : LexemeT ) : LexQueue;
+PROCEDURE enqueue ( queue : LexQueue; lexeme : StringT ) : LexQueue;
 (* Adds lexeme to the head of queue and returns queue, or NIL on failure. *)
 
-PROCEDURE enqueueUnique ( queue : LexQueue; lexeme : LexemeT ) : LexQueue;
+PROCEDURE enqueueUnique ( queue : LexQueue; lexeme : StringT ) : LexQueue;
 (* Adds lexeme to the head of queue if and only if the value is not already
  * present in queue.  Returns queue on success, or NIL on failure. *)
 
-PROCEDURE dequeue ( queue : LexQueue ) : LexemeT;
+PROCEDURE dequeue ( queue : LexQueue ) : StringT;
 (* Removes the lexeme at the tail queue and returns it, or NIL on failure. *)
 
 PROCEDURE isEmpty ( queue : LexQueue ) : BOOLEAN;
 (* Returns TRUE if queue is empty, otherwise FALSE. *)
 
-PROCEDURE isElem ( queue : LexQueue; lexeme : LexemeT ) : BOOLEAN;
+PROCEDURE isElem ( queue : LexQueue; lexeme : StringT ) : BOOLEAN;
 (* Returns TRUE if node is stored in queue, otherwise FALSE. *)
 
 PROCEDURE count ( queue : LexQueue ) : CARDINAL;
