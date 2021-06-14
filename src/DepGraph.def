@@ -5,7 +5,7 @@ DEFINITION MODULE DepGraph;
 (* Dependency Graph for Modula-2 R10 Bootstrap Kernel *)
 
 FROM Source IMPORT SourceT;
-FROM Lexeme IMPORT LexemeT;
+FROM String IMPORT StringT;
 
 
 (* Dependency Graph Type *)
@@ -17,7 +17,7 @@ TYPE DepGraphT = DepGraph; (* for unqualified use *)
 
 (* Iterator Procedure Type *)
 
-TYPE IteratorBody = PROCEDURE ( LexemeT );
+TYPE IteratorBody = PROCEDURE ( StringT );
 
 
 (* Operations *)
@@ -30,11 +30,11 @@ PROCEDURE count ( graph : DepGraph ) : CARDINAL;
 (* Returns the number of entries in graph. *)
 
 PROCEDURE isDependent
-  ( graph : DepGraph; module1, module2 : LexemeT ) : BOOLEAN;
+  ( graph : DepGraph; module1, module2 : StringT ) : BOOLEAN;
 (* Returns TRUE if module1 depends on module2, otherwise FALSE. *)
 
 PROCEDURE isMutuallyDependent
-  ( graph : DepGraph; module1, module2 : LexemeT ) : BOOLEAN;
+  ( graph : DepGraph; module1, module2 : StringT ) : BOOLEAN;
 (* Returns TRUE if module1 and module2 are mutually dependent, else FALSE. *)
 
 PROCEDURE Iterate ( graph : DepGraph; p : IteratorBody );
