@@ -87,7 +87,7 @@ TYPE Term1 = POINTER TO TermNode1;
 
 TYPE TermNode1 = RECORD
   type : AstNodeType.Terminal1;
-  value : LexemeT
+  value : StringT
 END; (* TermNode1 *)
 
 
@@ -244,7 +244,7 @@ END newVariadicNode;
  * --------------------------------------------------------------------------
  *)
 PROCEDURE newTerminalNode
-  ( type : AstNodeType.Terminal1; value : LexemeT ) : AstT;
+  ( type : AstNodeType.Terminal1; value : StringT ) : AstT;
 
 VAR
   newNode : Ast1;
@@ -434,7 +434,7 @@ END subnodeAtIndex;
  * Returns NIL if astNode is NIL or if index >= arity(astNode).
  * --------------------------------------------------------------------------
  *)
-PROCEDURE valueAtIndex ( astNode : AstT; index : CARDINAL ) : LexemeT;
+PROCEDURE valueAtIndex ( astNode : AstT; index : CARDINAL ) : StringT;
 
 VAR
   addr : ADDRESS;
