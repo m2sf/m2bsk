@@ -5,7 +5,7 @@ DEFINITION MODULE Symbol;
 (* Symbol Definition for Modula-2 R10 Bootstrap Kernel *)
 
 FROM Token IMPORT TokenT;
-FROM Lexeme IMPORT LexemeT;
+FROM String IMPORT StringT;
 FROM Diagnostic IMPORT DiagnosticT;
 
 
@@ -14,7 +14,7 @@ FROM Diagnostic IMPORT DiagnosticT;
 TYPE Symbol = RECORD
   token : TokenT;
   line, col : CARDINAL;
-  lexeme : LexemeT;
+  lexeme : StringT;
   diagnostic : DiagnosticT
 END; (* Symbol *)
 
