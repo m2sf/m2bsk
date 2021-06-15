@@ -9,7 +9,11 @@ The objective of this project is to develop a bootstrap compiler for the revised
 
 ### Grammar ###
 
-The grammar of the compiler is in the project repository
+The grammar of the compiler's command line interface is in the project repository
+
+https://github.com/m2sf/m2bsk/blob/master/m2cli-grammar.gll
+
+The grammar of the compiler's input language is in the project repository
 
 https://github.com/m2sf/m2bsk/blob/master/m2bsk-grammar.gll
 
