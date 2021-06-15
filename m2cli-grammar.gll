@@ -26,8 +26,7 @@ grammar m2cli;
 
 /* * *   R e s e r v e d   W o r d s   * * */
 
-reserved
-  STDLIB = 'stdlib', USRLIBS = 'usrlibs';
+/* to do */
 
 
 /* * *   N o n - T e r m i n a l   S y m b o l s   * * */
