@@ -1,0 +1,125 @@
+/* M2BSK -- EBNF Grammar for Modula-2 R10 Bootstrap Kernel (subset).
+ *
+ * Copyright (c) 2017 The Modula-2 Software Foundation
+ *
+ * Author & Maintainer: Benjamin Kowarsch <org.m2sf>
+ *
+ * @synopsis
+ *
+ * Modula-2 BSK is a subset of Modula-2 R10 for bootstrapping a compiler.
+ *
+ * This document specifies the command line argument grammar in EBNF.
+ *
+ * @repository
+ *
+ * https://github.com/m2sf/m2bsk
+ *
+ * @file
+ *
+ * m2cli-grammar.gll
+ *
+ * Grammar of Modula-2 command line interface.
+ *
+ */
+
+grammar m2cli;
+
+/* * *   R e s e r v e d   W o r d s   * * */
+
+reserved
+  STDLIB = 'stdlib', USRLIBS = 'usrlibs';
+
+
+/* * *   N o n - T e r m i n a l   S y m b o l s   * * */
+
+args :=
+  infoRequest | compilationRequest
+  ;
+
+infoRequest :=
+  --help | -h | --version | -V | --license
+  ;
+  
+compilationRequest :=
+  products? capabilities? sourceFile diagnostics?
+  ;
+
+products :=
+  ( singleProduct | multipleProducts ) commentOption?
+  ;
+
+singleProduct :=
+  --syntax-only | --ast-only | --graph-only | --xlat-only | --obj-only
+  ;
+
+multipleProducts :=
+  ( ast | graph | xlat | obj )+
+  ;
+
+ast :=
+  --ast | --no-ast
+  ;
+
+graph :=
+  --graph | --no-graph
+  ;
+
+xlat :=
+  --xlat | --no-xlat
+  ;
+
+obj :=
+  --obj | --no-obj
+  ;
+
+commentOption :=
+  --preserve-comments | --strip-comments
+  ;
+
+capabilities :=
+/* this should be simplified to a simple switch --foreign-identifiers */
+  ( dollarIdentifiers | lowlineIdentifiers )+
+  ;
+
+sourceFile :=
+  <platform dependent path/filename>
+  ;
+
+diagnostics :=
+  ( --verbose | -v | --lexer-debug | --parser-debug | --print-settings |
+    --errant-semicolons )+
+  ;
+
+
+/* * *   T e r m i n a l   S y m b o l s   * * */
+
+
+QuotedLiteral :=
+  SingleQuotedString | DoubleQuotedString
+  ;
+
+.SingleQuotedString :=
+  "'" ( QuotableCharacter | '"' )* "'"
+  ;
+
+.DoubleQuotedString :=
+  '"' ( QuotableCharacter | "'" )* '"'
+  ;
+
+.QuotableCharacter :=
+  Digit | Letter | Space | NonAlphanumQuotable
+  ;
+  
+.Digit := '0' .. '9' ;
+
+.Letter := 'a' .. 'z' | 'A' .. 'Z' ;
+
+.Space := 0u20 ;
+
+.NonAlphaNumQuotable :=
+  '!' | '#' | '$' | '%' | '&' | '(' | ')' | '*' | '+' | ',' |
+  '-' | '.' | '/' | ':' | ';' | '<' | '=' | '>' | '?' | '@' |
+  '[' | '\' | ']' | '^' | '_' | '`' | '{' | '|' | '}' | '~'
+  ;
+
+endg m2cli.
