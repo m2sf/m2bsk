@@ -1,0 +1,39 @@
+Compilation Workflow
+
+launch-script
+-------------
+* collect command line arguments
+* write arguments to argument file
+* invoke compiler
+* delete arg file
+
+compiler
+--------
+* read and evaluate argument file
+* store arguments
+* if information request
+  * print information
+  * exit
+* if compilation request
+  * read and evaluate configuration file
+  * store configuration
+  * determine module dependencies
+  * write DEP file
+  * determine compilation order from dependencies
+  * for each module
+    * perform lexical analysis and tokenisation
+    * perform syntax analysis and build AST node
+    * perform static semantic analysis
+    * if definition module
+      * write SYM file
+      * write PIM/ISO DEF file
+    * write AST file (S-expr representation)
+    * write DOT file (graphical representation)
+    * if implementation module
+      * check consistency with corresponding SYM file
+      * generate code from AST by template expansion
+      * write PIM/ISO MOD file
+  * invoke PIM/ISO compiler passing generated DEF or MOD file
+  * purge unwanted intermediary files
+  * determine and print statistics
+  * exit
