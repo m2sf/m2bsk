@@ -24,11 +24,11 @@ compiler
     * perform lexical analysis and tokenisation
     * perform syntax analysis and build AST node
     * perform static semantic analysis
+    * write AST file (S-expr representation)
+    * write DOT file (graphical representation)
     * if definition module
       * write SYM file
       * write PIM/ISO DEF file
-    * write AST file (S-expr representation)
-    * write DOT file (graphical representation)
     * if implementation module
       * check consistency with corresponding SYM file
       * generate code from AST by template expansion
