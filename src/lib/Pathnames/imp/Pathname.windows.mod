@@ -492,7 +492,7 @@ BEGIN
       filenamePos := nofilenamefound;
       index := index + 1;
     (* pathComponent? *)
-    ELSIF (path[index] = ISO646.NUL) {
+    ELSIF (path[index] = ISO646.NUL) THEN
       EXIT;
     END; (* IF *)
   END; (* WHILE *)
@@ -505,7 +505,66 @@ BEGIN
 
   RETURN index
 END ParseRootPath;
-      
+
+(* --------------------------------------------------------------------------
+ * function isReservedPathComponent(path, startIndex, endIndex)
+ * --------------------------------------------------------------------------
+ * reservedPathComponent :=
+ *   'AUX' | 'CON' | 'NUL' | 'PRN' | ( 'COM' | 'LPT' ) ( '0' .. '9' )
+ *   ;
+ * ----------------------------------------------------------------------- *)
+PROCEDURE isReservedPathComponent
+  ( path            : ARRAY OF CHAR; (* in *)
+    startIndex      : CARDINAL;      (* in *)                                              
+    endIndex        : CARDINAL;      (* in *)
+    ) : BOOLEAN;
+
+VAR
+  len               : CARDINAL;
+  ch1, ch2, ch3     : CHAR;
+     
+BEGIN
+  len := endIndex - startIndex + 1;
+  IF (len = 3 OR len = 4) THEN
+    (* TO DO *)
+  ELSE
+    RETURN FALSE;
+  END; (* IF *)
+
+  (* test for AUX, CON, NUL and PRN *)
+  IF (len = 3) THEN
+    (* TO DO *)
+  END; (* IF *)
+       
+  RETURN FALSE;
+END isReservedPathComponent;
+
+(* --------------------------------------------------------------------------
+ * function isOptionalComponentChar(ch)
+ * --------------------------------------------------------------------------
+ *   '-' | '~'
+ * ------------------------------------------------------------------------ *)
+PROCEDURE isOptionalComponentChar(ch)
+  ( ch              : CHAR; (* in *) ) : BOOLEAN;
+
+BEGIN
+  (* TO DO *)
+END isOptionalComponentChar;
+     
+(* --------------------------------------------------------------------------
+ * function isPathComponentChar(ch)
+ * --------------------------------------------------------------------------
+ * PathComponentChar :=
+ *   PathComponentLeadChar | '-' | '~'
+ *   ;
+ * ----------------------------------------------------------------------- *)
+PROCEDURE isPathComponentChar
+  ( ch              : CHAR; (* in *) ) : BOOLEAN;
+
+BEGIN
+  RETURN (isPathComponentLeadChar(ch) OR isOptionalComponentChar(ch));
+END isPathComponentChar;
+     
 (* --------------------------------------------------------------------------
  * function parsePathSubcomponent(path, index)
  * --------------------------------------------------------------------------
@@ -519,8 +578,35 @@ PROCEDURE parsePathSubcomponent
     VAR invalid     : BOOLEAN;       (* out, may not be NIL *)
     ) : CARDINAL;
 
+VAR
+  startIndex        : CARDINAL;
+
+BEGIN
+  (* remember start position *)
+  startIndex := index;
+
+  (* ComponentLeadChar *)
+  index := index + 1;
+
+  (* ComponentChar *)     
+  WHILE isPathComponentChar(path[index]) DO
+    index := index + 1;
+  END; (* WHILE *)     
+
   (* TO DO *)
-          
+
+  (* check for AUX, CON, NUL, PRN, COMx and LPTx *)
+  IF NOT isReservedPathComponent(path, startIndex, index - 1) THEN
+    (* not reserved -- all clear *)
+    index := index - 1;
+    invalid := FALSE;
+  ELSE (* invalid path : reserved name *)
+    (* reset index to last character of offending sub-component *)
+    index := index - 1;
+    invalid := TRUE;   
+  END; (* IF *)
+
+  RETURN index;          
 END parsePathSubcomponent; 
       
       
@@ -545,7 +631,7 @@ END parsePathSubcomponent;
 PROCEDURE parsePathComponent
   ( VAR path        : ARRAY OF CHAR;
     index           : CARDINAL;
-    VAR invalid       : BOOLEAN;
+    VAR invalid     : BOOLEAN;
     VAR suffixIndex : CARDINAL ) : CARDINAL;
 
 VAR
@@ -569,7 +655,11 @@ BEGIN
   END (* IF *)
        
   (* TO DO *)
-  
+       
+  (* pass back validity *)
+  invalid := FALSE;     
+
+  RETURN index;
 END parsePathComponent;
 
 (* --------------------------------------------------------------------------
