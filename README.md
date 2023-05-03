@@ -76,10 +76,12 @@ M2BSK will run on any operating system with target support by the host-compiler.
 * The syntax diagram generator script is written in TCL/TK (not required to build M2BSK)
 * Build configuration scripts are written in the prevalent shell language of the hosting platform
 
-### Collaboration ###
+### Contact ###
 
-If you would like to contribute to the project, please get in touch by email
+If you have questions or would like to contribute to the project, get in touch via
 
-trijezdci (gmail)
+* [Modula2 Telegram group](https://t.me/+hTKSWC2mWoM1OGVl) chat
+
+* [email](mailto:REMOVE+REVERSE.com.gmail@trijezdci) to the project maintainer
 
 +++
