@@ -1,0 +1,11 @@
+(*!m2pim*) (* Copyright (c) 2024 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE Octet;
+
+
+TYPE Octet = CARDINAL [0 .. 255];
+
+TYPE OctetT = Octet; (* for unqualified use *)
+
+
+END Octet.
