@@ -1,0 +1,14 @@
+(*!m2pim*) (* Copyright (c) 2024 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE Unichar0; (* CARDINAL version *)
+
+(* For use on targets where CARDINAL is 32-bit wide. *)
+
+
+
+(* Unichar Base Type *)
+
+TYPE UnicharBaseT = CARDINAL;
+
+
+END Unichar0.

@@ -1,0 +1,13 @@
+(*!m2pim*) (* Copyright (c) 2024 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE Unichar0; (* LONGINT version *)
+
+(* For use on targets where LONGINT is 32-bit wide, but CARDINAL is not. *)
+
+
+(* Unichar Base Type *)
+
+TYPE UnicharBaseT = LONGINT;
+
+
+END Unichar0.
