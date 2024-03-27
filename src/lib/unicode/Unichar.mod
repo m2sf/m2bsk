@@ -3,6 +3,24 @@
 IMPLEMENTATION MODULE Unichar; (* portable *)
 
 
+
+(* ---------------------------------------------------------------------------
+ * function UCHR( value )
+ * ---------------------------------------------------------------------------
+ * Returns the UNICHAR code point for value.
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE UCHR ( val : UnicharBaseT ) : UNICHAR;
+
+BEGIN
+  IF (value > MaxCodePoint) OR (value < 0) THEN
+    HALT
+  END; (* IF *)
+  
+  RETURN VAL(UNICHAR, value)
+END UCHR;
+
+
 (* ---------------------------------------------------------------------------
  * function fromUTF8( utf8 )
  * ---------------------------------------------------------------------------
