@@ -1,0 +1,44 @@
+(*!m2pim*) (* Copyright (c) 2024 Modula-2 Software Foundation. *)
+
+DEFINITION MODULE Utf8;
+
+(* Portable UTF8 Type *)
+
+
+FROM Octet IMPORT OctetT;
+FROM Unichar IMPORT UNICHAR;
+
+
+
+(* Maximum UTF8 Length *)
+
+CONST MaxUTF8Length = 4; (* RFC 3629 *)
+
+
+(* UTF8 Type *)
+
+TYPE UTF8 = RECORD
+  length : CARDINAL;
+  octet : ARRAY [0 .. MaxUTF8Length-1] OF OctetT
+END; (* UTF8 *)
+
+
+(* ---------------------------------------------------------------------------
+ * function decode( utf8 )
+ * ---------------------------------------------------------------------------
+ * Decodes a UTF8 octet sequence and returns the corresponding UNICHAR value
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE decode ( VAR (* CONST *) utf8 : UTF8 ) : UNICHAR;
+
+
+(* ---------------------------------------------------------------------------
+ * procedure Encode( cp, utf8 )
+ * ---------------------------------------------------------------------------
+ * Encodes a UNICHAR value, passes back the corresponding UTF8 octet sequence
+ * ------------------------------------------------------------------------ *)
+
+PROCEDURE Encode ( cp : UNICHAR; VAR utf8 : UTF8 );
+
+
+END Utf8.
