@@ -3559,6 +3559,7 @@ In order to allow portability of source code libraries between different languag
 ---
 
 # Terms of Reference #
+> This is the glossary headline
 
 ### Allocation Size ###
 
@@ -3859,3 +3860,2616 @@ A *Wirthian macro* is a built-in syntactic entity whose occurrence is replaced w
 
 Wirthian macros allow more convenient syntax than ordinary library calls and make a facility such as memory management or I/O&nbsp;appear to be built into the language even though it is actually provided by a library. Classic examples of Wirthian macros are procedures `NEW` and `DISPOSE` in earlier versions of Modula-2.
 
+---
+
+# Appendix A : Pragma Facilities
+> This is the appendix headline
+
+Pragmas are non-semantic directives &mdash; instructions to the language processor to control or influence the compilation process but do not alter the semantics of the compiling source code.
+
+## Portable Pragma Specification
+
+Modula-2 R10 incorporates the portable pragma specification for Modula-2 and other Wirthian languages at
+
+[Portable Pragmas for Pascal, Modula-2 and Oberon](https://github.com/trijezdci/M2-Pragmas/wiki)
+
+However, some of the pragmas specified do not apply to Modula-2 R10
+
+[`RANGE`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#range)
+[`RELEASE`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#release)
+[`RETAIN`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#retain)
+
+
+## Mandatory Pragmas
+
+The Bootstrap Kernel (BSK) subset requires support for the following pragmas
+
+[`DEPRECATED`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#deprecated)
+[`FFI`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#pragma-ffi)
+[`FFIDENT`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#pragma-ffident)
+[`INLINE`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#pragma-inline)
+[`PRIVATETO`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#pragma-privateto)
+
+Implementations that support Unicode are further required to support pragma
+
+[`ENCODING`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#pragma-encoding)
+
+
+## Implementation Defined Pragmas
+
+Implementations may provide implementation defined pragmas in compliance with the portable pragma specification. The compiler ID prefix shall match `Impl.ShortName`. To facilitate portability, implementations that provide implementation defined pragmas shall further support pragmas
+
+[`PRESETS`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#pragma-presets)
+[`UNSET`](https://github.com/trijezdci/M2-Pragmas/wiki/Pragma-Specification#pragma-unset)
+
+---
+
+# Appendix B : Managing Technical Debt #
+> This is the appendix headline
+
+Technical debt is a metaphor for the sum total consequences of improper (software) design and implementation. Such deficiencies may be unintentional, or they may well be intentional in an attempt to shorten time to delivery. In either case, resulting deficiencies tend to accumulate over time until they reach a critical point where further development and maintenance on the software is severely impaired.
+
+The metaphor suggests – analogous to financial debt – that (1) technical debt has to be paid down over time and with interest, and (2) interest will grow exponentially if the debt is not paid down. If technical debt is left unchecked for too long, the software may become unmaintainable. Eventually, the time and cost to reduce the deficiencies to a manageable level may vastly outpace the time and cost to rewrite the software from scratch.
+
+In many organisations it is next to impossible to obtain the resources required to do proper maintenance on larger software projects without quantifying the debt, its financial impact and the cost required to reduce it. But without documenting the technical debt first, it is impossible to obtain that data and present figures with any confidence. Documenting and reporting of technical debt is thus a necessary prerequisite to managing the debt.
+
+## Documenting Debt ##
+
+Modula-2 provides a facility to document technical debt directly within the source code. The facility is incorporated into the language syntax so that documented issues become machine readable for automated report generation. A reporting tool may then generate reports on the weight, quantity and location of technical debt within a code base directly from its source code. A simple report writer may be built into the language processor. For more complex analysis an external report writer may be used.
+
+## Syntax ##
+
+A `TO` `DO` list is a machine readable directive to document technical debt directly within the source code. It may be placed wherever a definition, a declaration or a statement can occur. It may be empty, or contain a tracking reference of an external issue tracking system, and a list of tasks with descriptions and effort estimations.
+
+```antlr
+toDoList := TO DO ( trackingRef? taskToDo ( ’;’ taskToDo )* END )? ;
+trackingRef := ’(’ issueId ( ’,’ severity ’,’ description )? ’)’ ;
+taskToDo := description ( ’,’ estimatedTime timeUnit )? ;
+alias issueId, severity, estimatedTime = NumberLiteral ;
+alias description = StringLiteral ;
+alias timeUnit = StdIdent ; /* must be any of w, d, or h */
+```
+
+## Reporting Debt ##
+
+The language processor must report any `TO` `DO` list with line number as an informational compile time message and any syntax violation within as a compile time error. It must further report the total number of lists found in a compilation unit. Any further analysis and reporting is implementation defined. It is recommended to implement more complex analysis and reporting as a separate reporting tool outside of the language processor.
+
+## Examples ##
+
+### TO DO without Arguments ###
+
+The arguments may be omitted from a `TO` `DO` list altogether.
+
+```Modula-2
+PROCEDURE TitleCaseTransform ( VAR s : ARRAY OF CHAR );
+BEGIN
+  FOR index, char IN s DO
+    TO DO
+  END (* FOR *)
+END TitleCaseTransform;
+```
+
+### TO DO with Issue Tracking ###
+
+A tracking reference of an external issue tracking system may be included in a `TO` `DO` list.
+
+```Modula-2
+PROCEDURE skipBlockComment ( infile : Infile ) : Token;
+  TO DO (1337, 2 (*minor*), "empty comment not recognised")
+    "verify loop exit conditions", 1h;
+    "fix and test", 1h
+  END; (* TO DO *)
+BEGIN
+```
+
+A tracking reference may refer to another at a different location while omitting its severity and description.
+
+```Modula-2
+TO DO (1337)
+  "Fix: move increment to the end of the loop"
+END; (* TO DO *)
+```
+
+### TO DO without Issue Tracking ###
+
+The tracking reference may be omitted in a `TO` `DO` list.
+
+```Modula-2
+TYPE DynString = POINTER TO StringDescriptor;
+TO DO
+  "bindings to NEW and RETAIN", 2d;
+  "bindings to _ATVALUE, _ATSTORE, _LENGTH", 2d;
+  "bindings to APPEND, _ATINSERT, _ATREMOVE", 3d;
+  "bindings to READ and WRITE, using template", 2d;
+  "unit testing", 2d
+END; (* TO DO *)
+```
+
+## Sample Report ##
+
+```
+$ m2tdr --summary --proj m2bsk
+Modula-2 technical debt summary report for project m2bsk
+found 14 issues with 39 tasks in 9 modules, thereof
+   5 issues of weight 3 (major) with 23 tasks, est. 338 hours,
+   7 issues of weight 2 (minor) with 12 tasks, est. 121 hours,
+   2 issues of weight 1 (cosmetic) with 4 tasks, est. 19 hours;
+found further 26 untracked tasks in 21 modules, est. 312 hours.
+Total estimated effort for 65 tasks: 790 hours (avg. 12 hours/task).
+```
+
+---
+
+# Appendix C : Atomic Operations #
+> This is the appendix headline
+
+Built-in module `ATOMIC` provides type-safe atomic operations. Its provision is **optional**.
+
+### ATOMIC ###
+
+```Modula-2
+INTERFACE MODULE ATOMIC; (* OPTIONAL *)
+(* Atomic Operations *)
+TYPE OPERATION =
+  ( SWAP,    (* atomic swap *)
+    CAS,     (* atomic compare and swap *)
+    INC,     (* atomic increment *)
+    DEC,     (* atomic decrement *)
+    BWNOT,   (* atomic bitwise NOT *)
+    BWAND,   (* atomic bitwise AND *)
+    BWNAND,  (* atomic bitwise NAND *)
+    BWOR,    (* atomic bitwise OR *)
+    BWXOR ); (* atomic bitwise XOR *)
+PROCEDURE AVAIL ( op : OPERATION; bitwidth : CARDINAL ) : BOOLEAN;
+(* Returns TRUE if the given operation is available for the given bitwidth,
+   otherwise FALSE. The value of bitwidth must be a compile time expression. *)
+PROCEDURE SWAP = ( VAR target : T; newVal : T ) : T;
+(* Atomically writes newVal to target and returns the prior value of target.
+   Both arguments must be of the same type. The return type matches the argument type. *)
+PROCEDURE CAS ( VAR target : T; oldVal, newVal : T ) : T;
+(* Atomically compares oldVal and target. If they match, newVal is written to
+   target and oldVal is returned. Otherwise, the prior value of target is returned.
+   All arguments must be of the same type. The return type matches the argument type. *)
+PROCEDURE INC ( VAR target : T; increment : T ) : T;
+(* Atomically increments target by increment and returns the prior value of target.
+   Both arguments must be of the same type, which must be a built−in whole number type.
+   The increment must be larger than zero. The returned type matches the target type. *)
+PROCEDURE DEC ( VAR target : T; decrement : T ) : T;
+(* Atomically decrements target by decrement and returns the prior value of target.
+   Both arguments must be of the same type, which must be a built−in whole number type.
+   The decrement must be larger than zero. The returned type matches the target type. *)
+PROCEDURE BWNOT ( VAR target : T ) : T;
+(* Atomically performs bitwise NOT of target, writes the result to target and returns the
+   prior value of target. The argument may be of a built−in whole number type or a record
+   with an octet sequence field. The returned type matches the target type. *)
+PROCEDURE BWAND ( VAR target : T; mask : T ) : T;
+(* Atomically performs bitwise AND of target and mask, writes the result to target and
+   returns the prior value of target. The arguments may be of a built−in whole number type
+   or a record with an octet sequence field. The returned type matches the target type. *)
+PROCEDURE BWNAND ( VAR target : T; mask : T ) : T;
+(* Atomically performs bitwise NAND of target and mask, writes the result to target and
+   returns the prior value of target. The arguments may be of a built−in whole number type
+   or a record with an octet sequence field. The returned type matches the target type. *)
+PROCEDURE BWOR ( VAR target : T; mask : T ) : T;
+(* Atomically performs bitwise OR of target and mask, writes the result to target and
+   returns the prior value of target. The arguments may be of a built−in whole number type
+   or a record with an octet sequence field. The returned type matches the target type. *)
+PROCEDURE BWXOR ( VAR target : T; mask : T ) : T;
+(* Atomically performs bitwise XOR of target and mask, writes the result to target and
+   returns the prior value of target. The arguments may be of a built−in whole number type
+   or a record with an octet sequence field. The returned type matches the target type. *)
+END ATOMIC.
+```
+Functions of module `ATOMIC` may not be assigned nor passed as arguments to any procedure, function or macro.
+
+---
+
+# Appendix D : Syntax Diagrams #
+> This is the appendix headline
+
+## Non-Terminals ##
+
+### Start Symbol ###
+
+#### compilationUnit ####
+![Compilation Unit](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/compilationUnit.png)
+
+### Definition Module Syntax ###
+
+#### definitionModule ####
+![Definition Module](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/definitionModule.png)
+
+#### moduleIdent ####
+![Module Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/moduleIdent.png)
+
+#### import ####
+![Import](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/import.png)
+
+#### libIdent ####
+![Library Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/libIdent.png)
+
+#### reExport ####
+![Library Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/reExport.png)
+
+#### definition ####
+![Definition](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/definition.png)
+
+#### constDefinition ####
+![Constant Definition](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/constDefinition.png)
+
+#### constantBinding ####
+![Constant Binding](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/constantBinding.png)
+
+#### constDeclaration ####
+![Constant Declaration](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/constDeclaration.png)
+
+#### ident ####
+![Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/ident.png)
+
+#### constExpression ####
+![Constant Expression](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/constExpression.png)
+
+#### typeDefinition ####
+![Type Definition](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/typeDefinition.png)
+
+#### aliasType ####
+![Alias Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/aliasType.png)
+
+#### typeIdent ####
+![Type Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/typeIdent.png)
+
+#### qualident ####
+![Qualified Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/qualident.png)
+
+#### derivedType ####
+![Derived Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/derivedType.png)
+
+#### subrangeType ####
+![Subrange Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/subrangeType.png)
+
+#### constRange ####
+![Constant Range](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/constRange.png)
+
+#### lowerBound, upperBound ####
+![Lower Bound](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/lowerBound.png)
+
+#### countableType ####
+![Ordinal Or Scalar Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/countableType.png)
+
+#### enumType ####
+![Enumeration Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/enumType.png)
+
+#### enumTypeToExtend ####
+![Enumeration Type To Extend](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/enumTypeToExtend.png)
+
+#### enumTypeIdent ####
+![Enumeration Type Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/enumTypeIdent.png)
+
+#### identList ####
+![Identifier List](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/identList.png)
+
+#### setType ####
+![Set Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/setType.png)
+
+#### arrayType ####
+![Array Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/arrayType.png)
+
+#### valueCount ####
+![Value Count](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/valueCount.png)
+
+#### recordType ####
+![Record Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/recordType.png)
+
+#### recTypeToExtend ####
+![Record Type To Extend](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/recTypeToExtend.png)
+
+#### fieldList ####
+![Field List](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/fieldList.png)
+
+#### pointerType ####
+![Pointer Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/pointerType.png)
+
+#### opaqueType ####
+![Opaque Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/opaqueType.png)
+
+#### allocSize ####
+![Allocation Size](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/allocSize.png)
+
+#### procedureType ####
+![Procedure Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/procedureType.png)
+
+#### formalType ####
+![Formal Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/formalType.png)
+
+#### nonAttrFormalType ####
+![Non-Attributed Formal Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/nonAttrFormalType.png)
+
+#### returnedType ####
+![Formal Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/returnedType.png)
+
+#### simpleFormalType ####
+![Simple Formal Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/simpleFormalType.png)
+
+#### castingFormalType ####
+![Casting Formal Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/castingFormalType.png)
+<br>&nbsp;<sup>**&bigtriangleup; Syntax enabled by import of moule `UNSAFE`**</sup>
+
+#### variadicFormalType ####
+![Variadic Formal Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/variadicFormalType.png)
+
+#### procedureHeader ####
+![Procedure Header](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/procedureHeader.png)
+
+#### bindingSpecifier ####
+![Binding Specifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/bindingSpecifier.png)
+
+#### argListFlag ####
+![Argument List Flag](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/argListFlag.png)
+
+#### capacityFlag ####
+![Capacity Flag](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/capacityFlag.png)
+
+#### allocFlag ####
+![Allocation Flag](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/allocFlag.png)
+
+#### formatFlag ####
+![Format Flag](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/formatFlag.png)
+
+#### bindableIdent ####
+![Bindable Ident](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/bindableIdent.png)
+
+#### procedureSignature ####
+![Procedure Signature](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/procedureSignature.png)
+
+#### formalParams ####
+![Formal Parameters](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/formalParams.png)
+
+
+### Implementation and Program Module Syntax ###
+
+#### programModule ####
+![Program Module](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/programModule.png)
+
+#### privateImport ####
+![Private Import](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/privateImport.png)
+
+#### block ####
+![Block](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/block.png)
+
+#### implementationModule ####
+![Implementation Module](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/implementationModule.png)
+
+#### possiblyEmptyBlock ####
+![Possibly Empty Block](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/possiblyEmptyBlock.png)
+
+#### declaration ####
+![Declaration](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/declaration.png)
+
+#### typeDeclaration ####
+![Type Declaration](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/typeDeclaration.png)
+
+#### octetSeqType ####
+![Octet Sequence Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/octetSeqType.png)
+
+#### privatePointerType ####
+![Private Pointer Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/privatePointerType.png)
+
+#### determinateTarget ####
+![Determinate Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/determinateTarget.png)
+
+#### indeterminateTarget ####
+![Indeterminate Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/indeterminateTarget.png)
+
+#### indeterminateField ####
+![Indeterminate Field](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/indeterminateField.png)
+
+#### capacityField ####
+![Capacity Field](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/capacityField.png)
+
+#### varDeclaration ####
+![Variable Declaration](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/varDeclaration.png)
+
+#### aliasDeclaration ####
+![Alias Declaration](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/aliasDeclaration.png)
+
+#### nameSelector ####
+![Name Selector](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/nameSelector.png)
+
+#### wildcard ####
+![Wildard](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/wildcard.png)
+
+
+### Statements ###
+
+#### statementSequence ####
+![Statement Sequence](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/statementSequence.png)
+
+#### statement ####
+![Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/statement.png)
+
+#### memMgtOperation ####
+![Memory Management Operation](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/memMgtOperation.png)
+
+#### newStatement ####
+![NEW Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/newStatement.png)
+
+#### retainStatement ####
+![RETAIN Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/retainStatement.png)
+
+#### releaseStatement ####
+![RELEASE Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/releaseStatement.png)
+
+#### updateOrProcCall ####
+![Update Or Procedure Call](https://github.com/m2sf/M2-BSK-Syntax-Diagrams/blob/master/png/updateOrProcCall.png)
+
+#### incOrDecSuffix ####
+![Increment Or Decrement Suffix](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/incOrDecSuffix.png)
+
+#### returnStatement ####
+![RETURN Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/returnStatement.png)
+
+#### copyStatement ####
+![COPY Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/copyStatement.png)
+
+#### readStatement ####
+![READ Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/readStatement.png)
+
+#### writeStatement ####
+![WRITE Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/writeStatement.png)
+
+#### inputArg ####
+![Input Argument](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/inputArg.png)
+
+#### outputArgs ####
+![Output Arguments](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/outputArgs.png)
+
+#### formattedArgs ####
+![Formatted Arguments](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/formattedArgs.png)
+
+#### fmtStr ####
+![Format String](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/fmtStr.png)
+
+#### unformattedArg ####
+![Unformatted Argument](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/unformattedArg.png)
+
+#### chan ####
+![Channel](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/chan.png)
+
+#### ifStatement ####
+![IF Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/ifStatement.png)
+
+#### boolExpression ####
+![Boolean Expression](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/boolExpression.png)
+
+#### caseStatement ####
+![CASE Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/caseStatement2.png)
+
+#### case ####
+![Case](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/case.png)
+
+#### caseLabels ####
+![Case Labels](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/caseLabels.png)
+
+#### loopStatement ####
+![LOOP Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/loopStatement.png)
+
+#### whileStatement ####
+![WHILE Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/whileStatement.png)
+
+#### repeatStatement ####
+![REPEAT Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/repeatStatement.png)
+
+#### forStatement ####
+![FOR Statement](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/forStatement2.png)
+
+#### forLoopVariants ####
+![FOR Loop Variants](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/forLoopVariants.png)
+
+#### accessor, value ####
+![Accessor](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/accessor.png)
+
+#### descender ####
+![Descender](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/descender.png)
+
+#### iterableExpr ####
+![Iterable Expr](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/iterableExpr.png)
+
+#### collectionOrType ####
+![Collection Or Type](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/collectionOrType.png)
+
+#### valueRange ####
+![Value Range](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/valueRange.png)
+
+#### firstValue, lastValue ####
+![First Value/Last Value](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/firstValue.png)
+
+#### designator ####
+![Designator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/designator.png)
+
+#### derefTail ####
+![Dereferenced Designator Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/derefTail.png)
+
+#### subscriptTail ####
+![Subscripted Designator Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/subscriptTail.png)
+
+#### targetDesignator ####
+![Target Designator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/targetDesignator.png)
+
+#### derefTargetTail ####
+![Dereferenced Target Designator Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/derefTargetTail.png)
+
+#### bracketTargetTail ####
+![Bracketed Target Designator Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/bracketTargetTail.png)
+
+#### deref ####
+![Dereference](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/deref.png)
+
+
+### Expressions ###
+
+#### expressionList ####
+![Expression List](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/expressionList.png)
+
+#### expression ####
+![Expression](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/expression.png)
+
+#### operL1 ####
+![Level-1 Operator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/operL1.png)
+
+#### simpleExpression ####
+![Simple Expression](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/simpleExpression.png)
+
+#### operL2 ####
+![Level-2 Operator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/operL2.png)
+
+#### concatOp ####
+![Concatenation Operator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/concatOp.png)
+
+#### setDiffOp ####
+![Set Difference Operator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/setDiffOp.png)
+
+#### term ####
+![Term](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/term.png)
+
+#### operL3 ####
+![Level-3 Operator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/operL3.png)
+
+#### simpleTerm ####
+![Simple Term](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/simpleTerm.png)
+
+#### factor ####
+![Factor](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/factor.png)
+
+#### typeConvOp ####
+![Type Conversion Operator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/typeConvOp.png)
+
+#### simpleFactor ####
+![Simple Factor](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/simpleFactor.png)
+
+#### sourceDesignator ####
+![Source Designator](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/sourceDesignator.png)
+
+#### derefSourceTail ####
+![Dereferenced Source Designator Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/derefSourceTail.png)
+
+#### bracketSourceTail ####
+![Bracketed Source Designator Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/bracketSourceTail.png)
+
+#### functionCallTail ####
+![Function Call Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/functionCallTail.png)
+
+#### structuredValue ####
+![Structured Value](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/structuredValue.png)
+
+#### valueComponent ####
+![Value Component](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/valueComponent.png)
+
+#### runtimeExpression ####
+![Runtime Expression](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/runtimeExpression.png)
+
+
+### Technical Debt Management ###
+
+#### toDoList ####
+![TO DO List](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/toDoList.png)
+
+#### trackingRef ####
+![Tracking Reference](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/trackingRef.png)
+
+#### taskToDo ####
+![Task To Do](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/taskToDo.png)
+
+#### issueId, Severity, estimatedTime ####
+![Issue ID](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/issueId.png)
+
+#### timeUnit ####
+![Time Unit](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/timeUnit.png)
+<br>&nbsp;<sup>**&bigtriangleup; By convention, `timeUnit` identifiers should be `w` for weeks, `d` for days, and `h` for hours**</sup>
+
+#### description ####
+![Description](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/description.png)
+
+#### wholeNumber ####
+![Whole Number](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/wholeNumber.png)
+
+
+## Terminals ##
+
+#### StdIdent ####
+![Standard Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/StdIdent.png)
+
+#### LetterOrDigit ####
+![Letter Or Digit](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/LetterOrDigit.png)
+
+#### Qualident ####
+![Qualified Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Qualident.png)
+
+#### Pervasive ####
+![Pervasive Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Pervasive.png)
+
+#### Primitive ####
+![Primitive Identifier](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Primitive.png)
+
+#### NumberLiteral ####
+![Number Literal](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/NumberLiteral.png)
+
+#### DecimalNumberTail ####
+![Decimal Number Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/DecimalNumberTail.png)
+
+#### RealNumberTail ####
+![Real Number Tail](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/RealNumberTail.png)
+
+#### DigitSeq ####
+![Digit Sequence](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/DigitSeq.png)
+
+#### DigitGroup ####
+![Digit Group](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/DigitGroup.png)
+
+#### Base2DigitSeq ####
+![Base-2 Digit Sequence](https://github.com/m2sf/m2-r10-syntax-diagrams/blob/master/png/Base2DigitSeq.png)
+
+#### Base2DigitGroup ####
+![Base-2 Digit Group](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Base2DigitGroup.png)
+
+#### Base16DigitSeq ####
+![Base-16 Digit Sequence](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Base16DigitSeq.png)
+
+#### Base16DigitGroup ####
+![Base-16 Digit Group](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Base16DigitGroup.png)
+
+#### Digit ####
+![Digit](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Digit.png)
+
+#### Base2Digit ####
+![Base-2 Digit](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Base2Digit.png)
+
+#### Base16Digit ####
+![Base-16 Digit](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Base16Digit.png)
+
+#### StringLiteral ####
+![String Literal](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/StringLiteral.png)
+
+#### SingleQuotedString ####
+![Single-Quoted String](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/SingleQuotedString.png)
+
+#### DoubleQuotedString ####
+![Double-Quoted String](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/DoubleQuotedString.png)
+
+#### QuotableCharacter ####
+![Quotable Character](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/QuotableCharacter.png)
+
+#### Letter ####
+![Letter](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Letter.png)
+
+#### NonAlphaNumQuotable ####
+![Non-Alpha-Numeric Quotable 1](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/NonAlphaNumQuotable1.png)
+![Non-Alpha-Numeric Quotable 2](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/NonAlphaNumQuotable2.png)
+![Non-Alpha-Numeric Quotable 3](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/NonAlphaNumQuotable3.png)
+
+#### EscapedCharacter ####
+![Escaped Character](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/EscapedCharacter.png)
+
+## Ignore Symbols ##
+
+#### Whitespace ####
+![Whitespace](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/Whitespace.png)
+
+#### LineComment ####
+![Line Comment](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/LineComment.png)
+
+#### BlockComment ####
+![Block Comment](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/BlockComment.png)
+
+#### CommentCharacter ####
+![Comment Character](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/CommentCharacter.png)
+
+#### EndOfLine ####
+![End Of Line Marker](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/EndOfLine.png)
+
+
+### Pragmas ###
+
+#### inlinePragma ####
+![INLINE Pragma](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/inlinePragma.png)
+
+#### deprecatedPragma ####
+![DEPRECATED Pragma](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/deprecatedPragma.png)
+
+#### privatetoPragma ####
+![PRIVATETO Pragma](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/privatetoPragma.png)
+
+#### ffiPragma ####
+![FFI Pragma](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/ffiPragma.png)
+
+#### ffidentPragma ####
+![FFIDENT Pragma](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/ffidentPragma.png)
+
+#### implDefPragma ####
+![Implementation Defined Pragma](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/implDefPragma.png)
+
+#### ctMsgMode ####
+![Compile-Time Message Mode](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/ctMsgMode.png)
+
+#### implPrefix ####
+![Implementation Prefix](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/implPrefix.png)
+
+#### pragmaSymbol ####
+![Pragma Symbol](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/pragmaSymbol.png)
+<br>&nbsp;<sup>**&bigtriangleup; Implementation defined `implPrefix` and `pragmaSymbol` symbols follow the syntax of `StdIdent`**</sup>
+
+### Debugging Aid ###
+*Not strictly part of the language, should be implemented nevertheless*
+
+#### DisabledCodeSection ####
+![Disabled Code Section](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/DisabledCodeSection.png)
+
+#### AnyPrintable ####
+![Any Printable Character](https://github.com/m2sf/m2-bsk-syntax-diagrams/blob/master/png/AnyPrintable.png)
+
+---
+
+# Appendix E : Implementation Parameters #
+> This is the appendix headline
+
+Module `Impl` provides implementation specific constants. Its provision is mandatory. Where any of the constants are dependent on user selectable compiler options, the module may be implemented as a built-in module.
+
+## Identity ##
+
+|Constant |Type |Meaning|
+|:-|:-|:-|
+|`ShortName`        |String Literal |short name of the language processor |
+|`LongName`         |String Literal |long name of the language processor |
+|`MajorVersion`     |Whole Number |major version of the language processor |
+|`MinorVersion`     |Whole Number |minor version of the language processor |
+|`SubMinorVersion`  |Whole Number |sub-minor version of the language processor |
+|`BuildNumber`      |Whole Number |build number of the language processor |
+|`HostEnvironment`  |String Literal |name of the host environment or operating system |
+
+## Capability Flags ##
+
+|Boolean Constant |indicates whether language processor supports ...|
+|:-|:-|
+|`SupportsM2BSK`      |Modula-2 R10 Bootstrap Kernel (M2BSK) subset |
+|`SupportsM2R10`      |Modula-2 R10 (M2R10) full specification |
+|`SupportsUnicode`    |type `UNICHAR` and its operations |
+|`SupportsUtf8Source` |source files encoded in UTF-8 |
+|`SupportsCFFI`       |C foreign function interface and `<*FFI="C"*>` pragma |
+|`SupportsCLRFFI`     |Microsoft CLR FFI and `<*FFI="CLR"*>` pragma |
+|`SupportsJVMFFI`     |Java Virtual Machine FFI and `<*FFI="CLR"*>` pragma |
+
+## Implementation Limits ##
+
+|Whole Number Constant |indicates ... |required |
+|:-|:-|:-|
+|`MaxIdentLength` |maximum significant length of identifiers | &ge; 31 |
+|`MaxNumLiteralLength` |maximum length of number literals | &ge; 40 |
+|`MaxStrLiteralLength` |maximum length of string literals | &ge; 120 |
+|`MaxLineCounter` |maximum value of line counter for error messages | &ge; 32000 |
+|`MaxColumnCounter` |maximum value of column counter for error messages | &ge; 160 |
+|`MaxEnumValues` |maximum number of values of an enumeration type | &ge; 4096 |
+|`MaxSetElements` |maximum number of elements in an enumerated set | &ge; 128 |
+|`MaxProcNestLevel` |maximum nesting level of local procedures | &ge; 2 |
+
+---
+
+# Appendix F : Target Parameters #
+> This is the appendix headline
+
+Module `Trgt` provides target specific constants. Its provision is mandatory. Where any of the required constants are dependent on user selectable compiler options, the module may be implemented as a built-in module.
+
+## Identity ##
+
+|Constant |Type |Meaning |
+|:-|:-|:-|
+|`ShortName` |String Literal |short name of the target |
+|`LongName` |String Literal |long name of the target |
+|`MajorVersion` |Whole Number |major version of the code generator for this target |
+|`MinorVersion` |Whole Number |minor version of the code generator for this target |
+|`SubMinorVersion` |Whole Number |sub-minor version of the code generator for this target |
+
+## Classification ##
+
+|Boolean Constant |indicates whether target ... |
+|:-|:-|
+|`IsProcessor` |is a hardware architecture |
+|`IsVirtualProcessor` |is a processor independent assembler backend |
+|`IsVirtualMachineHost` |is a virtual machine host and runtime environment |
+|`IsHigherLevelLanguage` |is a language processor for a higher level programming language |
+
+## Characteristics ##
+
+|Boolean Constant |indicates whether ... |
+|:-|:-|
+|`IsBigEndian` |target uses big-endian byte order |
+|`IsLittleEndian` |target uses little-endian byte order |
+|`SupportsAO`  |code generator supports atomic operations for this target |
+|`SupportsTCE` |code generator supports tail call elimination for this target |
+
+---
+
+# Appendix G : Naming Convention #
+> This is the appendix headline
+
+## Module Identifiers ##
+
+Module identifiers always start with a capital letter.
+
+```modula-2
+INTERFACE MODULE Foobar;
+```
+
+Multi-word module identifiers are in title case.
+
+```modula-2
+INTERFACE MODULE FileSystem;
+```
+A module identifier that coincides with a widely used acronym may be all-uppercase. However, as a general rule, the institution of all-uppercase identifiers should be avoided to prevent name conflicts with future reserved words and pervasive identifiers.
+
+```modula-2
+INTERFACE MODULE ASCII;
+```
+
+The identifier of a module that follows the module-as-a-type paradigm should be a singular noun, describing the type that the module provides.
+
+```modula-2
+INTERFACE MODULE String;
+
+TYPE String = OPAQUE POINTER;
+```
+
+The identifier of a module that follows the module-as-a-manager paradigm should generally also be a singular noun, describing the management service the module provides.
+
+```modula-2
+INTERFACE MODULE Console;
+```
+
+However, in some cases it may be preferable for a module that follows the module-as-a-manager paradigm to use an identifier that is a plural noun, if that better describes its service.
+
+```modula-2
+INTERFACE MODULE CompilerOptions;
+```
+
+The use of single-letter module identifiers is **strictly prohibited** except in unit tests.
+
+
+## Constant Identifiers ##
+
+Constant identifiers always start with a capital letter.
+
+```modula-2
+CONST Separator = '/';
+```
+
+Multi-word constant identifiers are in title case.
+
+```modula-2
+CONST BufferSize = 4096;
+```
+
+In some cases a constant identifier that coincides with a common acronym may be all-uppercase. However, as a general rule of thumb, the definition and declaration of all-uppercase identifiers should preferably be avoided.
+
+```modula-2
+CONST NUL = 0u0; (* ASCII NUL *)
+```
+
+The enumerated values of enumeration types are constants and follow the naming convention for constants.
+
+```modula-2
+TYPE Status = ( Success, Failure );
+```
+
+The use of single-letter constant identifiers is **strictly prohibited** except in unit tests.
+
+
+## Type Identifiers ##
+
+Type identifiers always start with a capital letter.
+
+```modula-2
+TYPE Key = CARDINAL;
+```
+
+Multi-word type identifiers are in title case.
+
+```modula-2
+TYPE RegexStatus = RECORD ( Status ) code : RegexStatusCode END;
+```
+
+A type identifier that coincides with a widely used acronym may be all-uppercase. However, as a general rule, the institution of all-uppercase identifiers should be avoided.
+
+```modula-2
+TYPE AST = OPAQUE POINTER; (* Abstract Syntax Tree *)
+```
+
+The identifier of the primary type provided by a module that follows the module-as-a-type paradigm should match the module identifier verbatim.
+
+```modula-2
+INTERFACE MODULE String;
+
+TYPE String = OPAQUE POINTER;
+```
+
+The use of single-letter identifiers for public types is **strictly prohibited** except in unit tests.
+
+
+## Variable Identifiers ##
+
+Variable identifiers always start with a lowercase letter.
+
+```modula-2
+VAR ch : CHAR;
+```
+
+Multi-word variable identifiers are always in camel case.
+
+```modula-2
+VAR sourceIndex, targetIndex : LONGCARD;
+```
+
+The use of single-letter variable identifiers should be avoided, except for modelling math formulas.
+
+
+## Record Field Identifiers ##
+
+Record field identifiers follow the convention for variable identifiers.
+
+
+## Procedure Identifiers ##
+
+Regular procedure identifiers always start with a capital letter.
+
+```modula-2
+PROCEDURE Write ( ch : CHAR );
+```
+
+Multi-word regular procedure identifiers are in title case.
+
+```modula-2
+PROCEDURE WriteChars ( str : ARRAY OF CHAR );
+```
+The use of single-letter regular procedure identifiers is **strictly prohibited** except in unit tests.
+
+
+## Function Identifiers ##
+
+Function procedure identifiers always start with a lowercase letter.
+
+```modula-2
+PROCEDURE length ( str : String ) : LONGCARD;
+```
+
+Multi-word function procedure identifiers are in camel case.
+
+```modula-2
+PROCEDURE isQuotable ( ch : CHAR ) : BOOLEAN;
+```
+The use of single-letter function procedure identifiers is **strictly prohibited** except in unit tests.
+
+
+## Formal Parameter Identifiers ##
+
+Formal parameter identifiers follow the convention for variable identifiers.
+
+The use of single-letter formal parameter identifiers should generally be avoided, but is permissible in math functions where parameters `n` and `m` denote unsigned integers, `i` and `j`  denote signed integers and `r` denotes a real number.
+
+```modula-2
+PROCEDURE log2 ( n : CARDINAL ) : CARDINAL;
+```
+
+---
+
+# Appendix H : Library Interfaces #
+> This is the appendix headline
+
+## Standard Library ##
+
+### Status ###
+```Modula-2
+INTERFACE MODULE Status;
+(* Status Root Type *)
+TYPE Status = RECORD ( NIL )
+  failed : BOOLEAN
+END; (*Status*)
+END Status.
+```
+
+### StatusCode ###
+```Modula-2
+INTERFACE MODULE StatusCode;
+(* Status−Code Base Type *)
+TYPE StatusCode = ( Success, Failure );
+END StatusCode.
+```
+
+## Characters ##
+
+### ISO646 ###
+```Modula-2
+INTERFACE MODULE ISO646;
+CONST (* Control Codes *)
+  NUL=0u0; SOH=0u1; STX=0u2; ETX=0u3; EOT=0u4; ENQ=0u5; ACK=0u6; BEL=0u7; BS=0u8; TAB=0u9; LF=0u0A;
+  VT=0u0B; FF=0u0C; CR=0u0D; SO=0u0E; SI=0u0F; DLE=0u10; DC1=0u11; DC2=0u12; DC3=0u13; DC4=0u14; NAK=0u15;
+  SYN=0u16; ETB=0u17; CAN=0u18; EN=0u19; SUB=0u1A; ESC=0u1B; FS=0u1C; GS=0u1D; RS=0u1E; US=0u1F; DEL=0u7F;
+CONST (* Printables *)
+  SP=0u20; Exclamation=0u21; DoubleQuote=0u22; Octothorpe=0u23; Dollar=0u24; Percent=0u25; Ampersand=0u26;
+  SingleQuote=0u27; LeftParenthesis=0u28; RightParenthesis=0u29; Asterisk=0u2A; Plus=0u2B; Comma=0u2C;
+  Minus=0u2D; Period=0u2E; Solidus=0u2F; Colon=0u3A; Semicolon=0u3B; Less=0u3C; Equals=0u3D; Greater=0u3E;
+  QuestionMark=0u3F; AtSign=0u40; LeftBracket=0u5B; Backslash=0u5C; RightBracket=0u5D; Caret=0u5E;
+  Lowline=0u5F; Backquote=0u60; LeftBrace=0u7B; VerticalBar=0u7C; RightBrace=0u7D; Tilde=0u7E;
+CONST (* Common Synonyms *)
+  Whitespace=SP; Apostrophe=SingleQuote; LeftParen=LeftParenthesis; RightParen=RightParenthesis;
+  HyphenMinus=Minus; Dot=Period; Slash=Solidus; LeftAngularBracket=Less; RightAngularBracket=Greater;
+END ISO646.
+```
+
+### Char, Unichar ###
+```Modula-2
+INTERFACE MODULE <#TitlecasedCharTypeIdent#>;
+PROCEDURE isDigit ( ch : <#CharTypeIdent#> ) : BOOLEAN; (* any digit *)
+PROCEDURE isLetter ( ch : <#CharTypeIdent#> ) : BOOLEAN; (* any letter *)
+PROCEDURE isLower ( ch : <#CharTypeIdent#> ) : BOOLEAN; (* any lowercase letter *)
+PROCEDURE isUpper ( ch : <#CharTypeIdent#> ) : BOOLEAN; (* any uppercase letter *)
+PROCEDURE isControl ( ch : <#CharTypeIdent#> ) : BOOLEAN; (* 0u0..0u2F or 0u7F *)
+PROCEDURE isAlphaNum ( ch : <#CharTypeIdent#> ) : BOOLEAN; (* any digit or letter *)
+PROCEDURE isPrintable ( ch : <#CharTypeIdent#> ) : BOOLEAN; (* any non−alpha−numeric printable *)
+PROCEDURE toLower ( ch : <#CharTypeIdent#> ) : <#CharTypeIdent#>;
+  (* returns argument transformed to lowercase *)
+PROCEDURE toUpper ( ch : <#CharTypeIdent#> ) : <#CharTypeIdent#>;
+  (* returns argument transformed to uppercase *)
+END <#TitlecasedCharTypeIdent#>.
+```
+Replace `<#TitlecasedCharTypeIdent#>` with `Char` / `Unichar` , and `<#CharTypeIdent#>` with `CHAR` / `UNICHAR`.
+
+
+## Collation Order ##
+
+Collation libraries bind custom collation tables to the language processor’s internal table used by function `COLLATION()`.
+
+Library collation tables contain the collation indices for characters in range `[0u20..0u7E]`. Control characters are excluded.
+
+### AsciiCollation ###
+```Modula-2
+INTERFACE MODULE AsciiCollation;
+(* ASCII Collation Order *)
+CONST [COLLATION] Order = { 0..94 }; (* 95 values *)
+END AsciiCollation.
+```
+
+### EbcdicCollation ###
+```Modula-2
+(* EBCDIC Collation Order *)
+CONST [COLLATION] Order = { 0, 6, 25, 21, 7, 15, 5, 23, 3, 9, 8, 4, 14, 11, 1, 12, 85, 86, 87, 88, 89, 90,
+  91, 92, 93, 94, 20, 10, 2, 24, 17, 18, 22, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+  72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 54, 84, 55, 53, 16, 19, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+  35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 56, 13, 83, 52 }; (* 95 values *)
+END EbcdicCollation.
+```
+
+## Dynamic Strings ##
+
+### String, UniString ###
+
+Template for dynamic string libraries `String` and `UniString`.
+
+```Modula-2
+INTERFACE MODULE <#StringTypeIdent#>;
+TYPE <#StringTypeIdent#> = OPAQUE POINTER;
+CONST [TLIMIT] CapacityLimit = 0;
+PROCEDURE [NEW] New ( VAR s : <#StringTypeIdent#> );
+PROCEDURE [NEW+] NewWithStr ( VAR s : <#StringTypeIdent#>; CONST initStr : ARRAY OF <#CharTypeIdent#> );
+PROCEDURE [NEW#] NewWithCapacity ( VAR s : <#StringTypeIdent#>; capacity : LONGCARD );
+PROCEDURE [RETAIN] Retain ( VAR s : <#StringTypeIdent#> );
+PROCEDURE [RELEASE] Release ( VAR s : <#StringTypeIdent#> );
+PROCEDURE [ATVALUE] charAtIndex ( CONST s : <#StringTypeIdent#>; atIndex : LONGCARD ) : <#CharTypeIdent#>;
+PROCEDURE [ATSTORE] storeAtIndex ( VAR s : <#StringTypeIdent#>; atIndex : LONGCARD; ch : <#CharTypeIdent#> );
+PROCEDURE [LENGTH] length ( CONST s : <#StringTypeIdent#> ) : LONGCARD;
+PROCEDURE [APPEND] AppendChars ( VAR s : <#StringTypeIdent#>; CONST chars : ARRAY OF <#CharTypeIdent#> );
+PROCEDURE [ATINSERT] InsertChars
+  ( VAR s : <#StringTypeIdent#>; atIndex : LONGCARD; CONST chars : ARRAY OF <#CharTypeIdent#> );
+PROCEDURE [ATREMOVE] RemoveChars ( VAR s : <#StringTypeIdent#>; startIndex, endIndex : LONGCARD );
+END <#StringTypeIdent#>.
+```
+Replace `<#StringTypeIdent#>` with `String` or `UniString`, and `<#CharTypeIdent#>` with `CHAR` or `UNICHAR` respectively.
+
+
+### Key-Value Storage ###
+
+Template for arbitrary dynamic key-value storage libraries.
+
+```Modula-2
+INTERFACE MODULE <#TypeIdent#>;
+TYPE <#TypeIdent#> = OPAQUE POINTER;
+CONST [TLIMIT] CapacityLimit = 0;
+PROCEDURE [NEW] New ( VAR dict : <#TypeIdent#> );
+PROCEDURE [RETAIN] Retain ( VAR dict : <#TypeIdent#> );
+PROCEDURE [RELEASE] Release ( VAR dict : <#TypeIdent#> );
+PROCEDURE [VALUE] valueForKey ( CONST dict : <#TypeIdent#>; key : <#KeyTypeIdent#> ) : <#ValueTypeIdent#>;
+PROCEDURE [STORE] StoreKV ( VAR dict : <#TypeIdent#>; key : <#KeyTypeIdent#>; value : <#ValueTypeIdent#> );
+PROCEDURE [REMOVE] RemoveKeys ( VAR dict : <#TypeIdent#>; keys : ARGLIST OF <#KeyTypeIdent#> );
+PROCEDURE [COUNT] count ( CONST dict : <#TypeIdent#> ) : LONGCARD;
+(* Use of COPY and FOR statements are supported by bindings to FIRST, LAST, PREV and NEXT *)
+PROCEDURE [FIRST] firstKey ( CONST dict : <#TypeIdent#> ) : <#KeyTypeIdent#>;
+PROCEDURE [LAST] lastKey ( CONST dict : <#TypeIdent#> ) : <#KeyTypeIdent#>;
+PROCEDURE [PREV] prevKey ( CONST dict : <#TypeIdent#>; key : <#KeyTypeIdent#> ) : <#KeyTypeIdent#>;
+PROCEDURE [NEXT] nextKey ( CONST dict : <#TypeIdent#>; key : <#KeyTypeIdent#> ) : <#KeyTypeIdent#>;
+END <#TypeIdent#>.
+```
+Replace `<#TypeIdent#>` with desired name, `<#KeyTypeIdent#>` with key type and `<#ValueTypeIdent#>` with value type.
+
+
+## Math ##
+
+### CardinalMath, LongCardMath ###
+
+Template* for `CARDINAL` and `LONGCARD` math libraries `CardinalMath` and `LongCardMath`.
+
+```Modula-2
+INTERFACE MODULE <#TitlecasedTypeIdent#>Math;
+PROCEDURE power ( n, exponent : <#TypeIdent#> ) : <#TypeIdent#>; (* n to the power of exponent *)
+PROCEDURE digitCount ( n : <#TypeIdent#> ) : CARDINAL; (* number of digits of n in decimal notation *)
+END <#TitlecasedTypeIdent#>Math.
+```
+
+### IntegerMath, LongIntMath ###
+
+Template* for `INTEGER` and `LONGINT` math libraries `IntegerMath` and `LongIntMath`.
+
+```Modula-2
+INTERFACE MODULE <#TitlecasedTypeIdent#>Math;
+PROCEDURE fdiv ( a, n : <#TypeIdent#> ) : <#TypeIdent#>; (* floored integer division *)
+PROCEDURE fmod ( a, n : <#TypeIdent#> ) : <#TypeIdent#>; (* modulus of floored integer division *)
+PROCEDURE tdiv ( a, n : <#TypeIdent#> ) : <#TypeIdent#>; (* truncated integer division *)
+PROCEDURE tmod ( a, n : <#TypeIdent#> ) : <#TypeIdent#>; (* modulus of truncated integer division *)
+PROCEDURE power ( i, exponent : <#TypeIdent#> ) : <#TypeIdent#>; (* i to the power of exponent *)
+PROCEDURE digitCount ( i : <#TypeIdent#> ) : CARDINAL; (* number of digits of i in decimal notation *)
+END <#TitlecasedTypeIdent#>Math.
+```
+
+### RealMath, LongRealMath ###
+
+Template* for `REAL` and `LONGREAL` math libraries `RealMath` and `LongRealMath`.
+
+```Modula-2
+INTERFACE MODULE <#TitlecasedTypeIdent#>Math;
+CONST
+  e = 2.7182818284590452353602874713526;
+  pi = 3.1415926535897932384626433832795;
+  phi = 1.6180339887498948482045868343656;
+  tau = 6.2831853071795864769252867665590;
+PROCEDURE frac ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* fractional part of r*)
+PROCEDURE ceil ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* ⌈r⌉ *)
+PROCEDURE floor ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* ⌊r⌋ *)
+PROCEDURE trunc ( r : <#TypeIdent#>; n : CARDINAL ) : <#TypeIdent#>; (* truncation of r to n places *)
+PROCEDURE round ( r : <#TypeIdent#>; n : CARDINAL ) : <#TypeIdent#>; (* rounding of r to n places *)
+PROCEDURE inv ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* multiplicative inverse of r *)
+PROCEDURE power ( r, exponent : <#TypeIdent#> ) : <#TypeIdent#>; (* r to the power of exponent *)
+PROCEDURE sqrt ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* square root of r *)
+PROCEDURE ln ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* natural logarithm of r *)
+PROCEDURE log ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* base−10 logarithm of r *)
+PROCEDURE sin ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* sine of r *)
+PROCEDURE cos ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* cosine of r *)
+PROCEDURE tan ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* tangent of r *)
+PROCEDURE arcsin ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* arcsine of r *)
+PROCEDURE arccos ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* arccosine of r *)
+PROCEDURE arctan ( r : <#TypeIdent#> ) : <#TypeIdent#>; (* arctangent of r *)
+END <#TitlecasedTypeIdent#>Math.
+```
+
+[*] Replace `<#TypeIdent#>` with type identifier and `<#TitlecasedTypeIdent#>` with titlecase transformed type identifier.
+
+
+## Memory Allocation ##
+
+The storage library binds allocation and deallocation procedures to primitives `@ALLOC` and `@DEALLOC`.
+
+### Storage ###
+
+```Modula-2
+INTERFACE MODULE Storage;
+(* Allocates memory block of <size> octets and passes its address back in p. *)
+PROCEDURE [ALLOC] Allocate ( VAR p : CAST ADDRESS; size : LONGCARD );
+(* Deallocates memory block pointed to by p and passes NIL back in p. *)
+PROCEDURE [DEALLOC] Deallocate ( VAR p : CAST ADDRESS );
+END Storage.
+```
+
+## Regular Expressions ##
+
+### Grammar ###
+
+```antlr
+/* non-terminals */
+regex := term+ ( ’|’ term+ )* ;
+term := factor ( ’*’ /* 0..n */ | ’+’ /* 1..n */ | ’?’ /* 0..1 */ | arbitraryQuantifier )? ;
+arbitraryQuantifier := ’{’ Digit+ ( ’,’ Digit+ )? ’}’ /* exact occurrences or min..max occurrences */
+factor := ( ’~’ /* inverse match */ | ’{aA}’ /* case insensitive match */ )? simpleFactor ;
+simpleFactor := literal | Synonym | ’[’ range ( ’,’ range )* ’]’ | ’(’ regex ’)’ ;
+literal := Digit | Letter | RePrintable | CodePointOrRange ;
+range := ( Digit ’-’ Digit ) | ( LowerLetter ’-’ LowerLetter ) | ( UpperLetter ’-’ UpperLetter ) ;
+/* terminals */
+Synonym := ’{start}’ | ’{end}’ | ’{nul}’ | ’{sp}’ | ’{tab}’ | ’{ws}’ | ’{nl}’ | ’{ret}’ | ’{bar}’ |
+  ’{tilde}’ | ’{qm}’ | ’{plus}’ | ’{ast}’ | ’{lparen}’ | ’{rparen}’ | ’{lbrack}’ | ’{rbrack}’ |
+  ’{lbrace}’ | ’{rbrace}’ |’{q}’ | ’{qq}’ | ’{sign}’ |’{binary}’ | ’{lowerbool}’ | ’{upperbool}’ |
+  ’{bool}’ | ’{digit}’ | ’{lowerhex}’ | ’{upperhex}’ | ’{hex}’ | ’{lower}’ | ’{upper}’ | ’{alpha}’ |
+  ’{alnum}’ | ’{control}’ | ’{printable}’ | ’{nonalnum}’ | ’{int}’ | ’{real}’ | ’{escseq}’ |
+  ’{word}’ | ’{allcaps}’ | ’{ident}’ | ’{camelident}’ | ’{titleident}’ | ’{allcapsident}’ ;
+RePrintable := ASCII(0x22..0x27) | ’,’ | ASCII(0x2E..0x3E) | ASCII(0x40..0x5A) | ’\’ | ASCII(0x5E..0x7A) ;
+CodePointOrRange := ’{#’ ( Digit | ’A’ .. ’F’ )+ ( ’-’ ( Digit | ’A’ .. ’F’ )+ )? ’}’ ;
+Digit := ’0’ .. ’9’ ;
+LowerLetter := ’a’ .. ’z’ ;
+UpperLetter := ’A’ .. ’Z’ ;
+Letter := ’a’ .. ’z’ | ’A’ .. ’Z’ ;
+/* verbatim whitespace and control characters are ignored */
+```
+
+### Regex ###
+
+```Modula-2
+INTERFACE MODULE Regex;
+IMPORT CharRE+, UnicharRE+;
+END Regex.
+```
+
+### CharRE, UnicharRE ###
+
+```Modula-2
+INTERFACE MODULE <#TitlecasedCharTypeIdent#>RE;
+PROCEDURE matches ( CONST str, re : ARRAY OF <#CharTypeIdent#> ) : BOOLEAN;
+END <#TitlecasedCharTypeIdent#>RE.
+```
+Replace `<#CharTypeIdent#>` with `CHAR` / `UNICHAR` and `<#TitlecasedCharTypeIdent#>` with `Char` / `Unichar`.
+
+### StringRE, UniStringRE ###
+
+```Modula-2
+INTERFACE MODULE <#StringTypeIdent#>RE;
+IMPORT <#StringTypeIdent#>;
+PROCEDURE matches ( CONST str : String; CONST re : ARRAY OF <#CharTypeIdent#> ) : BOOLEAN;
+END <#StringTypeIdent#>RE.
+```
+Replace `<#CharTypeIdent#>` with `CHAR` / `UNICHAR` and `<#StringTypeIdent#>` with `String` / `UniString`.
+
+### CharRegexNFA, UnicharRegexNFA ###
+
+```Modula-2
+INTERFACE MODULE <#TitlecasedCharTypeIdent#>RegexNFA;
+IMPORT RegexStatus, RegexStatusCode, RegexNotification;
+TYPE <#TitlecasedCharTypeIdent#>RegexNFA : OPAQUE POINTER;
+  NotificationHandler = PROCEDURE ( VAR (*notifiedEvent:*) RegexNotification;
+    VAR (*char:*) <#CharTypeIdent#>; VAR (*index:*) LONGCARD; VAR (*stateCount:*) CARDINAL );
+PROCEDURE [NEW] New ( VAR nfa : <#TitlecasedCharTypeIdent#>RegexNFA );
+PROCEDURE [RETAIN] Retain ( nfa : <#TitlecasedCharTypeIdent#>RegexNFA );
+PROCEDURE [RELEASE] Release ( VAR nfa : <#TitlecasedCharTypeIdent#>RegexNFA );
+PROCEDURE installHandler ( nfa : <#TitlecasedCharTypeIdent#>RegexNFA; handler : NotificationHandler );
+PROCEDURE matches
+  ( nfa : <#TitlecasedCharTypeIdent#>RegexNFA; CONST str : ARRAY OF <#CharTypeIdent#> ) : BOOLEAN;
+PROCEDURE status ( nfa : <#TitlecasedCharTypeIdent#>RegexNFA ) : RegexStatus;
+END <#TitlecasedCharTypeIdent#>RegexNFA.
+```
+Replace `<#CharTypeIdent#>` with `CHAR` / `UNICHAR`, and `<#TitlecasedCharTypeIdent#>` with `Char` / `Unichar`.
+
+### RegexNotification ###
+
+```Modula-2
+INTERFACE MODULE RegexNotification;
+TYPE RegexNotification = ( SizeInfo, NoMatchInfo, IllegalChar, UnknownSynonym, AllocFailed );
+END RegexNotification.
+```
+
+### RegexStatus ###
+
+```Modula-2
+INTERFACE MODULE RegexStatus;
+IMPORT Status, RegexStatusCode;
+TYPE RegexStatus = RECORD ( Status )
+  code : RegexStatusCode
+END;
+END RegexStatus.
+```
+
+### RegexStatusCode ###
+```Modula-2
+INTERFACE MODULE RegexStatusCode;
+IMPORT StatusCode;
+TYPE RegexStatusCode =
+  ( +StatusCode, InvalidExpr, InvalidStr, InvalidNFA, StackFull, AllocFailed );
+END RegexStatusCode.
+```
+
+## Hashing ##
+
+### Hash32, UniHash32 ###
+
+```Modula-2
+INTERFACE MODULE <#LibIdent#>;
+CONST KeyBits = 32;
+TYPE Key = OPAQUE [KeyBits DIV 8];
+(* functions for incremental hashing *)
+PROCEDURE initialValue : Key;
+PROCEDURE valueForNextChar ( hash : Key; ch : <#CharTypeIdent#> ) : Key;
+PROCEDURE finalValue ( hash : Key ) : Key;
+(* functions for en−bloc string hashing *)
+PROCEDURE valueForArray ( CONST str : ARRAY OF <#CharTypeIdent#> ) : Key;
+PROCEDURE valueForSlice ( CONST str : ARRAY OF <#CharTypeIdent#>; startIndex, endIndex : LONGCARD ) : Key;
+END <#LibIdent#>.
+```
+Replace `<#LibIdent#>` with `Hash32` / `UniHash32` and `<#CharTypeIdent#>` with `CHAR` / `UNICHAR`.
+
+### Hash64, UniHash64 ###
+
+```Modula-2
+INTERFACE MODULE <#LibIdent#>;
+CONST KeyBits = 64;
+TYPE Key = OPAQUE [KeyBits DIV 8];
+(* functions for incremental hashing *)
+PROCEDURE initialValue : Key;
+PROCEDURE valueForNextChar ( hash : Key; ch : <#CharTypeIdent#> ) : Key;
+PROCEDURE finalValue ( hash : Key ) : Key;
+(* functions for en−bloc string hashing *)
+PROCEDURE valueForArray ( CONST str : ARRAY OF <#CharTypeIdent#> ) : Key;
+PROCEDURE valueForSlice ( CONST str : ARRAY OF <#CharTypeIdent#>; startIndex, endIndex : LONGCARD ) : Key;
+END <#LibIdent#>.
+```
+Replace `<#LibIdent#>` with `Hash64` / `UniHash64` and `<#CharTypeIdent#>` with `CHAR` / `UNICHAR`.
+
+## Filesystem ##
+
+### Filesys ###
+
+```Modula-2
+INTERFACE MODULE Filesys;
+IMPORT DateTime, IOSize, FilesysStatus, FilesysStatusCode;
+TYPE Status = ALIAS OF FilesysStatus; TYPE StatusCode = ALIAS OF FilesysStatusCode;
+TYPE Attribute = ( Readable, Writable, Executable, Directory, Other );
+TYPE AttrSet = SET OF Attribute;
+CONST RO = { Attribute.Readable }; WO = { Attribute.Writable }; EO = { Attribute.Executable };
+RW = { Attribute.Readable, Attribute.Writable }; RWE = RW + { Attribute.Executable };
+PROCEDURE maxFilenameLength : LONGCARD;
+PROCEDURE maxPathnameLength : LONGCARD;
+PROCEDURE isFile ( CONST atPath : ARRAY OF CHAR; VAR status : Status ) : BOOLEAN;
+PROCEDURE isDirectory ( CONST atPath : ARRAY OF CHAR; VAR status : Status ) : BOOLEAN;
+PROCEDURE entryExists ( CONST atPath : ARRAY OF CHAR; VAR status : Status ) : BOOLEAN;
+PROCEDURE attrSet ( CONST atPath : ARRAY OF CHAR; VAR status : Status ) : AttrSet;
+PROCEDURE SetAttr ( CONST atPath : ARRAY OF CHAR; attr : AttrSet; VAR status : Status );
+PROCEDURE GetFileSize ( CONST atPath : ARRAY OF CHAR; VAR size : IOSize; VAR status : Status );
+PROCEDURE GetTimeCreated ( CONST atPath : ARRAY OF CHAR; VAR timestamp : DateTime; VAR status : Status );
+PROCEDURE GetTimeModified ( CONST atPath : ARRAY OF CHAR; VAR timestamp : DateTime; VAR status : Status );
+PROCEDURE CreateEntry ( CONST atPath : ARRAY OF CHAR; attr : AttrSet; VAR status : Status );
+PROCEDURE RenameEntry ( CONST atPath, newFilename : ARRAY OF CHAR; VAR status : Status );
+PROCEDURE MoveEntry ( CONST fromPath, toPath : ARRAY OF CHAR; VAR status : Status );
+PROCEDURE RemoveEntry ( CONST atPath : ARRAY OF CHAR; VAR status : Status );
+END Filesys.
+```
+
+### FilesysStatus ###
+
+```Modula-2
+INTERFACE MODULE FilesysStatus;
+IMPORT Status;
+TYPE FilesysStatus = RECORD ( Status )
+  code : FilesysStatusCode
+END;
+END FilesysStatus.
+```
+
+### FilesysStatusCode ###
+
+```Modula-2
+INTERFACE MODULE FilesysStatusCode;
+IMPORT StatusCode;
+TYPE FilesysStatusCode =
+  ( +StatusCode, (* inherits Success and Failure *)
+    AlreadyExists,
+    InvalidPath,
+    PathNotFound,
+    PathTooLong,
+    InvalidName,
+    NameTooLong,
+    InvalidAttr,
+    AccessDenied,
+    SizeOverflow,
+    DeviceError );
+END FilesysStatusCode.
+```
+
+## Runtime System Interface ##
+
+### RTS ###
+
+```Modula-2
+INTERFACE MODULE RTS;
+TYPE Fault = ( DivByZero, DerefNil, NotRefCounted, InvalidAccessor, TypeOverflow,
+  IndexOutOfBounds, CapacityExceeded, StackOverflow, OutOfMemory, LibAbort, UserAbort );
+TYPE NotificationHandler = PROCEDURE ( VAR (*PC*) UNSAFE.ADDRESS; VAR (*SP*) UNSAFE.ADDRESS );
+(* Callback procedure type for runtime fault notification handlers, passing back two addresses:
+   PC = program counter at which the fault event occurred.
+   SP = stack pointer at which the fault event occurred. *)
+PROCEDURE RaiseFault ( fault : Fault );
+(* Raises runtime fault and causes program abort, never returns. *)
+PROCEDURE InstallNotificationHandler ( forFault : Fault; handler : NotificationHandler );
+(* Installs the given notification handler for the specified runtime fault. *)
+PROCEDURE InstallInitHasFinishedHandler ( handler : PROCEDURE );
+(* Installs given procedure as the program’s post−initialisation handler. *)
+PROCEDURE InstallWillTerminateHandler ( handler : PROCEDURE );
+(* Installs given procedure as the program’s pre−termination handler. *)
+END RTS.
+```
+
+## Host OS Interface ##
+
+### System ###
+
+```Modula-2
+INTERFACE MODULE System;
+IMPORT Newline, DateTime;
+CONST MaxOSNameLength = 65; (* POSIX.1−2001 *)
+  MaxHostnameLength = 255; (* RFC 1123 *)
+  CountryCodeLength = 2; (* ISO 3166−1 alpha−2 *)
+  LanguageCodeLength = 2; (* ISO 639−1 *)
+  CurrencyCodeLength = 3; (* ISO 4217 *)
+PROCEDURE GetOSName ( VAR str : ARRAY OF CHAR );
+PROCEDURE GetHostname ( VAR str : ARRAY OF CHAR );
+PROCEDURE GetVersion ( VAR major, minor, subminor : CARDINAL );
+PROCEDURE newlineMode : Newline.Mode; (* platform dependent default *)
+PROCEDURE GetDateTime ( VAR timestamp : DateTime; VAR tzOffs : DateTime.TZOffset );
+PROCEDURE GetSysLocale
+  ( VAR tzOffset : DateTime.TZOffset; VAR decimalSep : CHAR;
+    VAR countryCode, langCode, currencyCode : ARRAY OF CHAR );
+END System.
+```
+
+### OSUsrEnv ###
+
+```Modula-2
+INTERFACE MODULE OSUsrEnv;
+IMPORT DateTime;
+PROCEDURE GetCWD ( VAR dirStr : ARRAY OF CHAR ); (* get current working directory *)
+PROCEDURE SetCWD ( CONST dirStr : ARRAY OF CHAR ); (* set current working directory *)
+PROCEDURE GetUsrLocale
+  ( VAR tzOffset : DateTime.TZOffset; VAR decimalSep : CHAR;
+    VAR countryCode, langCode, currencyCode : ARRAY OF CHAR );
+PROCEDURE SetUsrLocaleTZ ( tzOffs : DateTime.TZOffset; VAR succeeded : BOOLEAN );
+PROCEDURE SetUsrLocaleDecSep ( decimalSep : CHAR; VAR succeeded : BOOLEAN ); (* "," or "." *)
+PROCEDURE SetUsrLocaleCountry ( CONST countryCode : ARRAY OF CHAR; VAR succeeded : BOOLEAN );
+PROCEDURE SetUsrLocaleLanguage ( CONST langCode : ARRAY OF CHAR; VAR succeeded : BOOLEAN );
+PROCEDURE SetUsrLocaleCurrency ( CONST currencyCode : ARRAY OF CHAR; VAR succeeded : BOOLEAN );
+END OSUsrEnv.
+```
+
+## Date and Time ##
+
+### DateTime ###
+
+```Modula-2
+INTERFACE MODULE DateTime; IMPORT INTEGER32;
+CONST
+  OneYear = { 1, 0, 0, 0, 0, 0, 0, 0 };
+  OneMonth = { 0, 1, 0, 0, 0, 0, 0, 0 };
+  OneDay = { 0, 0, 1, 0, 0, 0, 0, 0 };
+  OneHour = { 0, 0, 0, 1, 0, 0, 0, 0 };
+  OneMin = { 0, 0, 0, 0, 1, 0, 0, 0 };
+TYPE DateTime = RECORD year : Year;
+  month : Month;
+  day : Day;
+  hour : Hour;
+  min : Minute;
+  sec : Second;
+  msec : MilliSecond;
+  tzOffs : TimeZoneOffset
+END; (* DateTime *)
+  Year = ALIAS OF INTEGER32;
+  Month = [0..12] OF INTEGER32;
+  Day = [0..31] OF INTEGER32;
+  Hour = [0..23] OF INTEGER32;
+  Minute = [0..59] OF INTEGER32;
+  Second = [0..59] OF INTEGER32;
+  MilliSecond = [0..999] OF INTEGER32;
+  TimeZoneOffset = [-720..720] (*minutes*) OF INTEGER32;
+  TZOffset = ALIAS OF TimeZoneOffset;
+PROCEDURE isValidAbsoluteDate ( CONST time : DateTime ) : BOOLEAN; (* year, month, day > 0 *)
+PROCEDURE isEarlier ( CONST t1, t2 : DateTime ) : BOOLEAN; (* t1 < t2 *)
+PROCEDURE sum ( CONST t1, t2 : DateTime ) : DateTime; (* t1 + t2 *)
+PROCEDURE diff ( CONST t1, t2 : DateTime ) : DateTime; (* t1 − t2 *)
+PROCEDURE toDays ( CONST time : DateTime ) : INTEGER32; (* time −−> days *)
+PROCEDURE scalarDelta ( CONST time : DateTime; deltaDays : INTEGER32 ) : DateTime; (* time +/− days *)
+PROCEDURE scalarProduct ( CONST time : DateTime; factor : INTEGER32 ) : DateTime; (* time * factor *)
+PROCEDURE scalarQuotient ( CONST time : DateTime; divisor : INTEGER32 ) : DateTime; (* time / divisor *)
+END DateTime.
+```
+
+### DateTimeIO ###
+
+```Modula-2
+INTERFACE MODULE DateTimeIO;
+IMPORT DateTime, IOChannel;
+PROCEDURE [WRITE] Write ( chan : IOChannel; value : DateTime );
+PROCEDURE [WRITE#] Write ( chan : IOChannel; CONST fmtStr : ARRAY OF CHAR; value : DateTime );
+END DateTimeIO.
+```
+
+## Whole Number Types with Fixed Bitwidth ##
+
+Implementations targeting multiple architectures may require target-specific versions of the library.
+
+### CARDINAL32 ###
+
+```Modula-2
+INTERFACE MODULE CARDINAL32;
+TYPE CARDINAL32 = ALIAS OF <#32BitCardinal#>;
+END CARDINAL32.
+```
+
+### INTEGER32 ###
+
+```Modula-2
+INTERFACE MODULE INTEGER32;
+TYPE INTEGER32 = ALIAS OF <#32BitInteger#>;
+END INTEGER32.
+```
+
+For targets
+* where `TSIZE(CARDINAL)=32`, replace `<#32BitCardinal#>` with `CARDINAL` and `<#32BitInteger#>` with `INTEGER`
+* where `TSIZE(LONGCARD)=32`, replace `<#32BitCardinal#>` with `LONGCARD` and `<#32BitInteger#>` with `LONGINT`
+
+---
+
+# Appendix I : IO Library Interfaces #
+> This is the appendix headline
+
+## Group IO Aggregators ##
+
+Group IO aggregators are modules that import and re-export the IO library modules for a given group of types. They represent the top user-level of the type specific IO library. The standard library defines two group IO aggregator modules:
+
+### PervasiveIO ###
+
+IO aggregator `PervasiveIO` imports and re-exports the IO library modules for the pervasive types.
+
+```Modula-2
+INTERFACE MODULE PervasiveIO;
+IMPORT BooleanIO+, CharIO+, UnicharIO+,
+  OctetIO+, CardinalIO+, LongCardIO+, IntegerIO+, LongIntIO+, RealIO+, LongRealIO+;
+END PervasiveIO.
+```
+
+### MachineTypeIO ###
+
+IO aggregator `MachineTypeIO` imports and re-exports the IO library modules for the machine types.
+
+```Modula-2
+INTERFACE MODULE MachineTypeIO;
+IMPORT ByteIO+, WordIO+, LongWordIO+, AddressIO+;
+END MachineTypeIO.
+```
+
+## Type Specific IO Aggregators ##
+
+The standard library defines 14 type specific IO aggregator modules, one for each pervasive type and one for each machine type. Each type specific IO aggregator imports and re-exports the IO modules for values and arrays of a given type.
+
+The module identifier of a type specific IO aggregator for a given type `T` is composed from the titlecase transformed identifier of type `T`, followed by suffix `IO`. Type identifiers with prefix `LONG` are considered two words, others are considered one word. Thus, the titlecase transformation of `UNICHAR` is `Unichar`, but that of `LONGCARD` is `LongCard`.
+
+The IO aggregator for a given type `T` may be generated from the template* below by replacing
+* all occurrences of `<#TypeIdent#>` with the identifier of type `T`, and
+* all occurrences of `<#TitleCasedTypeIdent#>` with the titlecase transformation of the identifier of type `T`.
+
+Common template for pervasive types and machine types
+```Modula-2
+INTERFACE MODULE <#TitleCasedTypeIdent#>IO;
+IMPORT Sole<#TypeIdent#>IO+, Array<#TypeIdent#>IO+;
+END <#TitleCasedTypeIdent#>IO.
+```
+
+[*] Template expansion may easily be automated using the Unix ```awk``` or ```sed``` utilities.
+
+
+## Type Specific Value IO Modules ##
+
+The standard library defines 14 type specific value IO modules, one for each pervasive type and one for each machine type. Each type specific value IO module provides IO bindings for reading and writing sole values of a given type.
+
+The module identifier of a type specific value IO module for a given type `T` is composed from prefix `Sole`, followed by the titlecase transformed identifier of type `T`, followed by suffix `IO`.
+
+The interface of a value IO module for a given type `T` may be generated from one of the two templates below by replacing
+* all occurrences of `<#TypeIdent#>` with the identifier of type `T`, and
+* all occurrences of `<#TitleCasedTypeIdent#>` with the titlecase transformation of the identifier of type `T`.
+
+Template for pervasive types
+```Modula-2
+INTERFACE MODULE Sole<#TitleCasedTypeIdent#>IO;
+IMPORT IOChannel;
+PROCEDURE [READ] Read ( chan : IOChannel; VAR value : <#TypeIdent#> );
+PROCEDURE [WRITE] Write ( chan : IOChannel; value : <#TypeIdent#> );
+PROCEDURE [WRITE#] WriteF ( chan : IOChannel; CONST fmtStr : ARRAY OF CHAR; value : <#TypeIdent#> );
+END Sole<#TitleCasedTypeIdent#>IO.
+```
+
+Template for machine types
+```Modula-2
+INTERFACE MODULE Sole<#TitleCasedTypeIdent#>IO;
+IMPORT UNSAFE, IOChannel;
+PROCEDURE [READ] Read ( chan : IOChannel; VAR value : UNSAFE.<#TypeIdent#> );
+PROCEDURE [WRITE] Write ( chan : IOChannel; value : UNSAFE.<#TypeIdent#> );
+PROCEDURE [WRITE#] WriteF
+  ( chan : IOChannel; CONST fmtStr : ARRAY OF CHAR; value : UNSAFE.<#TypeIdent#> );
+END Sole<#TitleCasedTypeIdent#>IO.
+```
+
+## Type Specific Array IO Modules ##
+
+The standard library defines 14 type specific array IO modules, one for each pervasive type and one for each machine type. Each type specific array IO module provides IO bindings for reading and writing arrays of a given type.
+
+The module identifier of a type specific array IO module for a given type `T` is composed from prefix `ArrayOf`, followed by the titlecase transformed identifier of type `T`, followed by suffix `IO`.
+
+The interface of an array IO module for a given type `T` may be generated from one of the two templates below by replacing
+* all occurrences of `<#TypeIdent#>` with the identifier of type `T`, and
+* all occurrences of `<#TitleCasedTypeIdent#>` with the titlecase transformation of the identifier of type `T`.
+
+Template for pervasive types
+```Modula-2
+INTERFACE MODULE ArrayOf<#TitleCasedTypeIdent#>IO;
+IMPORT IOChannel;
+PROCEDURE [READ] Read ( chan : IOChannel; VAR array : ARRAY OF <#TypeIdent#> );
+PROCEDURE [WRITE] Write ( chan : IOChannel; CONST array : ARRAY OF <#TypeIdent#> );
+PROCEDURE [WRITE#] WriteF
+  ( chan : IOChannel; CONST fmtStr : ARRAY OF CHAR; CONST array : ARRAY OF <#TypeIdent#> );
+END ArrayOf<#ModuleIdent#>IO.
+```
+
+Template for machine types
+```Modula-2
+INTERFACE MODULE ArrayOf<#TitleCasedTypeIdent#>IO;
+IMPORT UNSAFE, IOChannel;
+PROCEDURE [READ] Read ( chan : IOChannel; VAR array : ARRAY OF UNSAFE.<#TypeIdent#> );
+PROCEDURE [WRITE] Write ( chan : IOChannel; CONST array : ARRAY OF UNSAFE.<#TypeIdent#> );
+PROCEDURE [WRITE#] WriteF
+  ( chan : IOChannel; CONST fmtStr : ARRAY OF CHAR; CONST array : ARRAY OF UNSAFE.<#TypeIdent#> );
+END ArrayOf<#TitleCasedTypeIdent#>IO.
+```
+
+## Channel Based IO ##
+
+### StdIO ###
+
+```Modula-2
+INTERFACE MODULE StdIO;
+IMPORT IOChannel, IOStatus;
+PROCEDURE [STDIN] in : IOChannel <*INLINE*>;
+PROCEDURE [STDOUT] out : IOChannel <*INLINE*>;
+PROCEDURE err : IOChannel <*INLINE*>; (* for use by RTS *)
+PROCEDURE SetStdIn ( chan : IOChannel; VAR status : IOStatus );
+PROCEDURE SetStdOut ( chan : IOChannel; VAR status : IOStatus );
+PROCEDURE SetStdErr ( chan : IOChannel; VAR status : IOStatus );
+END StdIO.
+```
+
+### IOChannel ###
+
+```Modula-2
+INTERFACE MODULE IOChannel;
+(* Generic IO Channel Type *)
+IMPORT IOStatus, IOAccessMode, IOSize;
+TYPE IOChannel = POINTER TO Descriptor;
+TYPE Descriptor = RECORD ( NIL )
+  (* method slots for status handling *)
+  statusOf : PROCEDURE ( IOChannel ) : IOStatus;
+  StatusMsg : PROCEDURE ( IOChannel; IOStatus );
+  SetStatus : PROCEDURE ( IOChannel; IOStatus, BOOLEAN );
+  (* method slots for access mode query *)
+  isReadable : PROCEDURE ( IOChannel ) : BOOLEAN;
+  isWritable : PROCEDURE ( IOChannel ) : BOOLEAN;
+  (* method slots for generic input *)
+  dataReady : PROCEDURE ( IOChannel; IOSize ) : BOOLEAN;
+  ReadOctet : PROCEDURE ( IOChannel; VAR OCTET );
+  ReadBlock : PROCEDURE ( IOChannel; VAR ARRAY OF OCTET );
+  insertReady : PROCEDURE ( IOChannel ) : BOOLEAN;
+  Insert : PROCEDURE ( IOChannel, OCTET );
+  (* method slots for generic output *)
+  WriteOctet : PROCEDURE ( IOChannel; OCTET );
+  WriteBlock : PROCEDURE ( IOChannel; ARRAY OF OCTET; VAR IOSize );
+  isFlushable : PROCEDURE ( IOChannel ) : BOOLEAN;
+  Flush : PROCEDURE ( IOChannel )
+END; (*Descriptor*)
+END IOChannel.
+```
+
+### IOSize ###
+
+```Modula-2
+INTERFACE MODULE IOSize;
+TYPE IOSize = ALIAS OF LONGCARD;
+END IOSize.
+```
+On systems where the maximum file size exceeds `LONGCARD`, type `IOSize` may be redefined and the IO library rebuilt.
+
+
+### IOAccessMode ###
+
+```Modula-2
+INTERFACE MODULE IOAccessMode;
+(* IO Access Mode Common to all Channel Drivers *)
+CONST
+  RO = { Flags.Read };
+  WO = { Flags.Write };
+  RW = { Flags.Read, Flags.Write };
+TYPE IOAccessMode = SET OF Flags;
+TYPE Flags =
+  ( Read,    (* reading is permitted if set *)
+    Write ); (* writing is permitted if set *)
+END IOAccessMode.
+```
+
+### FileChannel ###
+
+```Modula-2
+INTERFACE MODULE FileChannel;
+(* FileIO Specific IO Channel Type *)
+IMPORT IOChannel, IOStatus, FileMode, IOSize, FileIO;
+TYPE FileChannel = POINTER TO Descriptor;
+PROCEDURE [NEW] New ( VAR chan : FileChannel ); (* allocates channel, initialises method slots *)
+PROCEDURE [RETAIN] Retain ( VAR chan : FileChannel ); (* prevents inadvertent closing of channel *)
+PROCEDURE [RELEASE] Release ( VAR chan : FileChannel ); (* closes channel when refcount is zero *)
+PROCEDURE isFileChannel ( chan : IOChannel ) : BOOLEAN;
+TYPE FilePos = ALIAS OF IOSize;
+TYPE Descriptor = RECORD ( IOChannel )
+  (* inherits generic channel method slots *)
+  (* FileChannel specific method slots *)
+  Open : PROCEDURE ( FileChannel, (*filename:*) CONST ARRAY OF CHAR, FileMode, VAR IOStatus );
+  ReOpen : PROCEDURE ( FileChannel, FileMode );
+  (* method slots for access mode and filename query *)
+  modeOf : PROCEDURE ( FileChannel ) : FileMode;
+  nameLen : PROCEDURE ( FileChannel ) : LONGCARD;
+  GetName : PROCEDURE ( FileChannel; (*filename:*) VAR ARRAY OF CHAR );
+  (* positioning *)
+  isValidPos : PROCEDURE ( FileChannel; FilePos ) : FilePos;
+  lastValidSetPos : PROCEDURE ( FileChannel ) : FilePos;
+  SetPos : PROCEDURE ( FileChannel; (*position:*) FilePos );
+  Advance : PROCEDURE ( FileChannel; (*offset:*) FilePos );
+  Rewind : PROCEDURE ( FileChannel );
+  handle : FileIO.File (* file handle is a FileIO handle *)
+END; (*Descriptor*)
+END FileChannel.
+```
+
+### FileIO ###
+
+```Modula-2
+INTERFACE MODULE FileIO; (* Abstract Low-Level File IO *)
+IMPORT IOSize, IOStatus, FileMode;
+TYPE File = OPAQUE POINTER; FilePos = ALIAS OF IOSize;
+PROCEDURE defaultInFile : File;
+PROCEDURE defaultOutFile : File;
+PROCEDURE defaultErrFile : File;
+PROCEDURE isValidAccessor ( file : File ) : BOOLEAN;
+PROCEDURE isSpecialFile ( file : File ) : BOOLEAN;
+PROCEDURE Open
+  ( NEW file : File; CONST filename : ARRAY OF CHAR; mode : FileMode; VAR status : IOStatus );
+PROCEDURE ReOpen ( file : File; mode : FileMode );
+PROCEDURE statusOf ( file : File ) : IOStatus;
+PROCEDURE StatusMsg ( file : File; status : IOStatus );
+PROCEDURE SetStatus ( file : File; status : IOStatus; VAR valid : BOOLEAN );
+PROCEDURE modeOf ( file : File ) : FileMode;
+PROCEDURE nameLen ( file : File ) : CARDINAL;
+PROCEDURE GetName ( file : File; VAR filename : ARRAY OF CHAR );
+PROCEDURE eof ( file : File ) : BOOLEAN;
+PROCEDURE currentPos ( file : File ) : FilePos;
+PROCEDURE isValidPos ( file : File; pos : FilePos ) : BOOLEAN;
+PROCEDURE lastValidSetPos ( file : File ) : FilePos;
+PROCEDURE SetPos ( file : File; pos : FilePos );
+PROCEDURE Advance ( file : File; offset : FilePos );
+PROCEDURE Rewind ( file : File );
+PROCEDURE dataReady ( file : File; octets : IOSize ) : BOOLEAN;
+PROCEDURE ReadOctet ( file : File; VAR data : OCTET );
+PROCEDURE ReadBlock ( file : File; VAR data : ARRAY OF OCTET );
+PROCEDURE insertReady ( file : File ) : BOOLEAN;
+PROCEDURE Insert ( file : File; data : OCTET );
+PROCEDURE WriteOctet ( file : File; data : OCTET );
+PROCEDURE WriteBlock ( file : File; data : ARRAY OF OCTET; VAR octetsWritten : IOSize );
+PROCEDURE isFlushable ( file : File ) : BOOLEAN;
+PROCEDURE Flush ( file : File );
+PROCEDURE Close ( VAR file : File; VAR status : IOStatus );
+END FileIO.
+```
+
+### IOStatus ###
+
+```Modula-2
+INTERFACE MODULE IOStatus;
+IMPORT Status, StatusCode;
+TYPE IOStatus = RECORD ( Status )
+  (* inherits failed : BOOLEAN *)
+  code : IOStatusCode
+END; (*IOStatus*)
+END IOStatus.
+```
+
+### IOStatusCode ###
+
+``` Modula-2
+INTERFACE MODULE IOStatusCode;
+IMPORT StatusCode;
+TYPE IOStatusCode =
+  ( +StatusCode,            (* inherits Success and Failure       *)
+     FileNotFound,          (* no file found with this filename   *)
+     NameTooLong,           (* the passed filename is too long    *)
+     IllegalCharsInName,    (* illegal chars in passed filename   *)
+     InvalidMode,           (* the passed mode is invalid         *)
+     AlreadyOpen,           (* the passed file is already open    *)
+     MayNotOpenDirectory,   (* attempt to open a directory        *)
+     AccessDenied,          (* the filesystem denied file access  *)
+     AccessBeyondEOF,       (* attempt to read past end of file   *)
+     NotOpenForReading,     (* file is not in Read mode           *)
+     NotOpenForWriting,     (* file is not in Write/Append mode   *)
+     OutOfRange,            (* input data is out of target range  *)
+     WrongFormat,           (* input data is in unexpected format *)
+     UnexpectedEndOfLine,   (* unexpected end−of−line in input    *)
+     UnexpectedEndOfInput,  (* unexpected end of input data       *)
+     ConnectionClosed,      (* remote end closed the connection   *)
+     InvalidFilePos,        (* attempt to set a invalid position  *)
+     InsertBufferFull,      (* capacity of insert buffer exceeded *)
+     FileSizeLimitExceeded, (* attempt to write past size limit   *)
+     OpenFileLimitExceeded, (* attempt to open too many files     *)
+     OperationNotSupported, (* unsupported operation attempted    *)
+     DeviceFull,            (* the device capacity is exceeded    *)
+     DeviceError );         (* the device reported a failure      *)
+END IOStatusCode.
+```
+
+### FileMode ###
+
+```Modula-2
+INTERFACE MODULE FileMode;
+IMPORT IOAccessMode;
+CONST
+  RO = { Flags.Read };
+  WO = { Flags.Write };
+  RW = { Flags.Read, Flags.Write };
+TYPE FileMode = SET OF Flags;
+(* The file access mode consists of four flags: read, write, append and sync.
+   These flags may be combined arbitrarily, subject to the following rules:
+   (1) a file mode may not be the empty set
+   (2) append may not be set if read is set
+   (3) append may only be set if write is set
+   (4) sync may only be set if write is set *)
+TYPE Flags =
+  ( +IOAccessMode.Flags, (* inherits Read and Write *)
+    Append,              (* writing always appends if set *)
+    Sync );              (* writing always flushes if set *)
+PROCEDURE isValid ( mode : FileMode ) : BOOLEAN;
+(* Returns TRUE if mode is a valid file access mode, otherwise FALSE. *)
+END FileMode.
+```
+
+### DecimalSep ###
+
+```Modula-2
+INTERFACE MODULE DecimalSep;
+(* Used for Formatted Output *)
+TYPE Mode = ( Comma, Point );
+PROCEDURE mode : Mode;
+PROCEDURE SetMode ( mode : Mode );
+(* default setting is locale dependent *)
+END DecimalSep.
+```
+
+### Tabulator ###
+
+```Modula-2
+INTERFACE MODULE Tabulator; (* "\t" *)
+TYPE Range = [0..80] OF CARDINAL;
+PROCEDURE width : Range;
+PROCEDURE SetWidth ( width : Range );
+END Tabulator. (* default setting is 0 *)
+```
+
+### NewLine ###
+
+```Modula-2
+INTERFACE MODULE NewLine; (* "\n" *)
+TYPE Mode = ( LF, CR, CRLF );
+PROCEDURE mode : Mode;
+PROCEDURE SetMode ( mode : Mode );
+END NewLine. (* OS dependent default *)
+```
+
+## Low-Level File IO ##
+
+### FilePtrIO ###
+
+```Modula-2
+INTERFACE MODULE FilePtrIO; (* Low-Level File IO *)
+IMPORT IOSize, IOStatus, FileMode;
+CONST DefaultBufferSize = 1024*16; (*16 KOctets*)
+TYPE File = OPAQUE POINTER; FilePos = ALIAS OF IOSize;
+PROCEDURE defaultInFile : File;
+PROCEDURE defaultOutFile : File;
+PROCEDURE defaultErrFile : File;
+PROCEDURE isValidAccessor ( file : File ) : BOOLEAN;
+PROCEDURE isSpecialFile ( file : File ) : BOOLEAN;
+PROCEDURE Open
+  ( NEW file : File; CONST filename : ARRAY OF CHAR; mode : FileMode; VAR status : IOStatus );
+PROCEDURE OpenWithBufferSize
+  ( NEW file : File; CONST filename : ARRAY OF CHAR;
+    mode : FileMode; bufSize : IOSize; VAR status : IOStatus );
+PROCEDURE ReOpen ( file : File; mode : FileMode );
+PROCEDURE statusOf ( file : File ) : IOStatus;
+PROCEDURE StatusMsg ( file : File; status : IOStatus );
+PROCEDURE SetStatus ( file : File; status : IOStatus; VAR valid : BOOLEAN );
+PROCEDURE modeOf ( file : File ) : FileMode;
+PROCEDURE nameLen ( file : File ) : CARDINAL;
+PROCEDURE GetName ( file : File; VAR filename : ARRAY OF CHAR );
+PROCEDURE eof ( file : File ) : BOOLEAN;
+PROCEDURE currentPos ( file : File ) : FilePos;
+PROCEDURE isValidPos ( file : File; pos : FilePos ) : BOOLEAN;
+PROCEDURE lastValidSetPos ( file : File ) : FilePos;
+PROCEDURE SetPos ( file : File; pos : FilePos );
+PROCEDURE Advance ( file : File; offset : FilePos );
+PROCEDURE Rewind ( file : File );
+PROCEDURE dataReady ( file : File; octets : IOSize ) : BOOLEAN;
+PROCEDURE ReadOctet ( file : File; VAR data : OCTET );
+PROCEDURE ReadBlock ( file : File; VAR data : ARRAY OF OCTET );
+PROCEDURE insertReady ( file : File ) : BOOLEAN;
+PROCEDURE Insert ( file : File; data : OCTET );
+PROCEDURE WriteOctet ( file : File; data : OCTET );
+PROCEDURE WriteBlock ( file : File; data : ARRAY OF OCTET; VAR octetsWritten : IOSize );
+PROCEDURE isFlushable ( file : File ) : BOOLEAN;
+PROCEDURE Flush ( file : File );
+PROCEDURE Close ( VAR file : File; VAR status : IOStatus );
+END FilePtrIO.
+```
+
+### FileDescIO ###
+
+```Modula-2
+INTERFACE MODULE FileDescIO; (* Low-Level File IO *)
+IMPORT IOSize, IOStatus, FileMode;
+CONST InvalidFile = -1;
+TYPE File = INTEGER;
+  FilePos = ALIAS OF IOSize;
+  RelPos = ALIAS OF LONGINT;
+  From = ( Start, Current, End );
+PROCEDURE defaultInFile : File;
+PROCEDURE defaultOutFile : File;
+PROCEDURE defaultErrFile : File;
+PROCEDURE Open
+  ( VAR fd : File; CONST filename : ARRAY OF CHAR; mode : FileMode; VAR status : IOStatus );
+PROCEDURE modeOf ( fd : File ) : Mode;
+PROCEDURE statusOf ( fd : File ) : IOStatus;
+PROCEDURE isValidFile ( fd : File ) : BOOLEAN;
+PROCEDURE isSpecialFile ( fd : File ) : BOOLEAN;
+PROCEDURE Read ( fd : File; VAR data : OCTET );
+PROCEDURE ReadBlock ( fd : File; VAR data : ARRAY OF OCTET; octetsRead : IOSize );
+PROCEDURE ReadBlockAtOffset
+  ( fd : File; VAR data : ARRAY OF OCTET; VAR octetsRead : IOSize; offset : FilePos );
+PROCEDURE Write ( fd : File; data : OCTET );
+PROCEDURE WriteBlock ( fd : File; CONST data : ARRAY OF OCTET; octetsWritten : IOSize );
+PROCEDURE WriteBlockAtOffset
+  ( fd : File; data : ARRAY OF OCTET; VAR octetsRead : IOSize; offset : FilePos );
+PROCEDURE eof ( fd : File ) : BOOLEAN;
+PROCEDURE SetPos ( fd : File; pos : FilePos );
+PROCEDURE Advance ( fd : File; offset : FilePos );
+PROCEDURE Rewind ( fd : File );
+PROCEDURE SetRelPos ( fd : File; from : From; offset : RelPos; VAR newPos : FilePos );
+PROCEDURE Close ( VAR fd : File; VAR status : IOStatus );
+PROCEDURE CloseAll ( VAR status : IOStatus );
+END FileDescIO.
+```
+
+---
+
+# Appendix J : IO Library Format Specifiers #
+> This is the appendix headline
+
+## Format Specifier Syntax for Type BOOLEAN ##
+
+```antlr
+boolFmtStr := shortBool | longBool ;
+shortBool := ’[’ ( trueSym | falseSym ) ’]’ ;
+alias trueSym, falseSym = PrintableChar ;
+longBool := ’TF’ | ’Tf’ | ’tf’ | ’YN’ | ’Yn’ | ’yn’ ;
+```
+
+```Modula-2
+WRITE #("TF", bool); (*TRUE or FALSE*)   WRITE #("[0|1]", bool); (*0 or 1*)
+```
+
+## Format Specifier Syntax for Character Types ##
+
+```antlr
+charFmt := quoted? glyph | codePoint ;
+quoted := ’Q’ | ’QQ’ ;
+glyph = ’A’ | ’UTF8’ ;
+codePoint := ’U+’ digitCount | ’0u’ digitFmt? ; digitFmt := digitCount digitGrouping? ;
+digitCount := leastNumOfDigits | fixedNumOfDigits ; alias leastNumOfDigits = ’*’ ;
+fixedNumOfDigits := Digit+ ;
+digitGrouping := digitSep digitsPerGroup ;
+digitSep := localeDependent | apostrophe | space ;
+alias digitsPerGroup = fixedNumOfDigits ;
+alias localeDependent = ’:’ ;
+alias apostrophe = "’" ;
+alias space = ’_’ ;
+```
+
+```Modula-2
+WRITE #("Q", char); (*’$’*)   WRITE #("QQ", char); (*"$"*)   WRITE #("0u8’2", char); (*0u00’00’00’24*)
+```
+
+## Format Specifier Syntax for Type OCTET ##
+
+```antlr
+octetFmt := decimalOctet | octetBase16 | base2 ;
+decimalOctet := leadSpace? compact | leadZeroes ;
+alias leadSpace = ’_’ ;
+alias leadZeroes = ’Z’ ;
+alias compact = ’*’ ;
+octetBase16 := ’0x’ | ’X’ ;
+base2 := ( ’0b’ | ’B’ ) digitFmt ;
+```
+
+```Modula-2
+WRITE #("0x", n); (*0x2A*)   WRITE #("Z", n); (*042*)   WRITE #("0b8’4", n); (*0b0010’1010*)
+```
+
+## Format Specifier Syntax for Cardinal Types ##
+
+```antlr
+cardinalFmt := decimalCardinal | base16 | base2 ;
+decimalCardinal := leadZeroes? ( digitFmt justification? )? ;
+alias leadZeroes = ’Z’;
+digitFmt := intDigits digitGrouping? ;
+alias intDigits, digitsPerGroup = digitCount ;
+digitCount := Digit+ ;
+digitGrouping := digitSep digitsPerGroup ;
+digitSep := ’:’ | ’_’ | "’" ;
+justification := ’|’ position ’|’ ;
+position := ’<’ | ’>’ ;
+base16 := ( ’0x’ | ’X’ ) digitFmt ;
+base2 := ( ’0b’ | ’B’ ) digitFmt ;
+```
+
+## Format Specifier Syntax for Integer Types ##
+
+```antlr
+integerFmt := sign? decimalCardinal | base16 | base2 ;
+sign := ’+’ | ’-’ ;
+```
+
+```Modula-2
+WRITE #("0x", i); (*0x2A*)   WRITE #("Z", i); (*042*)   WRITE #("0b8’4", i); (*0b0010’1010*)
+```
+
+## Format Specifier Syntax for Real Number Types ##
+
+```antlr
+realFmt := engOrSciFmt | acctFmt ;
+engOrSciFmt := ( ’E’ )? sign? significand exponent? justification? ;
+sign := ’+’ | ’-’ ;
+significand := intDigits digitGrouping? ’;’ fracDigits digitGrouping? ;
+digitGrouping := ’:’ digitsPerGroup ;
+exponent := ’e’ sign? expDigits digitGrouping? ;
+alias intDigits, fracDigits, expDigits, digitsPerGroup = digitCount ;
+digitCount := Digit+ ;
+acctFmt := ’A’ ( standard | ledger ) ;
+standard := ( sign spacer? | spacer sign ) significand ;
+alias spacer = ’_’ ;
+ledger := filler? significand acctSign ;
+filler := ’*’ | ’=’ ;
+acctSign := ’CR’ | ’()’ ;
+```
+
+```Modula-2
+WRITE #("E-2;9e3", r); (* 12.345,678,900e006*)   WRITE #("A7:3;2_CR", r); (*1,234,567.89 CR*)
+```
+
+## Format Specifier Syntax for Character Arrays ##
+
+```antlr
+strFmt := quoted? glyphs ;
+quoted := ’Q’ | ’QQ’ ;
+glyphs = ’A’ | ’UTF8’ ;
+```
+
+## Format Specifier Syntax for Non-Character Arrays ##
+
+```antlr
+arrayFmt := ’{’ itemSep ’}’ ( ’|’ valueFmt )? ;
+itemSep := ( ’,’ | ’;’ )? ’_’ ;
+valueFmt := boolFmt | octetFmt | cardinalFmt | integerFmt | realFmt ;
+```
+
+---
+
+# Supplementary Material #
+
+Library interfaces **not** included in the printed edition.
+
+## Templating ##
+
+Libraries expanding placeholders in templates.
+
+### StringTE, UniStringTE ###
+
+```Modula-2
+INTERFACE MODULE <#StringTypeIdent#>TE;
+IMPORT <#StringTypeIdent#>, Status;
+CONST MaxKeyLength = 32;
+TYPE Key = ARRAY MaxKeyLength OF CHAR;
+CONST MaxValueLength = 80;
+TYPE Value = ARRAY MaxValueLength OF <#CharTypeIdent#>;
+TYPE KeyValuePair = RECORD
+key : Key; value : Value END; (*KeyValuePair*)
+PROCEDURE expandWithList
+  ( CONST template, openingDelim, closingDelim : ARRAY OF <#CharTypeIdent#>;
+    list : ARGLIST OF KeyValuePair; VAR status : Status ) : String;
+PROCEDURE expandWithDict
+  ( CONST template, openingDelim, closingDelim : ARRAY OF <#CharTypeIdent#>;
+    dict : KeyValueDict; VAR status : Status ) : String;
+END <#StringTypeIdent#>TE.
+```
+Replace `<#StringTypeIdent#>` with `String` / `UniString` and `<#CharTypeIdent#>` with `CHAR` / `UNICHAR`.
+
+
+## Regular Expression IO ##
+
+Libraries for IO through regular expressions.
+
+### CharRegexIO, UnicharRegexIO ###
+
+```Modula-2
+INTERFACE MODULE <#TitlecasedCharTypeIdent#>RegexIO;
+IMPORT IOChannel, <#TitlecasedCharTypeIdent#>RegexNFA, RegexStatus;
+PROCEDURE SkipMatchingStr
+  ( chan : IOChannel; nfa : <#TitlecasedCharTypeIdent#>RegexNFA; VAR status : RegexStatus );
+PROCEDURE ReadMatchingStr
+  ( chan : IOChannel; nfa : <#TitlecasedCharTypeIdent#>RegexNFA;
+VAR str : ARRAY OF <#CharTypeIdent#>; VAR status : RegexStatus );
+PROCEDURE WriteMatchingStr
+  ( chan : IOChannel; nfa : <#TitlecasedCharTypeIdent#>RegexNFA;
+    CONST str : ARRAY OF <#CharTypeIdent#>; VAR status : RegexStatus );
+```
+Replace `<#CharTypeIdent#>` with `CHAR` / `UNICHAR` and `<#TitlecasedCharTypeIdent#>` with `Char` / `Unichar`.
+
+
+## Regular Expression Conversion ##
+
+Libraries for converting regular expressions between AWK and Modula-2.
+
+### CharRegexConv, UnicharRegexConv ###
+
+```Modula-2
+INTERFACE MODULE <#TitlecasedCharTypeIdent#>RegexConv;
+IMPORT <#StringTypeIdent#>, RegexStatus;
+PROCEDURE akwToM2 ( CONST awkRe : ARRAY OF <#CharTypeIdent#>; VAR status : RegexStatus ) : <#StringTypeIdent#>;
+PROCEDURE m2ToAwk ( CONST m2Re : ARRAY OF <#CharTypeIdent#>; VAR status : RegexStatus ) : <#StringTypeIdent#>;
+END <#TitlecasedCharTypeIdent#>RegexConv.
+```
+Replace `<#StringTypeIdent#>` with `String` / `UniString` and `<#TitlecasedCharTypeIdent#>` with `Char` / `Unichar`.
+
+
+## Alternative File Channels ##
+
+File channels bypassing the `FileIO` abstraction layer.
+
+### FPChannel ###
+
+```Modula-2
+INTERFACE MODULE FPChannel;
+(* FilePtrIO Specific IO Channel Type *)
+IMPORT IOChannel, IOStatus, FileMode, IOSize, FilePtrIO;
+TYPE FPChannel = POINTER TO Descriptor;
+PROCEDURE [NEW] New ( VAR chan : FPChannel ); (* allocates channel, initialises method slots *)
+PROCEDURE [RETAIN] Retain ( VAR chan : FPChannel ); (* prevents inadvertent closing of channel *)
+PROCEDURE [RELEASE] Release ( VAR chan : FPChannel ); (* closes channel when refcount is zero *)
+PROCEDURE isFPChannel ( chan : IOChannel ) : BOOLEAN;
+CONST DefaultBufferSize = FilePtrIO.DefaultBufferSize;
+TYPE FilePos = ALIAS OF IOSize;
+TYPE Descriptor = RECORD ( IOChannel )
+  (* inherits generic channel method slots *)
+  (* FPChannel specific method slots *)
+  Open : PROCEDURE ( FPChannel; (*filename:*) CONST ARRAY OF CHAR; FileMode; VAR IOStatus );
+  OpenWithBufferSize :
+    PROCEDURE ( FPChannel; (*filename:*) CONST ARRAY OF CHAR; FileMode; IOSize; VAR IOStatus );
+  ReOpen : PROCEDURE ( FPChannel; FileMode );
+  (* method slots for access mode and filename query *)
+  modeOf : PROCEDURE ( FPChannel ) : FileMode;
+  nameLen : PROCEDURE ( FPChannel ) : LONGCARD;
+  GetName : PROCEDURE ( FPChannel; (*filename:*) VAR ARRAY OF CHAR );
+  (* positioning *)
+  isValidPos : PROCEDURE ( FPChannel; FilePos ) : FilePos;
+  lastValidSetPos : PROCEDURE ( FPChannel ) : FilePos;
+  SetPos : PROCEDURE ( FPChannel; (*position:*) FilePos );
+  Advance : PROCEDURE ( FPChannel; (*offset:*) FilePos );
+  Rewind : PROCEDURE ( FPChannel );
+  handle : FilePtrIO.File (* file handle is a file pointer *)
+END (*Descriptor*)
+END FPChannel.
+```
+
+### FDChannel ###
+
+```Modula-2
+INTERFACE MODULE FDChannel;
+(* FileDescIO Specific IO Channel Type *)
+IMPORT IOChannel, IOStatus, FileMode, IOSize, FileDescIO;
+TYPE FDChannel = POINTER TO Descriptor;
+PROCEDURE [NEW] New ( VAR chan : FDChannel ); (* allocates channel, initialises method slots *)
+PROCEDURE [RETAIN] Retain ( VAR chan : FDChannel ); (* prevents inadvertent closing of channel *)
+PROCEDURE [RELEASE] Release ( VAR chan : FDChannel ); (* closes channel when refcount is zero *)
+PROCEDURE isFDChannel ( chan : IOChannel ) : BOOLEAN;
+TYPE FilePos = ALIAS OF IOSize;
+TYPE Descriptor = RECORD ( IOChannel )
+  (* inherits generic channel method slots *)
+  (* FDChannel specific method slots *)
+  Open : PROCEDURE ( FDChannel; (*filename:*) CONST ARRAY OF CHAR; FileMode; VAR IOStatus );
+  ReOpen : PROCEDURE ( FDChannel; FileMode );
+  (* method slots for access mode and filename query *)
+  modeOf : PROCEDURE ( FDChannel ) : FileMode;
+  nameLen : PROCEDURE ( FDChannel ) : LONGCARD;
+  GetName : PROCEDURE ( FDChannel; (*filename:*) VAR ARRAY OF CHAR );
+  (* positioning *)
+  isValidPos : PROCEDURE ( FDChannel; FilePos ) : FilePos;
+  lastValidSetPos : PROCEDURE ( FileDescChannel ) : FilePos;
+  SetPos : PROCEDURE ( FDChannel; (*position:*) FilePos );
+  Advance : PROCEDURE ( FDChannel; (*offset:*) FilePos );
+  Rewind : PROCEDURE ( FDChannel );
+  handle : FileDescIO.File (* file handle is a token, falsely called "file descriptor" *)
+END; (*Descriptor*)
+END FDChannel.
+```
+
+## Character Sets ##
+
+### CharSet ###
+
+```Modula-2
+INTERFACE MODULE CharSet;
+CONST [TLIMIT] Capacity = ORD(TMAX(CHAR));
+TYPE CharSet = OPAQUE [Capacity DIV 8];
+(* element insertion and removal *)
+PROCEDURE Insert ( VAR set : CharSet; chars : ARGLIST OF CHAR );
+PROCEDURE InsertAll ( VAR set : CharSet );
+PROCEDURE Remove ( VAR set : CharSet; chars : ARGLIST OF CHAR );
+PROCEDURE RemoveAll ( VAR set : CharSet );
+(* membership and subset tests *)
+PROCEDURE isSubset ( CONST set1, set2 : CharSet ) : BOOLEAN;
+PROCEDURE isSubsetOrEq ( CONST set1, set2 : CharSet ) : BOOLEAN;
+PROCEDURE charsInSet ( CONST set : CharSet; chars : ARGLIST OF CHAR ) : BOOLEAN;
+(* set operations *)
+PROCEDURE setUnion ( CONST set1, set2 : CharSet ) : CharSet;
+PROCEDURE setDiff ( CONST set1, set2 : CharSet ) : CharSet;
+PROCEDURE interSect ( CONST set1, set2 : CharSet ) : CharSet;
+PROCEDURE symDiff ( CONST set1, set2 : CharSet ) : CharSet;
+END CharSet.
+```
+
+### CharSetIO ###
+
+```Modula-2
+INTERFACE MODULE CharSetIO;
+IMPORT CharSet, IOChannel;
+PROCEDURE [READ] Read ( chan : IOChannel; VAR value : CharSet );
+PROCEDURE [WRITE] Write ( chan : IOChannel; value : CharSet );
+PROCEDURE [WRITE#] WriteF ( chan : IOChannel; CONST fmtStr : ARRAY OF CHAR; value : CharSet );
+END CharSetIO.
+```
+
+## Numeric Subrange Types ##
+
+### Quartet ###
+
+```Modula-2
+INTERFACE MODULE QUARTET;
+TYPE QUARTET = [0..15] OF OCTET;
+END QUARTET.
+```
+
+### Septet ###
+
+```Modula-2
+INTERFACE MODULE SEPTET;
+TYPE SEPTET = [0..127] OF OCTET;
+END SEPTET.
+```
+
+### POSINT ###
+
+```Modula-2
+INTERFACE MODULE POSINT;
+TYPE POSINT = [0..TMAX(INTEGER)] OF INTEGER;
+END POSINT.
+```
+
+### LONGPOSINT ###
+
+```Modula-2
+INTERFACE MODULE LONGPOSINT;
+TYPE LONGPOSINT = [0..TMAX(LONGINT)] OF LONGINT;
+END LONGPOSINT.
+```
+
+## Legacy Functions ##
+
+### Legacy ###
+
+```Modula-2
+INTERFACE MODULE Legacy;
+(* primarily for documentation, actual use is discouraged *)
+PROCEDURE CAP ( ch : CHAR ) : CHAR; (* better: replace with Char.toUpper() *)
+PROCEDURE FLOAT ( i : INTEGER ) : REAL; (* better: replace with i::REAL *)
+PROCEDURE TRUNC ( r : REAL ) : INTEGER; (* better: replace with RealMath.trunc(r)::INTEGER *);
+(* PROCEDURE HIGH ( a : ARRAY OF T ); replace with COUNT(a)−1 *)
+(* PROCEDURE HIGH ( str : ARRAY OF CHAR ); replace with LENGTH(str)−1 *)
+(* PROCEDURE MAX/MIN ( x : T ); replace with TMAX/TMIN(x) *)
+(* PROCEDURE SIZE ( T ); replace with TSIZE(T) *)
+(* PROCEDURE VAL ( T, v ) : T; replace with v::T *)
+(* PROCEDURE INC/DEC ( n ); replace with n++/n−− *)
+(* PROCEDURE INCL/EXCL ( s, e ); replace with INSERT/REMOVE(s, e) *)
+END Legacy.
+```
+
+## Inline Assembler ##
+
+Built-in module `ASSEMBLER` provides a target dependent inline assembler facility. Its provision is **optional**.
+
+### ASSEMBLER ###
+
+```Modula-2
+INTERFACE MODULE ASSEMBLER; (* OPTIONAL *)
+(* This module provides access to CPU registers and a raw machine code
+ * inline facility. Use of this module is unsafe and non−portable.
+ * All facilities are optional, subject to the following constraints:
+ * o  module ASSEMBLER may not be provided void of any facilities
+ * o  type REGISTER is required for SETREG and GETREG
+ * o  SETREG and GETREG are required if macro CODE is provided
+ * o  SETREG and GETREG may only be provided as a pair *)
+CONST ARCH = <string constant with architecture name>;
+TYPE REGISTER = <target architecture dependent enumeration type>;
+(* Type REGISTER is a target architecture dependent enumeration
+   with mnemonics for the target architecture’s registers. *)
+(* Access to CPU registers *)
+PROCEDURE SETREG( r : REGISTER; value : <ValueType> ) <*INLINE*>;
+(* Copies <value> to register <r> where <value> may be of any type
+   as long as TSIZE(ValueType) does not exceed the bitwidth of <r>. *)
+PROCEDURE GETREG( r : REGISTER; VAR value : <ValueType> ) <*INLINE*>;
+(* Copies the contents of <r> to <value> where <value> may be of any
+type as long as the bitwidth of <r> does not exceed TSIZE(ValueType). *)
+(* Raw machine code inline facility *)
+PROCEDURE CODE( <arglist> ) <*INLINE*>;
+(* Inserts the raw machine code represented by <arglist>. Its EBNF is:
+ *   arglist := code ( ’,’ code )∗ ;
+ *   code := <any constant expression of type [0..255] OF CARDINAL> ;
+ * A compile time error occurs if any argument value is out of range. *)
+END ASSEMBLER.
+```
+Procedures of module `ASSEMBLER` may not be assigned nor passed as arguments to any procedure, function or macro.
+
+### AMD64 (aka x86-64)
+
+```Modula-2
+CONST ARCH = "amd64";
+TYPE REGISTER = ( ah, al, bh, bl, ch, cl, dh, dl, ax, bx, cx, dx, eax, ebx, ecx, edx, cs, ds, es, fs, gs,
+  ss, di, si, bp, sp, ip, edi, esi, ebp, esp, eip, eflags, rax, rbx, rcx, rdx, rsi, rdi, rsp, rbp, rflags,
+  r8, r9, r10, r11, r12, r13, r14, r15, r8d, r9d, r10d, r11d, r12d, r13d, r14d, r15d, r8w, r9w, r10w, r11w,
+  r12w, r13w, r14w, r15w, r8b, r9b, r10b, r11b, r12b, r13b, r14b, r15b, xmm0, xmm1, xmm2, xmm3, xmm4, xmm5,
+  xmm6, xmm7, xmm8, xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15, ymm0, ymm1, ymm2, ymm3, ymm4, ymm5,
+  ymm6, ymm7, ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15 );
+```
+
+### ARM ###
+
+```Modula-2
+CONST ARCH = "arm";
+TYPE REGISTER = ( r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15 );
+```
+
+### Atmel AVR ###
+
+```Modula-2
+CONST ARCH = "avr";
+TYPE REGISTER = ( r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19,
+  r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, x, y, z, rampx, rampy, rampz, rampd, eind );
+```
+
+### Intel MCS-51 (aka 8051) ###
+
+```Modula-2
+CONST ARCH = "i8051";
+TYPE REGISTER = ( a, b, r0, r1, r2, r3, r4, r6, r7, dp, sp, psw );
+```
+
+### Intel IA-32 (aka x86) ###
+
+```Modula-2
+CONST ARCH = "x86";
+TYPE REGISTER = ( ah, al, bh, bl, ch, cl, dh, dl, ax, bx, cx, dx, eax, ebx, ecx, edx, cs, ds, es, fs, gs,
+  ss, di, si, bp, sp, ip, edi, esi, ebp, esp, eip, eflags, xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7,
+  xmm8, xmm9, xmm10, xmm11, xmm12, xmm13, xmm14, xmm15, ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7,
+  ymm8, ymm9, ymm10, ymm11, ymm12, ymm13, ymm14, ymm15 );
+```
+
+### LatticeMico32 ###
+
+```Modula-2
+CONST ARCH = "lm32";
+TYPE REGISTER = ( r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19,
+  r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, gp, fp, sp, ra, ea, ba, pc, ie, im, ip, icc,
+  dcc, cc, cfg, eba );
+```
+
+
+### Xilinx MicroBlaze ###
+
+```Modula-2
+CONST ARCH = "microblaze";
+TYPE REGISTER = ( r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19,
+  r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, pc, msr, ear, esr, btr, fsr, edr, pid, zpr,
+  tlblo, tlbhi, tlbx, tlbsx, pvr0, pvr1, pvr2, pvr3, pvr4, pvr5, pvr6, pvr7, pvr8, pvr9, pvr10, pvr11 );
+```
+
+
+### MIPS ###
+
+```Modula-2
+CONST ARCH = "mips";
+TYPE REGISTER = ( r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19,
+  r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, zero, at, v0, v1, a0, a1, a2, a3, t0, t1, t2,
+  t3, t4, t5, t6, t7, s0, s1, s2, s3, s4, s5, s6, s7, t8, t9, k0, k1, gp, sp, fp, ra, s8 );
+```
+
+### Motorola M68K and ColdFire ###
+
+```Modula-2
+CONST ARCH = "m68k";
+TYPE REGISTER = ( d0, d1, d2, d3, d4, d5, d6, d7, a0, a1, a2, a3, a4, a5, a6, a7, a7tick,
+  sp, usp, ssp, pc, ccr );
+```
+
+### Texas Instruments MSP430 ###
+
+```Modula-2
+CONST ARCH = "msp430";
+TYPE REGISTER = ( r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15 );
+```
+
+### Altera Nios II ###
+
+```Modula-2
+CONST ARCH = "nios2";
+TYPE REGISTER = ( r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19,
+  r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, zero, at, et, bt, gp, sp, fp, ea, ba, ra );
+```
+
+### IBM PowerPC ###
+
+```Modula-2
+CONST ARCH = "ppc64";
+TYPE REGISTER = ( r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19,
+  r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, fr0, fr1, fr2, fr3, fr4, fr5, fr6, fr7, fr8,
+  fr9, fr10, fr11, fr12, fr13, fr14, fr15, fr16, fr17, fr18, fr19, fr20, fr21, fr22, fr23, fr24, fr25, fr26,
+  fr27, fr28, fr29, fr30, fr31, cr, lr, ctr, xer, fpscr, pc );
+```
+
+### Berkeley University RISC-V ###
+
+```Modula-2
+CONST ARCH = "riscv";
+TYPE REGISTER = ( x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19,
+  x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30, x31, f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10,
+  f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24, f25, f26, f27, f28, f29, f30, f31 );
+```
+
+### Fujitsu/Oracle/Sun SPARC ###
+
+```Modula-2
+CONST ARCH = "sparc";
+TYPE REGISTER = ( g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, g16, g17, g18, g19,
+  g20, g21, g22, g23, g24, g25, g26, g27, g28, g29, g30, g31 );
+```
+
+### Zilog Z80/eZ80 ###
+
+```Modula-2
+CONST ARCH = "z80";
+TYPE REGISTER = ( A, F, B, C, D, E, H, L, Atick, Ftick, Btick, Ctick, Dtick, Etick, Htick, Ltick, BC, DE, HL,
+  BCtick, DEtick, HLtick, PC, SPS, SPL, I, MBASE, ADL, MADL, IEF1, IEF2, R, IXH, IXL, IXL, IYL, IX, IY );
+```
+
+Legal Notice: Any trademarks mentioned are the property of their respective owners and mentioned here only for reference.
+
+
+## Foreign Identifier Option ##
+
+While the `FFIDENT` pragma is perfectly adequate for mapping Modula-2 identifiers to foreign API identifiers, the ability to define or declare certain foreign identifiers directly may be desirable on some platforms where the use of such identifiers is ubiquitous such as is the case on OpenVMS. For this purpose an optional language extension is specified below.
+
+### Foreign Identifiers ###
+
+In addition to letters and digits, a foreign identifier may contain leading, non-trailing, non-consecutive `$` characters and non-leading, non-trailing, non-consecutive `_` characters.
+
+```antlr
+ForeignIdent :=
+  ’$’ ( Letter | Digit ) ForeignIdentTail* | StdIdent ForeignIdentTail+ ;
+ForeignIdentTail :=
+  ( ’$’ | ’_’ ) ( Letter | Digit )+ ;
+```
+Foreign identifiers must be disabled by default. Their use must be enabled by compiler option.
+
+### Caution ###
+
+The use of foreign identifiers will render source code **non-portable**.
+
+The use of pragma `FFIDENT` should therefore be given preference.
+
+### Implementation Notes ###
+
+This language extension should only be deployed on implementations for platforms where the use of foreign identifiers is ubiquitous in the platform’s operating system API.
+
+If this language extension is deployed, it should be implemented **exactly** as specified in order to prevent potential conflicts with the Modula-2 core language not only at present but also in the future.
+
+An implementation that provides this language extension should also provide a compiler switch to issue compile time infor- mational messages for each use of a foreign identifier so that these uses can be easily located.
+
+
+## Compiler Presets Pragma Option ##
+
+A language processor may provide implementation defined pragmas to control compiler settings. It may then provide the compiler presets pragma to read such pragmas from an external file. Provision is **optional**. 
+
+### Pragma PRESETS ###
+
+A `PRESETS` pragma may be placed anywhere before or after a token in a compilation unit. It represents a directive to read and apply compiler settings from a pragma file. The `PRESETS` pragma lists one or more pragma files without their suffixes. A compile time warning shall be emitted if a given pragma file cannot be found.
+
+
+```antlr
+PresetsPragma := ’<*’ PRESETS '=' identList ’*>’ ;
+```
+
+```Modula-2
+MODULE Main; <*PRESETS=common, fooproj*>
+```
+
+A pragma file may contain any number of block comments and any number of implementation defined pragmas for compiler settings, in any order, but not any other syntax.
+
+```antlr
+pragmaFile := ( blockComment* implDefinedPragma* )* ;
+```
+
+The filename of a pragma file consists of its basename, the short identifier of the language processor and a suffix identifying the file as a pragma file. Each supporting language processor shall automatically select pragma files whose implementation identifier matches that of the processor.
+
+```antlr
+pragmaFileName := basename '.' compilerID '.prag'
+```
+
+## Debugging Aid ##
+
+During debugging it is useful to temporarily disable sections of source code. However, comment delimiters should categorically **never** be used for this purpose. Instead, language processors should provide syntax specifically for this purpose.
+
+### Disabling Source Code ###
+
+```antlr
+DisabledCodeSection :=
+  ’?<’ /* strictly in first column of a line */
+  ( AnyPrintable | BlockComment | EndOfLine )*
+  ’>?’ /∗ strictly in first column of a line ∗/ ;
+AnyPrintable := 0u20 .. 0u7E ; /* greedy */
+```
+
+Where a language processor distinguishes between debug and production builds, the syntax should be automatically enabled when compiling in debug mode and disabled when compiling in production mode.
+
+For every disabled section of source code a compile time warning should be emitted.
+
+[END OF DOCUMENT]
