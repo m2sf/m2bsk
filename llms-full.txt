@@ -1,0 +1,3861 @@
+# Modula-2 R10 Language Specification &dash; Bootstrap Kernel (BSK) Subset
+> this is the headline for the specification
+
+---
+
+# Chapter 1 : Lexical Entities #
+> this is the chapter headline
+
+## Reserved Words ##
+
+### Classical Tokens ###
+
+`ALIAS`, `AND`, `ARGLIST`, `ARRAY`, `BEGIN`, `CASE`, `CONST`, `COPY`, `DIV`, `DO`, `ELSE`, `ELSIF`,
+`END`, `EXIT`, `FOR`, `IF`, `IMPLEMENTATION`, `IMPORT`, `IN`, `INTERFACE`, `LOOP`, `MOD`, `MODULE`,
+`NEW`, `NOP`, `NOT`, `OCTETSEQ`, `OF`, `OPAQUE`, `OR`, `POINTER`, `PROCEDURE`, `READ`, `RECORD`,
+`RELEASE`, `REPEAT`, `RETAIN`, `RETURN`, `SET`, `THEN`, `TO`, `TYPE`, `UNTIL`, `VAR`, `WHILE`,
+`WRITE`;
+
+### Schroedinger's Tokens ###
+
+Tokens that may represent a reserved word or an identifier. The ambiguity is resolved during syntax analysis.
+
+`ADDRESS`, `CAPACITY`, `CAST`, `NIL`;
+
+See also [Schrödinger's token](https://www.semanticscholar.org/paper/Schr%C3%B6dinger-s-token-Aycock-Horspool/8ce9d8c6338874bf4b2413b6ce70778660822857)
+
+
+## Special Symbols ##
+
+### Delimiters ###
+`(` `)` `[` `]` `{` `}` `'` `"`
+
+### Punctuation ###
+`.` `,` `:` `;` `=` `#` `+` `*` `@` `|` `..` `:=` `++` `--` `.*`
+
+### Operators ###
+`=` `#` `>` `>=` `<` `<=` `+` `-` `&` `\` `*` `/` `::` `^` `.`
+
+### Comment Delimiters ###
+`!` `(*` `*)`
+
+### Pragma Delimiters ###
+`<*` `*>`
+
+## Identifiers ##
+Identifiers denote predefined or user defined names for syntactic entities. A standard identifier starts with a letter and may be followed by letters and digits.
+
+```antlr
+StdIdent := Letter ( Letter | Digit )* ;
+```
+
+## Numeric Literals ##
+Numeric literals denote numeric values, either real number values, whole number values or character code values.
+
+### Real Numbers ###
+Real number values are always given in decimal notation, start with an [integral part](https://github.com/m2sf/m2bsk/wiki/Language-Description#integral-part), followed by an optional [fractional part](https://github.com/m2sf/m2bsk/wiki/Language-Description#fractional-part), followed by an optional exponent.
+
+```antlr
+RealNumber := integralPart fractionalPart? exponentialPart? ;
+
+integralPart := '0' | ( '1' .. '9' ) ( DigitSeparator? DigitSequence )? ;
+
+fractionalPart := '.' DigitSequence ;
+
+exponent := 'e' ( '+' | '-' )? DigitSequence ;
+
+DigitSequence := DecimalNumber ;
+```
+
+### Whole Numbers ###
+Whole number values may be given in decimal, radix-2 or radix-16 notation. C-style prefixes are used to indicate the radix of non-decimal literals. Prefix `0b` indicates radix-2 and prefix `0x` indicates radix-16. Digits may be grouped using `'` as a digit separator. A digit separator must always be preceded and followed by a digit.
+
+```antlr
+WholeNumber := DecimalNumber | Base2Number | Base16Number ;
+
+DecimalNumber := Digit+ ( DigitSeparator Digit+ )* ;
+
+Base2Number := '0b' Base2Digit+ ( DigitSeparator Base2Digit+ )* ;
+
+Base16Number := '0x' Base16Digit+ ( DigitSeparator Base16Digit+ )* ;
+
+Digit := '0' .. '9' ;
+
+Base2Digit := '0' | '1' ;
+
+Base16Digit := Digit | 'A' .. 'F' ;
+
+alias DigitSeparator = "'" ;
+```
+
+
+### Character Codes ###
+Character code values are always given in radix-16 notation with prefix `0u`.
+
+```antlr
+CharacterCode := '0u' Base16Digit+ ( DigitSeparator Base16Digit+ )* ;
+```
+
+
+## Quoted Literals ##
+Quoted literals denote text. They are delimited by single quotes `'` or double quotes `"`.
+
+```antlr
+QuotedLiteral := SingleQuotedLiteral | DoubleQuotedLiteral ;
+```
+
+A single quoted literal may contain double quotes but not single quotes. A double quoted literal may contain single quotes but not double quotes. A quoted literal may contain whitespace but no tabulator, no newline, nor any other control codes. As a result, it may not span multiple lines.
+
+```antlr
+SingleQuotedLiteral := "'" ( AnyPrintableExceptSingleQuote | EscSeq )* "'" ;
+
+DoubleQuotedLiteral := '"' ( AnyPrintableExceptDoubleQuote | EscSeq )* '"' ;
+```
+
+Backslash escape sequences may be used to denote newline and tabulator control codes within a quoted literal. Escape sequence `\n` denotes newline and `\t` denotes tabulator. A verbatim backslash must be escaped as `\\`. No other escape sequences shall be supported.
+
+```antlr
+EscSeq := '\' ( 'n' | 't' | '\' ) ;
+```
+
+
+## Non-Semantic Entities ##
+
+### Whitespace ###
+
+Whitespace `ASCII(0x20)` terminates a symbol, except within quoted literals, pragmas and comments.
+
+
+### Tabulator ###
+
+Tabulator `ASCII(0x09)` terminates a symbol, except within pragmas and comments.
+
+
+### Newline ###
+
+Newline terminates a symbol, except within pragmas and block comments. A newline increments the line counter and resets the column counter used in compile-time messages.
+
+
+## Comments ##
+Comments are non-semantic symbols ignored by the language processor. They may occur anywhere before or after semantic symbols and are used for documentation and annotation. There are line comments and block comments.
+
+### Line Comments ###
+Line comments start with a `!` and are terminated by newline.
+
+```antlr
+LineComment := '!' ( AnyPrintable | Tabulator )* Newline ;
+```
+
+
+### Block Comments ###
+Block comments are delimited by block comment delimiters `(*` and `*)`. Block comments may span multiple lines and may be nested up to a maximum of nine levels, not counting the outermost comment.
+
+```antlr
+BlockComment := '(*' ( BlockComment | AnyPrintable | Tabulator | Newline )* '*)' ;
+```
+
+
+## Pragmas ##
+Pragmas are non-semantic directives to the language processor to control or influence the compilation process. They are delimited by delimiters `<*` and `*>`, may span multiple lines but may not be nested.
+
+```antlr
+Pragma := '<*' PragmaBody '*>' ;
+```
+
+## Symbols Reserved for Other Uses ##
+
+Symbols `%`, `%%`, `<#`, `#>`, `/*` and `*/` are reserved for the Modula-2 template engine; `_` and `$` for foreign identifiers; `?` for source code transliterators and preprocessors; `<<`, `>>`, `` ` `` and `~` for future use.
+
+---
+
+# Chapter 2 : Compilation Units and Scopes #
+> this is the chapter headline
+
+## Compilation Units ##
+
+Modula-2 programs and libraries consist of one or more compilation units called modules. A program consists of exactly one program `MODULE` and any number of library modules. A library module consists of an interface part, called an `INTERFACE` `MODULE`, and an optional implementation part, called an `IMPLEMENTATION` `MODULE`. The interface part specifies the client interface of the library. The implementation part implements the library according to the interface. The implementation part is strictly accessible through its interface part only.
+
+## Identifier Visibility ##
+
+Identifiers that are predefined in the language core are pervasive, that is, they are visible in every scope without import. In contrast, predefined identifiers that are provided by special built-in modules are only visible within a scope into which they are imported. Identifiers not predefined are visible within the scope in which they are declared or defined and, if exported, any scope into which they are imported. Additionally, identifiers declared or defined within an interface module are also visible within the corresponding implementation module without import.
+
+### Visibility of Constants and Aliases ###
+
+Constants and aliases are visible in the scope in which they are defined or declared from the point forward where they are defined or declared. That is, they must be defined or declared before they are referenced.
+
+### Visibility of Types, Procedures and Variables ###
+
+Types, procedures and variables are visible in the entire scope in which they are defined or declared. That is, they may be referenced before they are defined or declared.
+
+## Scope ##
+
+Scope is a measure of the visibility of identifiers. There are three levels of scope. Global scope, module scope and local scope. Module scope is a sub-scope of global scope and local scope is a sub-scope of module scope.
+
+### Global Scope ###
+
+Global scope encompasses an entire program. Only predefined identifiers have global scope.
+
+### Module Scope ###
+
+Module scope encompasses a module. Identifiers that are defined or declared in, or imported into the top level of a module have module scope. Module scopes may not be nested.
+
+### Local Scope ###
+
+Local scope encompasses a `PROCEDURE` declaration or a `FOR` statement. Identifiers defined or declared within a procedure or the header of a statement have local scope. Local scopes may be nested. The surrounding scope in which a local scope is nested is called the outer scope. The nested scope is called the inner scope.
+
+Identifiers defined or declared in an outer scope are also visible in an inner scope and may be redefined within the inner scope. Redefining an identifier of an outer scope within an inner scope causes the entity denoted by the identifier to be shadowed. A shadowed entity is no longer addressable through its identifier within the scope in which it has been shadowed and within any of its sub-scopes. Identifiers that belong only to an inner scope are visible only in the inner scope and any of its sub-scopes but not in any outer scope.
+
+#### Procedure Scope ####
+
+Procedure scope is created by a `PROCEDURE` declaration.
+
+Procedure scope overlaps with the outer scope of the procedure. The outer scope extends to the end of the pro- cedure header and continues after the end of the procedure body. The inner scope extends from the beginning of the procedure header to the end of the procedure body. The procedure header thus belongs to both the outer and the inner scope.
+
+The procedure’s identifier is visible in both the outer and the inner scope. It may be referenced in either scope and may not be redefined in either scope. The identifiers of a procedure’s formal parameters exist in both the outer and the inner scope but are visible only within the inner scope and may not be redefined therein.
+
+#### FOR Statement Scope ####
+
+`FOR` statement scope is created by a `FOR` statement.
+
+A `FOR` statement scope does not overlap with its outer scope. It extends from the beginning of the `FOR` statement’s header to the end of its body. The loop variants declared within the loop header have local scope, they are only visible within the loop.
+
+## Import and Export ##
+
+Identifiers declared or defined within an interface module are automatically exported for import and use by client modules. By contrast, program and implementation modules do not export any identifiers. An `IMPORT` directive may be used within any kind of module to explicitly import the identifiers exported by interface modules. An interface module does not implicitly re-export imported identifiers.
+
+```modula-2
+IMPORT FooLib, BarLib, BazLib;
+```
+
+### Duplicate Import ###
+
+A duplicate import is an import of a library that has already been imported into the same scope. Any such import is ignored and will cause a compile time warning.
+
+### Qualified Import ###
+
+All imports are qualified. That is, an imported identifier is referenced in the importing module by a qualified identifier. A qualified identifier consists of the module identifier, followed by a period, followed by the actual identifier. Qualification prevents name conflicts between identical identifiers in different libraries.
+
+```modula-2
+IMPORT Flintstones, Rubbles;
+...
+person := Flintstones.Fred;
+person.spouse := Flintstones.Wilma;
+person.friend := Rubbles.Barney;
+person.friend.spouse := Rubbles.Betty;
+```
+
+### Import Aggregation ###
+
+Imported modules are not implicitly re-exported but they may be explicitly re-exported. Module identifiers to be imported for automatic re-export are marked with a re-export suffix `+`.
+
+```antlr
+import := IMPORT libIdent reExport? ( ’,’ libIdent reExport? )* ’;’ ;
+alias libIdent = StdIdent ;
+alias reExport = ’+’ ;
+```
+
+A library module that imports other modules for the sole purpose of re-export is called an import aggregator. The facility is called import aggregation. It is useful for importing multiple libraries with a single import directive.
+
+```modula-2
+INTERFACE MODULE CharIO;
+IMPORT SoleCharIO+, ArrayOfCharIO+; END CharIO.
+```
+
+When a client module `M` imports an import aggregator which imports and re-exports modules `B` and `C`, client module `M` then automatically imports modules `B` and `C`.
+
+```modula-2
+IMPORT CharIO; VAR char : CHAR; str : ARRAY 10 OF CHAR;
+...
+WRITE "char: ", char; (* use of syntax bindings in SoleCharIO *)
+WRITE "string: ", str; (* use of syntax bindings in ArrayOfCharIO *)
+```
+
+## Abstract Data Type Libraries ##
+
+An abstract data type library is a library that provides an abstract data type (ADT) whose identifier matches the identifier of its library module.
+
+```modula-2
+INTERFACE MODULE String;
+TYPE String = OPAQUE POINTER;
+```
+
+The identifier of such an ADT is implicitly aliased when it is imported and may therefore be used unqualified.
+
+```modula-2
+IMPORT String;
+VAR s : String; (* alias for String.String *)
+```
+
+## Institution ##
+
+The introduction of a name, possibly along with an associated specification of an entity is called institution. There are two kinds:
+
+* definition
+* declaration
+
+A definition is an institution of implementation of an entity, a declaration is an institution of interface. In the case of constants, variables and types other than opaque types, interface and implementation are inseparable. An institution of a constant, variable or non-opaque type within an interface module is both definition and declaration.
+
+---
+
+# Chaper 3 : Constants, Variables and Aliases #
+> This is the chapter headline
+
+## Constants ##
+
+A constant is an identifier that represents an immutable value determined at compile time. Its value is specified by a constant expression in its definition clause. A constant may be defined within interface, implementation and program modules.
+
+```antlr
+constDefinition := CONST ident ( ':' typeIdent )? ’=’ constExpression ;
+```
+
+The expression must be a constant expression and it may **not** be a module or type identifier.
+
+## Variables ##
+
+A variable is a named reference to a mutable value. It is always associated with a type and may only hold values of its type. The type is specified in its definition clause and is immutable. A variable may be defined within interface, implementation and program modules. The syntax of public and private definition clauses differs slightly.
+
+### Public Variable Definition ###
+
+A variable definition within an interface module may define variables of named types only.
+
+```antlr
+publicVarDefinition := VAR ( identList ’:’ typeIdent ’;’ )+ ;
+```
+
+Variables defined in an interface module are always exported immutable. They are mutable within the corresponding implementation module but immutable in any other scope.
+
+### Private Variable Definition ###
+
+A variable definition within an implementation or program module may define variables of named or anonymous types.
+
+```antlr
+privateVarDefinition := identList ’:’ ( typeIdent | arrayType | subrangeType | procedureType ) ;
+```
+
+### Variable Initialisation ###
+
+Variables of all pointer types are automatically initialised to hold the unallocated pointer value `NIL`. Variables of other types are not initialised. Their values are undetermined after allocation and must be explicitly initialised by assignment at runtime.
+
+
+## Aliases ##
+
+The unqualified name of a qualified identifier may be defined as an alias for the qualified identifier using an alias definition. The definition consists of reserved word `ALIAS` followed by an alias denoter, followed by symbol `=` and a qualified name selector. An alias denoter consists of a non-empty list of alias names or an asterisk `*`. A name selector consists of a qualified name, possibly followed by wildcard symbol `.*`. Every alias name must match a fully qualified name selected by the name selector. The qualified name must be visible in the current scope.
+
+```antlr
+aliasDefinition := ALIAS aliasDenoter '=' nameSelector ;
+
+aliasDenoter := aliasName ( ',' aliasName )* | '*' ;
+
+alias aliasName = StdIdent;
+
+nameSelector := qualident wildcard? ;
+
+alias wildcard = '.*' ;
+```
+
+The unqualified name is called the alias and the qualified identifier it represents is called its translation.
+
+
+### Named Alias Definition ###
+
+A named alias definition specifies the qualified identifier of its translation by name.
+
+An alias definition of the form
+
+```modula-2
+ALIAS Fred = Flintstone.Fred;
+```
+defines one alias name `Fred` to represent qualified name `Flintstone.Fred`.
+
+An alias definition of the form
+
+```modula-2
+ALIAS Fred, Wilma = Flintstone.*;
+```
+defines two aliases `Fred` and `Wilma` to represent `Flintstone.Fred` and `Flintstone.Wilma` respectively.
+
+
+### Wildcard Alias Definition ###
+
+Unqualified aliases for all the enumerated values of an enumeration type may be defined by using a name selector composed of the qualified identifier of the enumeration type followed by wildcard `.*`.
+
+Given a type definition of the form
+
+```modula-2
+TYPE Colour = ( Red, Green, Blue );
+```
+
+an alias definition of the form
+
+```modula-2
+ALIAS * = Colour.*;
+```
+
+defines aliases for every value of enumeration type `Colour`. The resulting aliases are `Red`, `Green` and `Blue`, representing `Colour.Red` , `Colour.Green` and `Colour.Blue` respectively.
+
+
+### Visibility of Aliases ###
+
+Unlike unqualified names brought into scope by unqualified import in earlier Modula-2 versions, unqualified names declared by an alias definition have local scope. They are only visible within the scope in which they are defined, reducing the likelihood of name collision when using unqualified names.
+
+
+An alias definition within a local scope
+
+```modula-2
+PROCEDURE DrawPoint ( point : Point; colour : Colour );
+ALIAS * = Colour.*;
+BEGIN
+  (* unqualified aliases for Colour values are in scope here *)
+END DrawPoint;
+(* unqualified aliases for Colour values are no longer in scope here *)
+```
+defines aliases `Red`, `Green`, and `Blue` within the local scope of procedure `DrawPoint`. The aliases are visible **only** within the scope of the procedure.
+
+---
+
+# Chapter 4 : Types #
+> This is the chapter headliner.
+
+A type is a classification of units of data that determines storage representation, value range and semantics. A type is instituted using a type institution clause, which may be a type declaration or type definition.
+
+## Type Institution ##
+
+### Type Declaration ###
+
+A type declaration may specify any type except indeterminate types.
+
+```antlr
+typeDeclarationClause := TYPE ( typeDeclaration ’;’ )+ ;
+typeDeclaration :=
+  ident ’=’ ( aliasType | derivedType | subrangeType | enumType | setType |
+    arrayType | recordType | opaqueType | pointerType | procedureType ) ;
+```
+
+### Type Definition ###
+
+A type definition may specify any type except opaque types.
+
+```antlr
+typeDefinitionClause := TYPE ( typeDefinition ’;’ )+ ;
+typeDefinition :=
+  ident ’=’ ( aliasType | derivedType | subrangeType | enumType | setType |
+    arrayType | recordType | privatePointerType | procedureType ) ;
+```
+
+## Alias Types ##
+
+An alias type is a synonym for another type. The type for which it is a synonym is called its base type.
+
+```antlr
+aliasTypeInstitution := TYPE ident ’=’ ALIAS OF typeIdent ;
+```
+
+An alias type and its base type are identical and thus interchangeable.
+
+## Derived Types ##
+
+A derived type is a derivative of another type. The type from which it is derived is called its base type.
+
+```antlr
+derivedTypeInstitution := TYPE ident ’=’ typeIdent ;
+```
+
+The type obtains its properties from its base type, except for its identifier. It has the same semantics as its base type. However, a derived type and its base type are different types and the two are not interchangeable.
+
+## Subrange Types ##
+
+A subrange type is a subtype of an ordinal type. The type of which it is a subtype is called its base type. A subrange type obtains its properties from its base type, except for its identifier and its value range. It has the same semantics as its base type. The value range of a subrange type is a subset, but not necessarily a strict subset of the value range of its base type.
+
+```antlr
+subrangeTypeInstitution := TYPE ident ’=’ ’[’ lowerBound ’..’ upperBound ’]’ OF ordinalType ;
+alias lowerBound, upperBound = constExpression ;
+alias ordinalType = typeIdent ;
+```
+
+A subrange type is always upwards compatible with its base type, but a base type is not downwards compatible with its subtypes. This restriction exists because any value of a subrange type is always a legal value of its base type but a value of a base type is not necessarily a legal value of its subrange type.
+
+## Enumeration Types ##
+
+An enumeration type is an ordinal type whose values are determined by an identifier list given in its institution clause.
+
+```antlr
+enumTypeInstitution := TYPE ident ’=’ ’(’ ( ’+’ enumTypeToExtend ’,’ )? identList ’)’ ;
+alias enumTypeToExtend = typeIdent ;
+```
+
+The identifier list is automatically enumerated, that is, each identifier is assigned an enumeration value. The enumeration value assigned to the leftmost identifier is always zero. The enumeration value assigned to any following identifier is the enumeration value of its predecessor incremented by one.
+
+A type institution clause of the form
+
+```modula-2
+TYPE Colour = ( Red, Green, Blue );
+```
+
+institutes an enumeration type `Colour` with three enumerated values `Red`, `Green` and `Blue` whose enumeration values are 0, 1 and 2 respectively.
+
+The maximum number of values in an enumeration type is defined by constant `Impl.MaxEnumValues`. Its value is implementation defined but must not be less than 4096.
+
+Enumerated values must generally be qualified by their type identifier to avoid name conflicts. However, they may be referenced unqualified in an assignment to a designator whose type matches the enumeration type.
+
+```modula-2
+VAR colour : Colour;
+colour := Red; (* unqualified use in assignment *)
+```
+
+### Enumeration Type Extension ###
+
+An enumeration type may be instituted as an extension of another enumeration type. Such a type is called a type extension and the type it extends is called its base type. To institute a type extension of an enumeration type, the identifier list within the institution clause is preceded with the identifier of the base type marked by prefix `+`. An extension type inherits all the enumerated values of its base type along with their enumeration values.
+
+A type institution clause of the form
+
+```modula-2
+TYPE MoreColour = ( +Colour, Orange, Magenta, Cyan );
+```
+
+institutes an enumeration type as an extension of enumeration type with six enumerated values `Red` , `Green` , `Blue` , `Orange`, `Magenta` and `Cyan` whose enumeration values are 0 to 5 respectively.
+
+An enumeration type is always downwards compatible with any of its type extensions, but an enumeration type extension is not upwards compatible with its base type. This restriction exists because any value of a base type is always a legal value of its extension type but the reverse is not necessarily the case.
+
+## Set Types ##
+
+A set type is a collection type that represents a mathematical set of unique finite values and whose value type is an enumeration type.
+
+```antlr
+setTypeInstitution := TYPE ident ’=’ SET OF enumTypeIdent ;
+```
+
+The value type determines the finite values of the set type. Each value may be stored in the set at most once. Value constructor `{}` denotes the empty set. The maximum number of elements in a set type is defined by constant `Impl.MaxSetElements`. Its value is implementation defined but must not be less than 128.
+
+Enumerated values may be referenced unqualified when passed to procedures `INSERT` and `REMOVE`, in a membership test expression, within an explicitly typed structured value or within an untyped structured value in an assignment to a set, provided that the value type of the target set matches the enumeration type.
+
+## Array Types ##
+
+An array type is an indexed collection type with a non-zero capacity limit and a value type. Capacity limit and value type are specified in its institution clause.
+
+```antlr
+arrayTypeInstitution := TYPE ident ’=’ ARRAY capacityLimit OF valueTypeIdent ;
+```
+
+The capacity limit determines the maximum number of values that can be stored in an instance of the type. The value type is the type of its storable values. The index type is always `[0..capacityLimit-1] OF LONGCARD`.
+
+Values are stored contiguously from the lowest index which is always zero, up to the highest index which is dynamically bounded. Values are addressed by their indexed position within the array using subscript notation.
+
+Character arrays are always and implicitly terminated by an ISO646 NUL control character `0u0`.
+
+### Dynamic Bounding ###
+
+The number of values stored in an array may change at runtime within the capacity limit of its type. To this end, arrays are internally represented by a record that consists of a value count field and a payload field. The value count field holds the number of values and the payload field holds the values stored in the array.
+
+* pervasive function `COUNT()` returns the value count of a non-character array
+* pervasive function `LENGTH()` returns the length of a character array, not counting its NUL terminator
+
+## Record Types ##
+
+A record type is a compound type whose components are of arbitrary types. It may be extensible or non- extensible. Its components are called fields. The number of fields is arbitrary.
+
+```antlr
+recordTypeInstitution :=
+  TYPE ident ’=’ RECORD ( '(' recTypeToExtend ')' )? fieldList ( ';' fieldList )* END ;
+fieldList := identList ':' ( typeIdent | arrayType | subrangeType | procedureType ) ;
+recTypeToExtend = NIL | recordTypeIdent ;
+```
+
+An extensible record type is instituted by specifying a base type enclosed in parentheses following reserved word `RECORD` in the institution clause. A record type whose institution lacks a base type specification is non-extensible. An extensible record type that specifies `NIL` instead of a base type is called a root type.
+
+Any extensible record type inherits all the fields from its base type, including any fields the base type may have inherited. A type so defined is also called a type extension of the base type. A type extension is up- wards passing compatible to its base type, but the base type is not downwards compatible with its type extensions. A pointer to a type extension is upwards compatible with a pointer to its base type.
+
+### Records with an Indeterminate Field ###
+
+An indeterminate field is an open array field whose capacity limit cannot be determined from its declaration. Instead it is determined during allocation at runtime. A pointer type whose target type is a record type whose last field is indeterminate at compile time is called an indeterminate type.
+
+```antlr
+indeterminateType := POINTER TO RECORD ( fieldList ';' )* indeterminateField END ;
+indeterminateField := '+' ident ':' ARRAY capacityField OF typeIdent ;
+alias capacityField = ident ;
+```
+
+An indeterminate type contains an embedded field of type `LONGCARD` to hold the capacity limit of the indeterminate field. The capacity field must be initialised when an instance of the type is allocated at runtime.
+
+When allocating an instance using the `NEW` statement, the capacity field is initialised implicitly. When allocating an instance using library procedure `Storage.Allocate` directly, the capacity field must be initialised explicitly.
+
+```modula-2
+TYPE Foo = POINTER TO RECORD (* arbitrary fields *) + bar : ARRAY capacity OF Bar END;
+Storage.Allocate(foo, TSIZE(Foo, 1000)); foo^.capacity := 1000; (* explicit initialisation *)
+```
+
+An instance of an indeterminate type is assignment and copy compatible to another if both are of the same type, regardless of their allocated capacity. However, when copying one instance to another, the operation may overflow the target instance’s capacity. When such an overflow is detected, a runtime fault will occur.
+
+
+## Pointer Types ##
+
+A pointer type is a reference type. Its values are references to instances of another type. The type it references is called its target type.
+
+
+```antlr
+pointerTypeDefinition := TYPE ident '=' POINTER TO typeIdent ;
+```
+
+An instance of a pointer type may store any reference to a value of the target type or the invalid pointer `NIL`.
+
+
+## Opaque Types ##
+
+An opaque type is a type whose structure is accessible within the implementation module that contains its definition, but inaccessible within the corresponding interface module that contains its declaration and as a consequence also inaccessible to any client module importing it.
+
+There are two kinds: (1) static opaque types and (2) opaque pointer types.
+
+
+### Static Opaque Types ###
+
+A static opaque type is an opaque type that permits static allocation of instances of the type.
+To facilitate static allocation, the allocation size must be specified in the type's declaration clause.
+The declaration is placed in an interface module.
+
+```antlr
+staticOpaqueTypeDeclaration := TYPE ident '=' OPAQUE '[' allocSize ']' ;
+alias allocSize = constExpression ; /* specified in octets */
+```
+
+A matching definition must be placed in the corresponding implementation module.
+
+```antlr
+staticOpaqueTypeCompletion := TYPE ident '=' privateType ;
+```
+
+where the type identifier and allocation size of the definition match those of the declaration.
+
+ 
+### Opaque Pointer Types ###
+
+An opaque type is a pointer type whose name is public but whose target type is hidden. Its declaration is placed in an interface module.
+
+```antlr
+opaquePointerTypeDefinition := TYPE ident '=' OPAQUE ;
+```
+
+A matching definition specifying the target type must be placed in the corresponding implementation module.
+
+```antlr
+opaquePointerTypeCompletion := TYPE ident '=' POINTER TO ( determinateTarget | indeterminateTarget );
+```
+
+where the type identifier in of the definition matches that of the declaration.
+
+
+## Procedure Types ##
+
+A procedure type is a reference type whose legal values are references to procedures or functions that match the signature associated with the type. The signature is specified within its institution clause.
+
+```antlr
+procedureTypeInstitution :=
+  TYPE ident ’=’ PROCEDURE ( ’(’ formalType ( ’;’ formalType )* ’)’ )? ( ’:’ returnedType )? ;
+```
+
+The instance of a procedure type may store any reference to a procedure or function whose signature matches the procedure signature associated with the procedure type or the invalid pointer `NIL`. The signatures of a procedure and a procedure type match if their respective formal types exactly match, that is, including any formal type attributes and including any return type.
+
+## Formal Types ##
+
+A type specification for a procedure parameter is called a formal type. It may be associated with a formal type attribute. A formal type attribute determines the parameter passing convention of parameters of the formal type.
+
+```antlr
+formalType := ( CONST | VAR )? nonAttrFormalType ;
+```
+
+A formal type may be a type identifier, an open array type, a casting formal type or a variadic formal type.
+
+```antlr
+nonAttrFormalType := simpleFormalType | castingFormalType | variadicFormalType ;
+simpleFormalType := ( ARRAY OF )? typeIdent ;
+```
+
+### Formal Open Array Types ###
+
+An open array type is an array type whose capacity limit is indeterminate at compile time. The capacity and value count of a parameter of a formal open array type are determined at runtime when an argument is passed to it.
+
+```antlr
+formalOpenArrayType := ARRAY OF typeIdent ;
+```
+
+### Casting Formal Types ###
+
+A casting formal type is a formal type with implicit cast semantics. An argument that is passed to a parameter of a casting formal type is implicitly cast to the formal type. The use of casting formal type syntax must be enabled by import of special module `UNSAFE`.
+
+There are two casting formal types: `CAST` `ADDRESS` and `CAST` `OCTETSEQ`.
+
+```antlr
+castingFormalType := CAST ( ADDRESS | OCTETSEQ ) ;
+```
+
+#### Formal Type CAST ADDRESS ####
+
+Formal type `CAST` `ADDRESS` imposes an implicit cast to type `UNSAFE.ADDRESS`.
+
+For semantics, see
+[Casting Formal Types](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(11)-:-Low-Level-Facilities#casting-formal-types)
+in chapter Low-Level Facilities.
+
+#### Formal Type CAST OCTETSEQ ####
+
+Formal type `CAST` `OCTETSEQ` imposes an implicit cast to a sequence of octets.
+
+For semantics, see
+[Casting Formal Types](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(11)-:-Low-Level-Facilities#casting-formal-types)
+in chapter Low-Level Facilities.
+
+### Variadic Formal Types ###
+
+A variadic formal type is a formal list type whose arity is indeterminate. Its argument count cannot be determined from its declaration and may vary. A parameter of a formal variadic type may be passed a variable number of arguments. The argument count is determined when a procedure with a variadic formal parameter is invoked.
+
+```antlr
+variadicFormalType := ARGLIST OF typeIdent ;
+```
+
+## Alignment ##
+
+Alignment of components within compound types is implementation dependent, and under certain circumstances target platform dependent. There are however four exceptions for which alignment is language defined.
+
+The following data are always packed
+* the values of arrays of type `CHAR` or a subrange thereof are always octet aligned
+* the values of arrays of type `OCTET` or a subrange thereof are always octet aligned
+* the values of sequences of type `OCTETSEQ` or `CAST` `OCTETSEQ` are always octet aligned
+* enumerated values in enumerated sets are always bitmapped, their bit index is their ordinal value
+
+---
+
+# Chapter 5 : Procedures #
+> This is the chapter headline
+
+A procedure is a sequence of statements associated with an identifier and it may be invoked from any scope in which its identifier is visible. A procedure has its own local scope in which local entities may be declared. It may have zero or more associated parameters and it may return a result in its own name. A procedure that returns a result in its own name is called a function procedure, or simply a function. A procedure that does not is called a regular procedure. Collectively, both are referred to as procedures.
+
+## Procedure Institution ##
+
+### Procedure Declaration ###
+
+A procedure declaration specifies a procedure header only.
+
+```antlr
+alias procedureDeclaration = procedureHeader ;
+procedureHeader := PROCEDURE procedureSignature ;
+procedureSignature :=
+  ident ( ’(’ formalParams ( ’;’ formalParams )* ’)’ )? ( ’:’ returnedType )? ;
+```
+
+### Procedure Definition ###
+
+A procedure definition specifies a procedure header followed by a procedure body.
+
+```antlr
+procedureDefinition := procedureHeader ’;’ block ident ;
+```
+
+#### The Procedure Header ####
+
+A procedure header consists of a procedure’s identifier, its formal parameters if any, and its return type if any. The procedure header represents the interface of the procedure.
+
+#### The Procedure Body ####
+
+A procedure body consists of a local block followed by the procedure’s identifier. The procedure body represents the implementation of the procedure.
+
+#### Formal Parameters ####
+
+Parameter specified within the parameter list of a procedure header are called the procedure’s formal parameters. Formal parameters determine the number, order, type and passing convention of arguments that may be passed to a procedure when it is invoked.
+
+```antlr
+formalParams := ( CONST | VAR )? identList ’:’ nonAttrFormalType ;
+```
+
+The identifier of a formal parameter is the identifier by which the value of the passed in argument or argument list can be referenced within the body of the procedure.
+
+#### Parameter Passing Conventions ####
+
+There are three parameter passing conventions.
+* pass by value
+* pass by reference, mutable
+* pass by reference, immutable
+
+#### Pass By Value ####
+
+The default parameter passing convention is pass by value. It is used when no attribute is specified for a formal parameter or formal parameter list. Such a parameter is called a value parameter. When an argument is passed to a value parameter, a copy is passed to the procedure. The scope of the copy is the procedure’s local scope.
+
+#### Pass By Reference – Mutable ####
+
+The pass by mutable reference convention is used when the `VAR` attribute is specified for a formal parameter or formal parameter list. Such a parameter is called a `VAR` parameter. When an argument is passed to a `VAR` parameter, a mutable reference to the argument is passed to the procedure. The procedure may or may not modify the argument. Immutable entities may therefore not be passed to `VAR` parameters.
+
+#### Pass By Reference – Immutable ####
+
+The pass by immutable reference convention is used when the `CONST` attribute is specified for a formal parameter or formal parameter list. Such a parameter is called a `CONST` parameter. When an argument is passed to a `CONST` parameter, an immutable reference to the argument is passed to the procedure. The procedure may not modify the argument. That is, within the scope of the procedure the parameter is treated as if it was a constant. Both mutable and immutable entities may be passed to parameters.
+
+#### Formal Open Array Parameters ####
+
+A formal open array parameter is a formal parameter of a formal open array type. Its capacity is indeterminate at compile time. Capacity and value count are determined at runtime when an argument is passed to it in a procedure call.
+
+An argument passed to an open array parameter must be an array whose value type is compatible with the value type of the parameter to which it is passed.
+
+Given the declarations
+
+```modula-2
+TYPE Chars = ARRAY 100 OF CHAR; Buffer = ARRAY 100 OF OCTET;
+VAR chars : Chars; buffer : Buffer;
+PROCEDURE PadWithZeroes ( VAR array : ARRAY OF OCTET );
+```
+variable `buffer` may be passed to parameter `array` in a call to procedure `PadWithZeroes` because their value types match, but variable `chars` may not be passed to `array` because their value types are incompatible.
+
+```modula-2
+chars := "abc"; buffer := { 1, 2, 3 };
+PadWithZeroes(buffer); (* OK *)
+PadWithZeroes(chars); (* compile time error : incompatible type *)
+```
+
+The actual capacity is passed as a hidden parameter immediately preceding the open array parameter.
+```modula-2
+PROCEDURE PadWithZeroes ( (*hidden capacity : LONGCARD;*) VAR array : ARRAY OF OCTET );
+```
+
+A call to function `CAPACITY()` with the identifier of the parameter within the procedure body returns this value.
+
+```modula-2
+PROCEDURE PadWithZeroes ( VAR array : ARRAY OF OCTET );
+BEGIN
+  WHILE COUNT(array) < CAPACITY(array) DO
+    APPEND(array, 0)
+  END (* WHILE *)
+END PadWithZeroes;
+```
+
+#### Casting Formal Parameters ####
+
+A casting formal parameter is a formal parameter of a casting formal type. It causes an argument passed to it to be cast to its formal type. There are two kinds.
+
+##### Casting Formal Address Parameter #####
+
+A casting formal address parameter is a parameter of formal type `CAST` `ADDRESS`.
+
+For semantics, see chapter Low-Level Facilities.
+
+##### Casting Formal Octet Sequence Parameter #####
+
+A casting formal octet sequence parameter is a parameter of formal type `CAST` `OCTETSEQ`.
+
+For semantics, see chapter Low-Level Facilities.
+
+#### Variadic Formal Parameters ####
+
+A variadic formal parameter is a formal parameter of a variadic formal type to which a variable number of arguments may be passed. All arguments must be passing compatible to its value type.
+
+```modula-2
+PROCEDURE average ( args : ARGLIST OF REAL ) : REAL;
+···
+v := average(1.2, 3.4, 5.6); (* <= OK *) v := average(1.2, 3); (* <= incompatible type *)
+```
+
+The actual argument count is passed as a hidden parameter immediately preceding the argument list.
+
+```modula-2
+PROCEDURE average ( (*hidden argc : LONGCARD;*) args : ARGLIST OF REAL ) : REAL;
+```
+
+A call to function `COUNT()` with the identifier of the parameter within the procedure body returns this value.
+
+```modula-2
+PROCEDURE Variadic ( args : ARGLIST OF T );
+BEGIN
+  WRITE "number of arguments: ", COUNT(args);
+```
+
+A variadic parameter is an indexed collection. A `FOR` statement may be used to iterate over its values.
+
+```modula-2
+PROCEDURE average ( args : ARGLIST OF REAL ) : REAL; VAR sum : REAL;
+BEGIN
+  IF COUNT(args) = 0 THEN RETURN 0.0 END; sum := 0.0;
+  FOR value IN args DO
+    sum := sum + value
+  END; (* FOR *)
+  RETURN sum / COUNT(args)
+END average;
+```
+
+As with other arrays, values may also be addressed by subscript. The index of the first value is always zero.
+
+```modula-2
+FOR index, value IN args DO
+  sum := sum + args[index] (* args[index] is equivalent to value *)
+END; (* FOR *)
+```
+
+An argument list passed to a variadic formal parameter may be enclosed in curly braces to delineate it from other arguments. Such delineation is required whenever the arguments passed to a variadic formal parameter are not distinguishable by their type from the argument that follows the list. Given a formal parameter list of the form
+
+```modula-2
+PROCEDURE P ( list1, list2 : ARGLIST OF REAL; x : LONGREAL );
+```
+
+arguments to be passed to parameters `list1` and `list2` in a procedure call to `P` are not distinguishable by type from their following arguments and must be delineated by curly braces.
+
+```modula-2
+P({0.1, 2.3}, {3.4, 5.6, 7.8}, 9.0);
+```
+
+---
+
+# Chapter 6 : Statements #
+> This is the chapter headline
+
+A statement represents a computation that causes a transformation of the computational state of a program. Statements are used for their effects only, they do not return values and they may **not** occur within expressions.
+
+## The Assignment Statement ##
+
+The assignment statement is a value-mutator statement. It assigns a given value to a mutable value.
+
+```antlr
+assignment := targetDesignator ’:=’ expression ;
+```
+The designator is called the L-value and must be mutable. The expression is called the R-value and must be assignment compatible to the L-value. If these conditions are not met, a compile time error will occur. Assignment of constants `NIL`, `0u0` or `0` and calls to procedures containing such assignments shall be considered intentional and shall **not** be subjected to dead store elimination!
+
+
+## The INC/DEC Statement ##
+
+The INC/DEC statement is a value-mutator statement. It consists of a designator followed by a mutator symbol, where `++` increments and `--` decrements the designator by one. The designator is an L-value. It must be mutable and of a whole number type. If these conditions are not met, a compile time error will occur.
+
+```antlr
+incOrDecStatement := designator ( ’++’ | ’--’ );
+```
+
+## The COPY Statement ##
+
+The COPY statement is a value-mutator statement. It copies values across type boundaries where types have a
+common or compatible value type.
+
+```antlr
+copyStatement := COPY targetDesignator ’:=’ expression ;
+```
+
+The designator is called the L-value, the expression is called the R-value. The L-value must be mutable. The R-value must be copy compatible to the L-value. Both must be non-elementary types. If these conditions are not met, a compile time error will occur.
+
+### Copying Sets ###
+
+Variables of different set types are not assignment compatible but they are copy compatible if their value types match or one is an extension or subtype of the other.
+
+Given the declarations
+
+```modula-2
+TYPE BaseColour = ( Red, Green, Blue ); ExtColour = ( +BaseColour, Orange, Magenta, Cyan );
+TYPE BaseColours = SET OF BaseColour; ExtColours = SET OF ExtColour;
+VAR baseColours : BaseColours; extColours : ExtColours;
+```
+
+a statement of the form
+```modula-2
+COPY extColours := baseColours
+```
+copies set `baseColours` to set `extColours`
+
+### Copying Arrays ###
+
+Variables of different array types are not assignment compatible but they are copy compatible if their value types match or one is an extension or subtype of the other.
+
+Given the declarations
+
+```modula-2
+TYPE PosInt = [0..TMAX(INTEGER)] OF INTEGER;
+TYPE ArrayA = ARRAY 20 OF INTEGER; ArrayB = ARRAY 10 OF PosInt;
+VAR arrayA : ArrayA; arrayB : ArrayB;
+```
+
+a statement of the form
+```modula-2
+COPY arrayA := arrayB
+```
+copies array `arrayB` to array `arrayA`
+
+a statement of the form
+```modula-2
+COPY arrayB := arrayA
+```
+copies array `arrayA` to array `arrayB`
+
+### Copying Between Sets and Arrays ###
+
+Variables of array and set types are not assignment compatible with each other but they are copy compatible if their value types are copy compatible.
+
+Given the declarations
+
+```modula-2
+TYPE Token = ( Unknown, Alias, And, Arglist, Array, Begin ... );
+TYPE TokenSet = SET OF Token; TokenArray = ARRAY 100 OF Token;
+VAR set : TokenSet; array : TokenArray;
+```
+
+a statement of the form
+```modula-2
+COPY set := array
+```
+copies the tokens stored in `array` to `set`
+
+a statement of the form
+```modula-2
+COPY array := set
+```
+copies the tokens stored in `set` to `array`
+
+## The Procedure Call Statement ##
+
+A procedure call statement is used to invoke a procedure. It consists of a designator that designates the called procedure, optionally followed by a list of parameters enclosed in parentheses to be passed to the procedure. Parameters passed are called arguments or actual parameters, those defined in the procedure’s header are called formal parameters.
+
+In every procedure call, the types of actual and formal parameters must match. If they don’t, a compile time error will occur. Procedure calls may be recursive, that is, a procedure may call itself within its body. Recursive calls shall be optimised by tail call elimination (TCE), except when generating source code in a target language that does not support TCE.
+
+## The RETURN Statement ##
+
+The `RETURN` statement is a flow-control statement used within a procedure body to return control to its caller
+and in the main body of the program to return control to the operating environment that activated the program.
+
+Depending on the type of procedure in which a `RETURN` statement is used, it may or may not return a value. When returning from a regular procedure, no value may be returned. When returning from a function procedure a value of the procedure’s return type must be returned. Non-compliance will cause a compile time error.
+
+## The NEW Statement ##
+
+The `NEW` statement is a memory management statement. It allocates storage for a new instance of the target
+type referenced by the type of its argument. Its syntax is
+
+```antlr
+newStmt := NEW designator ( ’:=’ initValue | CAPACITY expression )? ;
+```
+
+where `designator` must be an L-value and `initValue` must be an R-value.
+
+A statement of the form
+
+```modula-2
+NEW p
+```
+
+allocates a new instance of the target type of pointer `p` and passes a reference to the new instance in `p`
+
+### Allocation with Initialisation ###
+
+By default, a newly allocated instance is not initialised. To initialise a new instance during its allocation, an initialisation value may be specified within a `NEW` statement.
+
+A statement of the form
+
+```modula-2
+NEW array := { a, b, c }
+```
+
+allocates a new instance, initialises it with values `a` , `b` and `c` , and passes a reference to it in `array`
+
+### Allocation of Instances of Indeterminate Type ###
+
+A capacity value may be specified to initialise a new instance of an indeterminate type.
+
+A statement of the form
+
+```modula-2
+NEW buffer CAPACITY 1000
+```
+
+allocates a new instance of an indeterminate type with a capacity limit of 1000 values of the type’s indeterminate field and passes a reference to the new instance in `buffer`
+
+## The RETAIN Statement ##
+
+The `RETAIN` statement is a memory management statement. It prevents premature deallocation of the target
+referenced by its argument. It is only supported with data types that provide a library binding to `RETAIN`.
+
+## The RELEASE Statement ##
+
+The `RELEASE` statement is a memory management statement. It deallocates the target unless there are any
+prior invocations of `RETAIN` outstanding for the target. If so, `RELEASE` cancels one prior invocation of `RETAIN`.
+
+## The IF Statement ##
+
+The `IF` statement is a flow-control statement that passes control to one of a number of blocks within its body depending on the value of a boolean expression. It evaluates a condition in form of a boolean expression. If the condition is `TRUE` then program control passes to its block. If the condition is `FALSE` and an `ELSIF` branch follows, then program control passes to the branch to evaluate that branch’s condition.
+
+Again, if the condition is `TRUE` then program control passes to the block of the branch. If there are no `ELSIF` branches, or if the conditions of all `ELSIF` branches are `FALSE`, and if an `ELSE` branch follows, then program control passes to the block. At most one block in the statement is executed. `IF` statements must always be terminated with an `END`.
+
+## The CASE Statement ##
+
+The `CASE` statement is a flow-control statement that passes control to one of a number of labeled statements
+or statement sequences depending on the value of an ordinal expression.
+
+```antlr
+caseStatement := CASE expression OF ( ’|’ case )+ ( ELSE statementSequence )? END ;
+case := caseLabels ( ’,’ caseLabels )* : StatementSequence ;
+caseLabels := constExpression ( .. constExpression )? ;
+```
+
+Control is passed to the first statement following the case label that matches the ordinal expression. Case labels must be unique. There is no “fall through”. At the end of a label, control is passed to the first statement after the `CASE` statement. If no case label matches, control is passed to the `ELSE` block, or, if there is no `ELSE` block,
+to the first statement after the `CASE` statement.
+
+The statement is also used as a type-guard to ensure type safety when addressing fields of a type extension of an extensible record whose exact type is unknown. In this case, the fields of a specific type extension are only addressable within a case label matching the specific extension type. Otherwise a compile time fault occurs.
+
+```modula-2
+CASE record OF (* record may be of any extension of the root type or the root type itself *)
+| ExtnType : record^.extnField := value; (* addressing a field of a specific type extension *)
+```
+
+## The LOOP Statement ##
+
+The `LOOP` statement is a flow-control statement used to repeat a statement or statement sequence within its
+body indefinitely unless explicitly terminated by an `EXIT` statement within its body.
+
+## The WHILE Statement ##
+
+The `WHILE` statement is a flow-control statement used to repeat a statement or statement sequence depending on a condition in form of a boolean expression. The expression is evaluated each time before the `DO` block is executed. The `DO` block is repeated as long as the expression evaluates to `TRUE` unless the statement is explicitly terminated by an `EXIT` statement within its body.
+
+## The REPEAT Statement ##
+
+The `REPEAT` statement is is a flow-control statement used to repeat a statement or statement sequence depending on a condition in form of a boolean expression. The expression is evaluated each time after the `REPEAT` block has executed. The `REPEAT` block is repeated as long as the expression evaluates to `TRUE` unless the statement is explicitly terminated by an `EXIT` statement within its body.
+
+## The FOR Statement ##
+
+The `FOR` statement is a flow-control statement that iterates over an iterable entity, executing a statement or statement sequence during each iteration cycle. It consists of a loop header and a loop body. The header consists of one or two loop variants, an optional descender, and an iterable expression. The body consists of a statement or statement sequence.
+
+```antlr
+forStatement := FOR forLoopVariants IN iterableExpr DO statementSequence END ;
+```
+
+### The Loop Variants ###
+
+The loop variant section contains one or two identifiers through which the accessor of the iterated entity and its value are referenced within the loop.
+
+```antlr
+forLoopVariants := accessor ( ’--’ )? ( ’,’ value )? ;
+alias accessor, value = ident ;
+```
+
+The loop variant identifiers are declared by the loop header and they are only in scope within the header and body. Once a `FOR` statement has terminated, its loop variants are no longer in scope. The number of loop variants depends on the loop’s iterable expression.
+
+* If the iterable expression is an ordinal type, a subrange of an ordinal type or the designator of a set, then the accessor is also its value. The header thus contains only one loop variant, immutable within the loop body.
+* If the iterable expression is the designator of an array `a`, the header contains an accessor representing the iteration index `i` and an optional second loop variant `v` representing its value `a[i]`. Index `i` is always immutable within the loop body. The value is mutable if `a` is mutable, otherwise immutable.
+* If the iterable expression is the designator of a key-value dictionary `d`, the header contains an accessor representing the iteration key `k` and an optional second loop variant `v` representing the key’s value `d[k]`. Key `k` is always immutable within the loop body. The value is mutable if `d` is mutable, otherwise immutable.
+
+During the first iteration cycle the loop variants reference that accessor, value or accessor/value pair which is first for the prevailing iteration order. Before each subsequent iteration cycle the loop variants are advanced to their successor for the prevailing iteration order. Iteration continues until all accessors, values or pairs have been visited unless the `FOR` statement is explicitly terminated by an `EXIT` statement within its body.
+
+### The Iteration Order ###
+
+The actual order of values is determined by the type of the iterable. The default iteration order is ascending. For descending order, the first loop variant may be suffixed with a descender, denoted by the `--` symbol.
+
+### The Iterable Expression ###
+
+The iterable expression — or simply iterable — is denoted by (1) the identifier of an ordinal or subrange type, (2) an anonymous subrange thereof, or (3) the identifier of a set, array or key-value dictionary, or an array slice.
+
+```antlr
+iterableExpr := qualident ordinalRange? ;
+```
+
+### Iterating over Ordinal Types ###
+
+If the iterable is an ordinal type or a subrange thereof, only one loop variant may be given. The loop variant is immutable. Its type is the ordinal type or subrange given and the loop iterates over all values of the iterable.
+
+A statement of the form
+
+```modula-2
+FOR char IN CHAR DO
+  WRITE char
+END (* FOR *)
+```
+
+iterates over all values of type `CHAR`.
+
+Given declaration
+
+```modula-2
+TYPE Colour = ( Red, Green, Blue )
+```
+
+a statement of the form
+
+```modula-2
+FOR colour IN Colour DO
+  ...
+END (* FOR *)
+```
+
+iterates over all enumerated values of type `Colour`.
+
+The current value is referenced as `colour` within the loop.
+
+A statement of the form
+
+```modula-2
+FOR value-- IN CARDINAL[1..99] DO
+  WRITE value, " bottles of beer, take one down and pass it around.\n"
+END (* FOR *)
+```
+
+iterates over subrange `[1..99]` of type `CARDINAL` in descending order.
+
+### Iterating over Collections ###
+
+If the iterable is the designator of a set, only one loop variant may be given. The loop variant is immutable. Its type is the element type of the set and the loop iterates over all values in the set.
+
+A statement of the form
+
+```modula-2
+FOR elem IN set DO...END
+```
+
+iterates over all elements stored in `set`.
+
+If the iterable is the designator of an array or array slice, one or two loop variants may be given. The first is immutable and of type `LONGCARD`. The optional second is mutable if the array is mutable, otherwise immutable, and its type is the value type of the array. The loop iterates over all values stored in the array.
+
+A statement of the form
+
+```modula-2
+FOR index, value IN array DO array[index] := value END;
+```
+
+iterates over all values of `array`.
+
+A statement of the form
+
+```modula-2
+FOR index, value IN source[n..m] DO WRITE "source[", index, "] = ", value, "\n" END;
+```
+
+iterates over all values in array slice `source[n..m]`.
+
+If the iterable is the designator of a key-value dictionary, one or two loop variants may be given. The first is immutable and of the dictionary’s key type. The optional second is mutable if the dictionary is mutable, otherwise immutable, its type is the value type of the dictionary. The loop iterates over all key-value pairs stored in the dictionary.
+
+A statement of the form
+
+```modula-2
+FOR key, value IN dict DO WRITE "dict[", key, "] = ", value, "\n" END;
+```
+
+iterates over all key-value pairs of `dict`.
+
+## The EXIT Statement ##
+
+The EXIT statement is a control-flow statement used within the body of a `LOOP`, `WHILE`, `REPEAT` or `FOR` statement to terminate execution of the loop and transfer control to the first statement after its body. The `EXIT` statement may only occur within the body of loop statements. Non-compliance will cause a compile time error.
+
+## The READ Statement ##
+
+The `READ` statement reads one or more values from a communications channel and transfers the values in a
+non-empty variadic list of designators. Its syntax is
+
+```antlr
+readStmt := READ ( ’@’ chan ’:’ )? NEW? designator ( ’,’ designator )*
+```
+
+where `chan` is the designator of a communications channel.
+
+A statement of the form
+
+```modula-2
+READ @file : foo, bar, baz;
+```
+
+reads three values from channel `file` and passes them in `foo`, `bar` and `baz`.
+
+The communications channel may be omitted in which case a default input channel is used.
+
+A statement of the form `READ foo` reads a value from the default input channel and passes it in variable `foo`.
+
+The list of designators may be prefixed by reserved word `NEW` to allocate new memory for each value read. In
+this case every designator must designate a value of a pointer type and its value must be `NIL`.
+
+A statement of the form
+
+```modula-2
+READ @file : NEW ptr;
+```
+reads a value from channel `file`, allocates a new instance of `ptr` and passes the read value in `ptr^`.
+
+## The WRITE Statement ##
+
+The `WRITE` Statement statement writes one or more values to a communications channel. Its syntax is
+
+```antlr
+writeStmt := WRITE ( ’@’ chan ’:’ )? outputArgs ( ’,’ outputArgs )* ;
+outputArgs := formattedArgs | unformattedArgs ;
+formattedArgs := ’#’ ’(’ fmtStr, expressionList ’)’ ;
+alias unformattedArgs = expressionList ;
+```
+
+where `chan` is the designator of a communications channel and `fmtStr` is a format specifier string.
+
+A statement of the form
+
+```modula-2
+WRITE @file : foo, bar, baz;
+```
+
+writes the values `foo`, `bar` and `baz` to channel `file`.
+
+The communications channel may be omitted in which case a default output channel is used.
+
+A statement of the form `WRITE foo` writes the value of `foo` to the default output channel.
+
+The list of output values may include formatted and unformatted values. A formatted value or value list is preceded by a format specifier, enclosed in parentheses and preceded by `#`.
+
+A statement of the form
+
+```modula-2
+WRITE @file : "Price: ", #("5:3;2", price), "incl. VAT\n";
+```
+
+writes three values to channel `file` applying format specifier "5:3;2" to value `price`.
+
+Format specifiers are library defined but language specified for all built-in types, their interpretation takes place within the IO library. The syntax of format specifiers for built-in types is described in the Appendix.
+
+## The NOP Statement ##
+
+The `NOP` statement represents an explicit empty statement.
+
+The grammar forbids empty loops and blocks. When intended, the `NOP` statement must be used instead.
+
+```modula-2
+WHILE stream.nextChar() = ’ ’ DO (* skip all whitespace *)
+  NOP
+END; (* WHILE *)
+```
+
+---
+
+# Chapter 7 : Operators and Expressions #
+> This is the chapter headline
+
+## Operator Precedence and Associativity ##
+
+Expressions are evaluated according to the precedence level and associativity of the operators within the expression. Operators of higher precedence are evaluated before operators of lower precedence. Where operators have the same precedence, their associativity determines evaluation order. For left-associative operators of the same precedence the evaluation order is left to right. The properties of operators are given in the table below:
+
+|Operator |Math Symbols |Meaning    |Associativity   |Arity  |Position |  Precedence|
+|:--------|-------------|:----------|:---------------|:------|:--------|-----------:|
+| `=`     |=            |equality   |none |binary |infix    |  (lowest) 1|
+| `#`     |&ne;         |inequality |none |binary |infix    |  (lowest) 1|
+| `<`     |&lt;, &#8826; and &sub;  |less, strict subset, precedes |none |binary |infix | (lowest) 1|
+| `<=`    |&le;, &#8828; and &sube; |less/equal, subset, precedes/equal |none |binary |infix | (lowest) 1|
+| `>`     |&gt;, &#8827; and &sup;  |greater, strict superset, succeeds |none |binary |infix | (lowest) 1|
+| `>=`    |&ge;, &#8829; and &supe; |greater/equal, superset, succeeds/equal |none |binary |infix | (lowest) 1|
+| `==`    |&equiv;      |identity   |none |binary |infix | (lowest) 1|
+| `IN`    |&in;         |set membership, key set membership |none |binary |infix | (lowest) 1|
+|         |             |           |                |       |         |            |
+| `+`     |&plus; and &cup; |addition, set union |left |binary |infix | 2|
+| `-`x    |&minus;      |arithmetic negation |none |unary  |prefix | 2|
+| x`-`y   |&minus;      |subtraction |left |binary |infix | 2|
+| `&`     |&#124;&#124; |concatenation |left |binary |infix | 2|
+| `\`     |&#8726;      |set difference |left |binary |infix | 2|
+| `OR`    |&or;         |logical disjunction |left |binary |infix | 2|
+|         |             |           |                |       |         |            |
+| `*`     |&times; and &cap; |multiplication, set intersection |left |binary |infix | 3|
+| `/`     |&divide; and &#9651; |division, symmetric set difference |left |binary |infix | 3|
+| `DIV`   |&divide;     |integer division |left |binary |infix | 3|
+| `MOD`   |             |modulus |left |binary |infix | 3|
+| `AND`   |&and;        |logical conjunction |left |binary |infix | 3|
+|         |             |           |                |       |         |            |
+| `NOT`   |&not;        |logical negation |none |unary  |prefix | 4|
+|         |             |           |                |       |         |            |
+| `::`    |             |type conversion |none |binary |infix | 5|
+|         |             |           |                |       |         |            |
+| `(` `)` |             |sub-expression precedence |none |unary  |bifix | (highest) 6|
+| `[` `]` |*a*<sub>*i*</sub> |subscript |left |unary  |postfix | (highest) 6|
+| `[` `..]` |           |insertion |left |unary  |postfix | (highest) 6|
+| `^`     |             |dereference |left |unary  |postfix | (highest) 6|
+| `.`     |             |name/field selection |left |binary |infix | (highest) 6|
+
+## Relational Operations ##
+
+### Equality ###
+
+The binary infix operator `=` denotes an equality test. An expression of the form `a = b` returns `TRUE` if `a` and `b` are equal, otherwise `FALSE`. If both operands are arrays, or both operands are sets, their value types must match. Otherwise, both operands must be of the same type.
+
+### Inequality ###
+
+The binary infix operator `#` denotes an inequality test. An expression of the form `a # b` returns `TRUE` if `a` and `b` are not equal, otherwise `FALSE`. If both operands are arrays, or both operands are sets, their value types must match. Otherwise, both operands must be of the same type.
+
+### Less-Than ###
+
+The binary infix operator `<` denotes a less-than comparison when the operands are of a scalar type. An expression of the form `a < b` returns `TRUE` if the value of `a` is less than the value of `b`, otherwise `FALSE`. Both operands must be of the same type.
+
+### Precedes ###
+
+The binary infix operator `<` denotes collation order comparison when the operands are character strings. An expression of the form `a < b` returns `TRUE` if `a` precedes `b` using the prevailing collation order, else `FALSE`.
+
+### Strict Subset ###
+
+The binary infix operator `<` denotes a strict subset comparison when the operands are of a set type. An expression of the form `a < b` returns `TRUE` if `a` &sub; `b`, otherwise `FALSE`. The value types of the operands must match.
+
+### Less-Than-Or-Equal ###
+
+The binary infix operator `<=` denotes a less-than-or-equal comparison when the operands are of a scalar type. An expression of the form `a <= b` returns `TRUE` if the value of `a` is less than or equal to the value of `b`, otherwise `FALSE`. Both operands must be of the same type.
+
+### Precedes-Or-Equal ###
+
+The binary infix operator `<=` denotes collation order comparison when the operands are character strings. An expression of the form `a <= b` returns `TRUE` if `a` precedes `b` or if both rank equally using the prevailing collation order, else `FALSE`.
+
+### Subset ###
+
+The binary infix operator `<=` denotes a subset comparison when the operands are of a set type. An expression of the form `a <= b` returns `TRUE` if `a` &sube; `b`, otherwise `FALSE`. The value types of the operands must match.
+
+### Greater-Than ###
+
+The binary infix operator `>` denotes a greater-than comparison when the operands are of a scalar type. An expression of the form `a > b` returns `TRUE` if the value of `a` is greater than the value of `b`, otherwise `FALSE`. Both operands must be of the same type.
+
+### Succeeds ###
+
+The binary infix operator `>` denotes collation order comparison when the operands are character strings. An expression of the form `a > b` returns `TRUE` if `a` succeeds `b` using the prevailing collation order, else `FALSE`.
+
+### Strict Superset ###
+
+The binary infix operator `>` denotes a strict superset comparison when the operands are of a set type. An expression of the form `a > b` returns `TRUE` if `a` &sup; `b`, otherwise `FALSE`. The value types of the operands must match.
+
+### Greater-Than-Or-Equal ###
+
+The binary infix operator `>=` denotes a greater-than-or-equal comparison when the operands are of a scalar type. An expression of the form `a >= b` returns `TRUE` if the value of `a` is greater than or equal to the value of `b`, otherwise `FALSE`. Both operands must be of the same type.
+
+### Succeeds-Or-Equal ###
+
+The binary infix operator `>=` denotes collation order comparison when the operands are character strings. An expression of the form `a >= b` returns `TRUE` if `a` succeeds `b` or if both rank equally using the prevailing collation order, otherwise `FALSE`.
+
+### Superset ###
+
+The binary infix operator `>=` denotes a superset comparison when the operands are of a set type. An expression of the form `a >= b` returns `TRUE` if `a` &supe; `b`, otherwise `FALSE`. The value types of the operands must match.
+
+### Identity ###
+
+The binary infix operator `==` denotes an identity test. An expression of the form `a == b` returns `TRUE` if `UNSAFE.ADR(a)` equals `UNSAFE.ADR(b)`, otherwise `FALSE`.
+
+### Set Membership ###
+
+The binary infix operator `IN` denotes a set membership test. An expression of the form `a IN set` returns TRUE if `a` ∈ `set`, otherwise `FALSE`. The right operand must be of a set type. The left operand must be of the set type’s value type.
+
+## Logical Operations ##
+
+### Disjunction ###
+
+The binary infix operator `OR` denotes logical disjunction. An expression of the form `a OR b` returns the logical disjunction `a` ∨ `b`. Both operands must be of type `BOOLEAN`.
+
+### Conjunction ###
+
+The binary infix operator `AND` denotes logical conjunction. An expression of the form `a AND b` returns the logical conjunction `a` ∧ `b`. Both operands must be of type `BOOLEAN`.
+
+### Logical Negation ###
+
+The unary prefix operator `NOT` denotes logical negation. An expression of the form `NOT a` returns the logical inverse ¬`a`. The operand must be of type `BOOLEAN`.
+
+## Arithmetic Operations ##
+
+### Addition ###
+
+The binary infix operator `+` denotes addition when its operands are of numeric type. An expression of the form `a + b` returns the sum of `a` and `b`. Both operands must be of compatible numeric types.
+
+### Arithmetic Negation ###
+
+The unary prefix operator `-` denotes arithmetic negation. An expression of the form `-a` returns the complement of `a`. The operand must be of a signed numeric type. A unary `-` operator may only appear before a multi-term expression if the expression is enclosed in parentheses.*
+
+[*] This resolves an ambiguity in earlier versions of Modula-2.
+
+### Subtraction ###
+
+The binary infix operator `-` denotes subtraction. An expression of the form `a - b` returns the difference of `a` and `b`. Both operands must be of compatible numeric types.
+
+### Multiplication ###
+
+The binary infix operator `*` denotes multiplication when its operands are of numeric type. An expression of the form `a * b` returns the product `a` · `b`. Both operands must be of compatible numeric types.
+
+### Real Number Division ###
+
+The binary infix operator `/` denotes real number division when its operands are of a real number type. An expression of the form returns the quotient `a` &divide; `b`. Both operands must be of compatible numeric types.
+
+### Integer Division ###
+
+The binary infix operator `DIV` denotes Euclidean integer division. An expression of the form `a DIV b` returns the quotient `a` &divide; `b` where `a`, `b` ∈: T and T is a whole number type. Both operands must be of compatible numeric types.
+
+### Modulus ###
+
+The binary infix operator `MOD` denotes the modulus (remainder) of Euclidean integer division. An expression of the form `a MOD b` returns the modulus `a` mod `b` where `a`, `b` ∈: T and T is a whole number type. Both operands must be of compatible numeric types.
+
+## Set Operations ##
+
+### Set Union ###
+
+The binary infix operator `+` denotes set union when its operands are of a set type. An expression of the form `a + b` returns the set union `a` ∪ `b`. Both operands must be of a set type. The value types of the operands must match.
+
+### Set Difference ###
+
+The binary infix operator `\` denotes set difference. An expression of the form `a \ b` returns the set difference `a` \ `b`. Both operands must be of a set type. The value types of the operands must match.
+
+### Set Intersection ###
+
+The binary infix operator `*` denotes set intersection when its operands are of a set type. An expression of the form `a * b` returns the set intersection `a` ∩ `b`. Both operands must be of a set type. The value types of the operands must match.
+
+### Symmetric Set Difference ###
+
+The binary infix operator `/` denotes symmetric set difference when its operands are of a set type. An expression of the form `a / b` returns the symmetric set difference `a` △ `b`. Both operands must be of a set type. The value types of the operands must match.
+
+## Collection Operations ##
+
+### Insertion ###
+
+The subscript operator `[` `]` with a subscript followed by suffix `..` denotes insertion. An assignment of the form `a[i..] := v` inserts value `v` into array `a` at subscript `i`. The operand must be of an array type. An insertion designator may only appear as an L-value on the left side of an assignment.
+
+### Concatenation ###
+
+The binary infix operator `&` denotes concatenation. An expression of the form `a & b` returns the concatenation product of `a` and `b`. Both operands must be of a collection type. The value types of the operands must be copy compatible to the L-Value to which the expression is copied or passed to.
+
+## Designation Operations ##
+
+### Subscript Addressing ##
+
+The postfix operator `[` ... `]` denotes subscript addressing. The operator encloses a subscript or a range of subscripts. The operand must be the designator of an array. Subscripts must be of a whole number type.
+
+A sole subscript addresses a single value. A paired subscript addresses a range of values.
+* An expression of the form `a[i]` designates the value of `a` at subscript `i`
+* An expression of the form `a[i..j]` designates the value range of `a` from subscript `i` to `j`
+
+Non-negative subscripts represent positions relative to the first value.
+* index i = `i::LONGCARD` ∀ i ∈ { τwhole | 0 ≤ i ≤ count a ∧ i < capacity a }
+
+Negative subscripts represent positions relative to the position after the last value.
+* index i = `COUNT(a)-ABS(i)::LONGCARD` ∀ i ∈ { τwhole | i < 0 ∧ abs i < count a }
+
+### Pointer Dereference ###
+
+The unary postfix operator `^` denotes pointer dereference. An expression of the form `p^` designates the entity referenced by pointer `p` where `p` must be of a pointer type.
+
+### Name and Field Selection ###
+
+Binary infix operator `.` denotes name selection when its left operand is a qualifier of a qualified name, and field selection when it is the identifier of a record or record field. A designator `a.b` designates `b` qualified by `a`.
+
+## Miscellaneous Operations ##
+
+### Type Conversion ###
+
+The binary infix operator `::` denotes type conversion. An expression of the form `T :: v` converts value `v` to type `T` and returns the converted value. The left operand must be a type identifier. The right operand may be a value or expression of any convertible type.
+
+### Sub-Expression Precedence ###
+
+The bifix operator `(` ... `)` denotes sub-expression precedence. In an expression of the form `a % (b ~ c)` , the evaluation of (b ~ c) takes precedence for arbitrary operators % and ~ regardless of their precedence levels.
+
+### Function Call ###
+
+A designator followed by a possibly empty parameter list denotes a function call. The parentheses are mandatory.
+
+## Operations by Type ##
+
+### Elementary Types ###
+
+| |`=`<br>`#` |`<` <br> `<=` | `>` <br> `>=`  | `+` <br> `x-y`  | `-x` <br>&nbsp; | `*` <br>&nbsp; | `/` <br>&nbsp; | `DIV` <br> `MOD` | `AND` <br> `OR` | `NOT` <br>&nbsp; | `::` <br>&nbsp; |
+|:--------|:-:|:-:|:--:|:---:|:--:|:-:|:-:|:-----:|:-----:|:-----:|:--:|
+|BOOLEAN  |&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&bullet;|&mdash;|
+|Enumerations |&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|
+|Character Types |&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|
+|Cardinal Types |&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&bullet;|&mdash;|&bullet;|&mdash;|&mdash;|&bullet;|
+|Integer Types |&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&bullet;|&mdash;|&mdash;|&bullet;|
+|Real Number Types |&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&bullet;|
+
+| |`ORD()`<br>&nbsp; |`PRED()`<br>`SUCC()` |`ABS()`<br>&nbsp; |`ODD()`<br>&nbsp; |`SGN()`<br>&nbsp; |`POW2()`<br>`LOG2()` |`ENTIER()`<br>&nbsp; |`TMIN()`<br>`TMAX()` | `TSIZE()`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|BOOLEAN  |&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&bullet;|
+|Enumerations |&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&bullet;|
+|Character Types |&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&bullet;|
+|Cardinal Types |&bullet;|&bullet;|&mdash;|&bullet;|&mdash;|&bullet;|&mdash;|&bullet;|&bullet;|
+|Integer Types |&bullet;|&bullet;|&mdash;|&bullet;|&bullet;|&mdash;|&mdash;|&bullet;|&bullet;|
+|Real Number Types |&mdash;|&mdash;|&bullet;|&mdash;|&bullet;|&mdash;|&bullet;|&bullet;|&bullet;|
+
+| |`ADD()`<br>`SUB()` |`SHL()`<br>&nbsp; |`SHR()`<br>`ASHR()` |`BIT()`<br>`SETBIT()` |`BWNOT()`<br>&nbsp; |`BWAND()`<br>`BWOR()` |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|
+|BOOLEAN |&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|
+|Enumerations |&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|
+|Character Types |&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+|Cardinal Types |&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+|Integer Types |&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+|Real Number Types |&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+
+### Pointer Types ###
+
+| |`=`<br>`#` |`^`<br>&nbsp; |`NEW`<br>`RELEASE` |`TSIZE()`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|
+|transparent|&bullet;|&bullet;|&bullet;|&bullet;|
+|opaque |&bullet;|&mdash;|&bullet;|&bullet;|
+
+
+### Procedure Types ###
+
+| |`=`<br>`#` |`p(...)`<br>&nbsp; |`TSIZE()`<br>&nbsp; |
+|:--|:-:|:-:|:-:|
+|PROCEDURE |&bullet;|&bullet;|&bullet;|
+
+
+### Compound Types ###
+
+| |`=`<br>`#` |`<`<br>`<=` |`>`<br>`>=` |`==`<br>&nbsp; |`IN`<br>&nbsp; |`+`<br>`\` |`&`<br>&nbsp; |`*`<br>`/` |`a[i]`<br>&nbsp; |`a[i..]`<br>`a[i..j]` |`.`<br>&nbsp; |`COPY`<br>&nbsp; |`FOR`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|SET|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&bullet;|&mdash;|&mdash;|&mdash;|&bullet;|&bullet;|
+|ARRAY|&bullet;|&mdash;|&mdash;|&bullet;|&mdash;|&mdash;|&bullet;|&mdash;|&bullet;|&bullet;|&mdash;|&bullet;|&bullet;|
+|&nbsp;&nbsp;OF CHAR|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&bullet;|&mdash;|&bullet;|&bullet;|&mdash;|&bullet;|&bullet;|
+|&nbsp;&nbsp;OF UNICHAR|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&bullet;|&mdash;|&bullet;|&bullet;|&mdash;|&bullet;|&bullet;|
+|RECORD|&bullet;|&mdash;|&mdash;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&bullet;|&mdash;|
+|OCTETSEQ|&bullet;|&mdash;|&mdash;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&mdash;|&mdash;|&bullet;|&bullet;|
+
+| |`APPEND()`<br>&nbsp; |`INSERT()`<br>&nbsp; |`REMOVE()`<br>&nbsp; |`CAPACITY()`<br>`TLIMIT()` |`COUNT()`<br>&nbsp; |`LENGTH()`<br>&nbsp; |`TSIZE()`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|SET|&mdash;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&bullet;|
+|ARRAY|&bullet;|&mdash;|&bullet;|&bullet;|&bullet;|&mdash;|&bullet;|
+|&nbsp;&nbsp;OF CHAR|&bullet;|&mdash;|&bullet;|&bullet;|&mdash;|&bullet;|&bullet;|
+|&nbsp;&nbsp;OF UNICHAR|&bullet;|&mdash;|&bullet;|&bullet;|&mdash;|&bullet;|&bullet;|
+|RECORD|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|
+|OCTETSEQ|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&mdash;|
+
+
+### Formal Types ###
+
+| |`=`|`#`|`<` |`<=` |`>` |`>=` |`a[i]` |`a[i..j]` |`a[i..]` |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|ARRAY OF|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&bullet;|&bullet;|
+|&nbsp;&nbsp;CHAR|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+|&nbsp;&nbsp;UNICHAR|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+|ARGLIST OF|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&mdash;|&mdash;|
+|CAST OCTETSEQ|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&mdash;|&bullet;|&mdash;|&mdash;|
+
+| |`COPY`<br>L-Value |`COPY`<br>R-Value |`FOR`<br>&nbsp; |`APPEND()`<br>`REMOVE()` |`COUNT()`<br>&nbsp; |`CAPACITY()`<br>&nbsp; |`LENGTH()`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|ARRAY OF|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|
+|&nbsp;&nbsp;CHAR|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&bullet;|
+|&nbsp;&nbsp;UNICHAR|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&bullet;|
+|ARGLIST OF|&mdash;|&bullet;|&bullet;|&mdash;|&mdash;|&bullet;|&mdash;|
+|CAST OCTETSEQ|&mdash;|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&bullet;|
+
+
+### Machine Types ###
+
+| |`=` |`#` |`<` |`<=` |`>` |`>=` |`a[i]` |`a[i..j]` |`a[i..]` |`^` |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|BYTE|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|
+|WORD|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|
+|LONGWORD|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&mdash;|&mdash;|
+|ADDRESS|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&mdash;|&mdash;|&bullet;|
+
+| |`ODD()`<br>&nbsp; |`ADD()`<br>`SUB()` |`SHL()`<br>&nbsp; |`SHR()`<br>`ASHR()` |`BIT()`<br>`SETBIT()` |`BWNOT()`<br>&nbsp; |`BWAND()`<br>`BWOR()` |`TMIN()`<br>`TMAX()` |`TSIZE()`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|BYTE|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+|WORD|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+|LONGWORD|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+|ADDRESS|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|&bullet;|
+
+
+### ADT Operations ###
+
+| |`a[i]`<br>L-Value |`a[i]`<br>R-Value |`a[i..]`<br>&nbsp; |`a[i..j]`<br>L-Value |`a[i..j]`<br>R-Value |`REMOVE()`<br>&nbsp; |`COPY`<br>&nbsp; |`FOR`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|Array ADTs|(1)|(2)|(3)|(1)|(2)|(4)|(5)|(5)|
+
+**Required Bindings:**
+
+(1) `ATSTORE` &nbsp;&nbsp; (2) `ATVALUE` &nbsp;&nbsp; (3) `ATINSERT` &nbsp;&nbsp; (4) `ATREMOVE` &nbsp;&nbsp; (5) `LENGTH`/`COUNT`, `ATSTORE`, `ATVALUE` 
+
+| |`dict[key]`<br>L-Value |`dict[key]`<br>R-Value |`REMOVE()`<br>&nbsp; |`key` `IN` `dict`<br>&nbsp; |`COPY`<br>&nbsp; |`FOR`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|
+|Dictionary ADTs|(1)|(2)|(3)|(2)|(4)|(4)|
+
+**Required Bindings:**
+
+(1) `STORE` &nbsp;&nbsp; (2) `VALUE` &nbsp;&nbsp; (3) `ATREMOVE` &nbsp;&nbsp; (4) `FIRST`, `LAST`, `PREV`, `NEXT`, `STORE`, `VALUE` 
+
+
+### ADT Syntax Bindings ###
+
+| |`NEW`<br>`RETAIN`<br>`RELEASE` |`READ`<br>`WRITE`<br>&nbsp; |`APPEND`<br>&nbsp;<br>&nbsp; |`REMOVE`<br>&nbsp;<br>&nbsp; |`COUNT`<br>&nbsp;<br>&nbsp; |`LENGTH`<br>&nbsp;<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|
+|Any ADT|&cir;|&cir;|&mdash;|&mdash;|&mdash;|&mdash;|
+|Array ADTs|&cir;|&cir;|&cir;|&mdash;|&cir;|&cir;|
+|Dictionary ADTs|&cir;|&cir;|&mdash;|&cir;|&cir;|&mdash;|
+
+| |`FIRST()`<br>`LAST()`|`PREV()`<br>`NEXT()` |`ATVALUE`<br>`ATSTORE` |`ATINSERT`<br>`ATREMOVE` |`VALUE`<br>`STORE` |`TLIMIT()`<br>&nbsp; |
+|:--|:-:|:-:|:-:|:-:|:-:|:-:|
+|Array ADTs|&mdash;|&mdash;|&cir;|&cir;|&mdash;|&cir;|
+|Dictionary ADTs|&cir;|&cir;|&mdash;|&mdash;|&cir;|&cir;|
+
+---
+
+# Chapter 8 : Type Compatibility #
+This is the chapter headline
+
+*Type compatibility* is a relation between two types *T*<sub>*1*</sub> and *T*<sub>*2*</sub> that determines whether an entity *e*<sub>*1*</sub> of type&nbsp;*T*<sub>*1*</sub> may be assigned to, copied to, passed to or used together in an expression with an entity *e*<sub>*2*</sub> of type&nbsp;*T*<sub>*2*</sub>.
+
+Type compatibility thus determines the compatibility of two entities by their associated types. The compatibility relation between any two entities is congruent to the compatibility relation of their types. Any compatibility relation is always transitive, but not necessarily commutative. There are five compatibility relations.
+
+#### Assignment Compatibility ####
+
+*Assignment compatibility* is a relation between two types *T*<sub>*1*</sub> and *T*<sub>*2*</sub> that determines whether an entity *e*<sub>*1*</sub> of type&nbsp;*T*<sub>*1*</sub> may be assigned to an entity *e*<sub>*2*</sub> of type&nbsp;*T*<sub>*2*</sub>. The relation is denoted by the `=:`&nbsp;symbol, pronounced *"assignment compatible to"*.
+
+* *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *e*<sub>*1*</sub> &in; *T*<sub>*1*</sub> &and; *e*<sub>*2*</sub> &in; *T*<sub>*2*</sub> &#8658; *e*<sub>*1*</sub> =: *e*<sub>*2*</sub>
+
+
+#### Copy Compatibility ####
+
+*Copy compatibility* is a relation between two types *T*<sub>*1*</sub> and *T*<sub>*2*</sub> that determines whether an entity *e*<sub>*1*</sub> of type&nbsp;*T*<sub>*1*</sub> may be copied to an entity *e*<sub>*2*</sub> of type&nbsp;*T*<sub>*2*</sub>. The relation is denoted by the `>:`&nbsp;symbol, pronounced *"copy compatible to"*.
+
+* *T*<sub>*1*</sub> >: *T*<sub>*2*</sub> &and; *e*<sub>*1*</sub> &in; *T*<sub>*1*</sub> &and; *e*<sub>*2*</sub> &in; *T*<sub>*2*</sub> &#8658; *e*<sub>*1*</sub> >: *e*<sub>*2*</sub>
+
+
+#### By-Value Passing Compatibility ####
+
+*By-value passing compatibility* is a relation between two types *T*<sub>*1*</sub> and *T*<sub>*2*</sub> that determines whether an entity *e*<sub>*1*</sub> of type&nbsp;*T*<sub>*1*</sub> may be passed to a formal by-value parameter *e*<sub>*2*</sub> of type&nbsp;*T*<sub>*2*</sub>. The relation is denoted by the `≈:`&nbsp;symbol, pronounced *"by-value passing compatible to"*.
+
+* *T*<sub>*1*</sub> ≈: *T*<sub>*2*</sub> &and; *e*<sub>*1*</sub> &in; *T*<sub>*1*</sub> &and; *e*<sub>*2*</sub> &in; *T*<sub>*2*</sub> &#8658; *e*<sub>*1*</sub> ≈: *e*<sub>*2*</sub>
+
+
+#### By-Reference Passing Compatibility ####
+
+*By-reference passing compatibility* is a relation between two types *T*<sub>*1*</sub> and *T*<sub>*2*</sub> that determines whether an entity *e*<sub>*1*</sub> of type&nbsp;*T*<sub>*1*</sub> may be passed to a formal by-reference parameter *e*<sub>*2*</sub> of type&nbsp;*T*<sub>*2*</sub>. The relation is denoted by the `^:`&nbsp;symbol, pronounced *"by-reference passing compatible to"*.
+
+* *T*<sub>*1*</sub> ^: *T*<sub>*2*</sub> &and; *e*<sub>*1*</sub> &in; *T*<sub>*1*</sub> &and; *e*<sub>*2*</sub> &in; *T*<sub>*2*</sub> &#8658; *e*<sub>*1*</sub> ^: *e*<sub>*2*</sub>
+
+
+#### Expression Compatibility ####
+
+*Expression compatibility* is a relation between two types *T*<sub>*1*</sub> and *T*<sub>*2*</sub> that determines whether two entities *e*<sub>*1*</sub> of type&nbsp;*T*<sub>*1*</sub> and *e*<sub>*2*</sub> of type&nbsp;*T*<sub>*2*</sub> may be used together in a binary expression. The relation is commutative. It is denoted by the `○`&nbsp;symbol, pronounced *"expression compatible with"*.
+
+* *T*<sub>*1*</sub> ○ *T*<sub>*2*</sub> &and; *e*<sub>*1*</sub> &in; *T*<sub>*1*</sub> &and; *e*<sub>*2*</sub> &in; *T*<sub>*2*</sub> &#8658; *e*<sub>*1*</sub> ○ *e*<sub>*2*</sub>
+
+
+#### Hierarchy of Compatibility Relations ####
+
+Assignment compatibility implies all other compatibility relations. Copy compatibility implies by-value passing compatibility. Passing compatibility implies expression compatibility.
+
+* *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> >: *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> ≈: *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> ○ *T*<sub>*2*</sub>
+* *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> ^: *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> ○ *T*<sub>*2*</sub>
+
+
+### Type Regimes ###
+
+A type regime is a set of rules that govern type compatibility.
+
+The following type regimes are in use
+
+#### Strict Name Equivalence ####
+
+Under strict name equivalence, types are equivalent if they are identical types.
+
+* *T*<sub>*1*</sub> = *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+
+#### Super-Type Equivalence ####
+
+Under super-type equivalence, a type is upwards compatible with its super-type, but a super-type is not downwards compatible with its subtype.
+
+* *T*<sub>*1*</sub> **is-subtype-of** *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; &not; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+
+#### Value Type Equivalence ####
+
+Under value type equivalence, collection types are copy compatible if their value types are compatible.
+
+* *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; *T*<sub>*collection*</sub> &and; **value-type** *T*<sub>*1*</sub> =: **value-type** *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> >: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> >: *T*<sub>*1*</sub>
+
+
+#### Target Type Equivalence ####
+
+Under target type equivalence, pointer types are compatible if their target types are compatible.
+
+* *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; *T*<sub>*pointer*</sub> &and; **target-type** *T*<sub>*1*</sub> =: **target-type** *T*<sub>*2*</sub> &#8658; *T*<sub>*1*</sub> =: *T*<sub>*2*</sub>
+
+
+#### Structural Equivalence ####
+
+Under structural equivalence, types are compatible if they have identical structure.
+
+* *T*<sub>*1*</sub> &#8792; *T*<sub>*2*</sub> => *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+
+#### Limited Equivalence ####
+
+A type regime is limited if it only applies to a subset of compatibility relations.
+
+
+
+## Compatibility by Type Classification ##
+
+Except for type `OCTETSEQ`, all types follow strict name equivalence by default.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*any*</sub> &#8726; *T*<sub>*octetseq*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+The type regime may further be relaxed depending on the classification of the type.
+
+
+### Alias Type Compatibility ###
+
+An alias type is always identical to the type of which it is an alias.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*any*</sub> | *T*<sub>*1*</sub> **is-alias-of** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> &equiv; *T*<sub>*2*</sub>
+
+
+### Derived Type Compatibility ###
+
+A derived type is by definition incompatible with the type from which it is derived.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*any*</sub> | *T*<sub>*1*</sub> **is-derivative-of** *T*<sub>*2*</sub> } : &not; *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; &not; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+
+### Anonymous Type Compatibility ###
+
+Anonymous types with the same canonical type declaration are identical.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*anon*</sub> | *T*<sub>*1*</sub> **is-canonically-equal-to** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> &equiv; *T*<sub>*2*</sub>
+
+
+### Enumeration Type Compatibility ###
+
+Enumeration types follow strict name equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*enum*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+Enumeration types further follow super-type equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*enum*</sub> | *T*<sub>*2*</sub> **is-extension-of** *T*<sub>*1*</sub> &or; *T*<sub>*1*</sub> **is-subtype-of** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; &not; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+
+### Set Type Compatibility ###
+
+Set types follow strict name equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*set*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+Set types further follow value type equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*set*</sub> | **value-type** *T*<sub>*1*</sub> = **value-type** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> >: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> >: *T*<sub>*1*</sub>
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*set*</sub> | **value-type** *T*<sub>*1*</sub> ⊂ **value-type** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> >: *T*<sub>*2*</sub> &and; &not; *T*<sub>*2*</sub> >: *T*<sub>*1*</sub>
+
+
+### Array Type Compatibility ###
+
+Array types follow strict name equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*array*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+Array types further follow value-type equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*array*</sub> | **value-type** *T*<sub>*1*</sub> = **value-type** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> >: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> >: *T*<sub>*1*</sub>
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*array*</sub> | **value-type** *T*<sub>*1*</sub> ⊂ **value-type** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> >: *T*<sub>*2*</sub> &and; &not; *T*<sub>*2*</sub> >: *T*<sub>*1*</sub>
+
+
+### Record Type Compatibility ###
+
+Record types follow strict name equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*record*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+Extensible record types further follow limited super-type equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*extrec*</sub> | *T*<sub>*2*</sub> **is-extension-of** *T*<sub>*1*</sub> } : *T*<sub>*2*</sub> ^: *T*<sub>*1*</sub> &and; &not; *T*<sub>*1*</sub> ^: *T*<sub>*2*</sub>
+
+
+### Pointer Type Compatibility ###
+
+Opaque pointer types follow strict name equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*opaque*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+Other pointer types follow target type name equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*pointer*</sub> &#8726; *T*<sub>*opaque*</sub> | **target-type** *T*<sub>*1*</sub> = **target-type** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+Extensible record pointer types follow super-type equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*recptr*</sub> | *T*<sub>*1*</sub> **is-extension-of** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; &not; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+Given pointer types *T*<sub>*1*</sub> and *T*<sub>*2*</sub>, *T*<sub>*1*</sub> is a type extension of *T*<sub>*2*</sub> if the target type of *T*<sub>*1*</sub> is a type extension of the target type of *T*<sub>*2*</sub>.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; *T*<sub>*recptr*</sub> : *T*<sub>*1*</sub> **is-extension-of** *T*<sub>*2*</sub> if *T*<sub>*1*</sub>&prime; **is-extension-of** *T*<sub>*2*</sub>&prime; <br> where *T*<sub>*1*</sub>&prime; = **target-type** *T*<sub>*1*</sub> &and; *T*<sub>*2*</sub>&prime; = **target-type** *T*<sub>*2*</sub>
+
+
+### Procedure Type Compatibility ###
+
+Procedure types follow structural equivalence.
+
+* any two procedure types are compatible if their signatures match
+* the type of a procedure is the anonymous procedure type that matches its signature
+
+
+### Numeric Type Compatibility ###
+
+Numeric types follow strict name equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*scalar*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+Numeric subrange types follow super-type equivalence.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*scalar*</sub> | *T*<sub>*1*</sub> **is-subtype-of** *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; &not; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+
+### Machine Type Compatibility ###
+
+Machine types follow strict name equivalence only.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*machine*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+
+### Address Type Compatibility ###
+
+Address types follow strict name equivalence only.
+
+* &forall; *T*<sub>*1*</sub>, *T*<sub>*2*</sub> &in; { *T*<sub>*address*</sub> | *T*<sub>*1*</sub> = *T*<sub>*2*</sub> } : *T*<sub>*1*</sub> =: *T*<sub>*2*</sub> &and; *T*<sub>*2*</sub> =: *T*<sub>*1*</sub>
+
+
+### Literal Compatibility ###
+
+The compatibility of a literal value cannot be determined by type because literals are not associated with any specific type. Instead, literal compatibility is defined as follows:
+
+A literal value *L* is compatible with type *T* if *L* does not overflow *T* and if
+* *L* is a character code literal and *T* is a character type, or
+* *L* is a whole number literal and *T* is a machine type, cardinal type or integer type, or
+* *L* is a real number literal and *T* is a real number type, or
+* *L* is a non-empty structured literal and structurally equivalent to *T*
+
+An empty structured literal *L* is compatible with type *T* if
+* *L* is the empty string `""` and *T* &in; *T*<sub>*string*</sub>, or
+* *L* is the empty collection `{}` and *T* &in; *T*<sub>*set*</sub> &cup; *T*<sub>*array*</sub> &#8726; *T*<sub>*string*</sub>
+
+*Type compatibility* is a relation between two types *T*<sub>*1*</sub> and *T*<sub>*2*</sub> that determines whether an entity *e*<sub>*1*</sub> of type&nbsp;*T*<sub>*1*</sub> may be assigned to, copied to, passed to or used together in an expression with an entity *e*<sub>*2*</sub> of type&nbsp;*T*<sub>*2*</sub>.
+
+Type compatibility thus determines the compatibility of two entities by their associated types. The compatibility relation between any two entities is congruent to the compatibility relation of their types. Any compatibility relation is always transitive, but not necessarily commutative. There are five compatibility relations.
+
+---
+
+# Chapter 9 : Predefined Identifiers #
+This is the chapter headline
+
+Predefined identifiers are language defined and built-in. They are pervasive, that is, they are visible in every scope without import. Pervasive identifiers do not have qualified names and are always referenced unqualified. Unlike earlier versions of Modula-2, pervasive identifiers are now reserved and may not be redefined.
+
+The following identifiers are predefined:
+
+[`NIL`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#nil),
+[`TRUE`](https://https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#false-and-true),
+[`FALSE`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#false-and-true),
+[`BOOLEAN`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#boolean),
+[`OCTET`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#octet),
+[`CHAR`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#char),
+[`UNICHAR`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#unichar),
+[`CARDINAL`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#cardinal),
+[`LONGCARD`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#longcard),
+[`INTEGER`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#integer),
+[`LONGINT`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#longint),
+[`REAL`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#real),
+[`LONGREAL`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#longreal),
+[`APPEND`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#append),
+[`INSERT`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#insert),
+[`REMOVE`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#remove),
+[`CHR`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#chr),
+[`UCHR`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#uchr),
+[`COLLATION`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#collation),
+[`ORD`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#ord),
+[`ODD`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#odd),
+[`ABS`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#abs),
+[`SGN`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#sgn),
+[`MIN`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#min),
+[`MAX`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#max),
+[`LOG2`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#log2),
+[`POW2`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#pow2),
+[`ENTIER`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#entier),
+[`PRED`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#pred),
+[`SUCC`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#succ),
+[`PTR`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#ptr),
+[`CAPACITY`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#capacity),
+[`COUNT`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#count),
+[`LENGTH`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#length),
+[`FIRST`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#first),
+[`LAST`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#last),
+[`PREV`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#prev),
+[`NEXT`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#next),
+[`TMIN`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#tmin),
+[`TMAX`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#tmax),
+[`TSIZE`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#tsize),
+[`TLIMIT`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#tlimit);
+
+
+## Predefined Constants ##
+
+### NIL ###
+
+Identifier `NIL` represents an invalid pointer or address value. It is per definition compatible with any pointer type, including all opaque pointer types and all procedure types.
+
+
+### TRUE and FALSE ###
+
+Identifiers `TRUE` and `FALSE` represent the values of type `BOOLEAN`.
+
+
+## Predefined Types ##
+
+### BOOLEAN ###
+
+Type `BOOLEAN` is an [[enumerated type|Language-Description#type-enumerated]]. It represents logical truth values used in boolean expressions. It is defined as
+
+```Modula-2
+TYPE BOOLEAN = ( FALSE, TRUE );
+```
+The order is significant. `ORD(FALSE)` is always zero, `ORD(TRUE)` is always one.
+
+
+### OCTET ###
+
+Type `OCTET` is a [[cardinal type|Language-Description#type-cardinal]].
+
+It represents the smallest addressable unit which is per definition 8 bits.
+
+Its value range is always `[0..255]`.
+
+Whole number literals are compatible with type `OCTET`.
+
+
+### CHAR ###
+
+Type `CHAR` is a [[countable type|Language-Description#type-countable]].
+
+It represents the 7-bit character codes of [ISO 646](https://en.wikipedia.org/wiki/ISO/IEC_646) (aka ASCII).
+
+Its value range is always `[0u0..0u7F]`.
+
+Quoted literals of exactly one ISO 646 code point are compatible with type `CHAR`.
+
+
+### UNICHAR ###
+
+Type `UNICHAR` represents the 32-bit character codes of [ISO 10646](https://en.wikipedia.org/wiki/Universal_Coded_Character_Set) UCS-4.
+
+Its value range is `[0u0..0u10FFFF]`.
+
+Quoted literals of exactly one ISO 10646 code point are compatible with type `UNICHAR`.
+
+
+### CARDINAL ###
+
+Type `CARDINAL` is a [[cardinal type|Language-Description#type-cardinal]]. It represents unsigned whole numbers.
+
+Its value range is `[0..TMAX(CARDINAL)]` where `TMAX(CARDINAL) = POW2(8*TSIZE(CARDINAL)) - 1`
+
+The value of `TSIZE(CARDINAL)` is implementation defined, where `TSIZE(CARDINAL) <= TSIZE(LONGCARD)`.
+
+Whole number literals are compatible with type `CARDINAL`.
+
+
+### LONGCARD ###
+
+Type `LONGCARD` is a [[cardinal type|Language-Description#type-cardinal]]. It represents unsigned whole numbers with extended range.
+
+Its value range is `[0..TMAX(LONGCARD)]` where `TMAX(LONGCARD) = POW2(8*TSIZE(LONGCARD)) - 1`
+
+The value of `TSIZE(LONGCARD)` is implementation defined where `TSIZE(LONGCARD) >= TSIZE(ADDRESS)`
+
+Whole number literals are compatible with type `LONGCARD`.
+
+
+### INTEGER ###
+
+Type `INTEGER` is an [[integer type|Language-Description#type-integer]]. It represents signed whole numbers.
+
+Its value range is `[TMIN(INTEGER)..TMAX(INTEGER)]`.
+
+The internal representation of type `INTEGER` is always in two's complement. Thus
+
+* `TMIN(INTEGER) = (-1) * POW2(8*TSIZE(INTEGER) - 1)`
+* `TMAX(INTEGER) = POW2(8*TSIZE(INTEGER) - 1) - 1`
+
+The value of `TSIZE(INTEGER)` is always equal to `TSIZE(CARDINAL)`.
+
+Whole number literals are compatible with type `INTEGER`.
+
+
+### LONGINT ###
+
+Type `LONGINT` is an [[integer type|Language-Description#type-integer]]. It represents signed whole numbers with extended range.
+
+Its value range is `[TMIN(LONGINT)..TMAX(LONGINT)]`.
+
+The internal representation of type `LONGINT` is always in two's complement. Thus
+
+* `TMIN(LONGINT) = (-1) * POW2(8*TSIZE(LONGINT) - 1)`
+* `TMAX(LONGINT) = POW2(8*TSIZE(LONGINT) - 1) - 1`
+
+The value of `TSIZE(LONGINT)` is always equal to `TSIZE(LONGCARD)`.
+
+Whole number literals are compatible with type `LONGINT`.
+
+
+### REAL ###
+
+Type `REAL` is a [[real number type|Language-Description#type-real]]. It represents real numbers with standard range and precision.
+
+Its value range is `[TMIN(REAL)..TMAX(REAL)]`.
+
+The internal representation of type `REAL` is implementation defined where
+
+* `TMIN(REAL) <= TMIN(LONGINT)` and `TMAX(REAL) >= TMAX(LONGCARD)`
+
+IEEE 754 [single](https://en.wikipedia.org/wiki/Single-precision_floating-point_format)
+or [double](https://en.wikipedia.org/wiki/Double-precision_floating-point_format)
+precision format is recommended for type `REAL`.
+
+Real number literals are compatible with type `REAL`.
+
+
+### LONGREAL ###
+
+Type `LONGREAL` is a [[real number type|Language-Description#type-real]]. It represents real numbers with extended range or precision or both.
+
+Its value range is `[TMIN(LONGREAL)..TMAX(LONGREAL)]`.
+
+The internal representation of type `LONGREAL` is implementation defined where
+
+* `TMIN(LONGREAL) <= TMIN(REAL)` and `TMAX(LONGREAL) >= TMAX(REAL)`
+* the precision of type `REAL` must not exceed that of type `LONGREAL`
+
+IEEE 754 [double](https://en.wikipedia.org/wiki/Double-precision_floating-point_format)
+or [quadruple](https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format)
+precision format is recommended for type `LONGREAL`.
+
+Real number literals are compatible with type `LONGREAL`.
+
+
+## Predefined Procedures ##
+
+### APPEND ###
+
+Procedure `APPEND` appends one or more values to an array.
+
+```Modula-2
+PROCEDURE APPEND ( VAR array : ArrayType; values : ARGLIST OF ValueType );
+```
+Values to be appended must be of the component type of the array.
+
+
+### INSERT ###
+
+Procedure `INSERT` inserts one or more values of a given list into a set.
+
+```Modula-2
+PROCEDURE INSERT ( VAR set : SetType; values : ARGLIST OF ValueType );
+```
+Values passed in the list must be of the value type of the set.
+
+
+### REMOVE ###
+
+Procedure `REMOVE` has multiple signatures, depending on the type of its first argument.
+
+If its first argument is a set, it removes the values in a given list from the set.
+
+```Modula-2
+PROCEDURE REMOVE ( VAR set : SetType; values : ARGLIST OF ValueType );
+```
+Values passed in the list must be of the value type of the set.
+
+If its first argument is a dictionary, it removes the keys in a given list along with their values from the dictionary.
+
+```Modula-2
+PROCEDURE REMOVE ( VAR dict : DictType; values : ARGLIST OF KeyType );
+```
+Values passed in the list must be of the key type of the dictionary.
+
+If its first argument is an array, it removes the values addressed by a given index range from the array.
+
+```Modula-2
+PROCEDURE REMOVE ( VAR array : ArrayType; startIndex, endIndex : LONGCARD );
+```
+Any relative (negative) indices passed are translated into absolute (positive) indices by the language processor.
+
+
+## Predefined Functions ##
+
+### CHR ###
+
+Function `CHR` returns the character whose character code is its argument.
+
+```Modula-2
+PROCEDURE CHR ( n : T ) : CHAR;
+```
+where 0 &le; *n* &le; 127 &and; *T* &in; *T*<sub>*cardinal*</sub>. 
+
+
+### UCHR ###
+
+Function `UCHR` returns the unicode character whose character code is its argument.
+
+```Modula-2
+PROCEDURE UCHR ( n : T ) : UNICHAR;
+```
+where 0 &le; *n* &le; 0x10FFFF &and; *T* &in; *T*<sub>*cardinal*</sub>. 
+
+
+### COLLATION ###
+
+Function `COLLATION` returns the index within the prevailing collation sequence for a given character.
+
+```Modula-2
+PROCEDURE COLLATION ( ch : T ) : LONGCARD;
+```
+where *T* &in; *T*<sub>*char*</sub>. 
+
+The return values are determined as follows:
+* for tabulator `0u09` and newline `0u0A`, the index for whitespace `0u20` is looked up and returned
+* for all other control characters, `TMAX(LONGCARD)` is returned &mdash; they are ignored by the collation algorithm
+* for characters in range `[0u20..0u7E]`, the return value is looked up in the prevailing collation table
+* for accented letters, the return value equals that of the corresponding unaccented letter
+* for all other characters, the ordinal value of the character is returned
+
+The default collation sequence for printable 7-bit characters is:
+```
+␣0123456789@aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ!"#$%&’()*+,-./:;<=>?[\]∧_‘{|}~
+```
+
+The prevailing collation order may be changed by import of a collation library.
+
+
+### ORD ###
+
+Function `ORD` returns the ordinal value of its countable argument.
+
+```Modula-2
+PROCEDURE ORD ( value : T ) : LONGCARD;
+```
+where *T* &in; *T*<sub>*countable*</sub>.
+
+
+### ODD ###
+
+Function `ODD` returns `TRUE` if its argument is [[odd|Language-Description#odd-value]], otherwise `FALSE`.
+
+```Modula-2
+PROCEDURE ODD ( value : T ) : BOOLEAN;
+```
+where *T* &in; *T*<sub>*whole*</sub> &cup; *T*<sub>*machine*</sub>.
+
+
+### ABS ###
+
+Function `ABS` returns the absolute value of its scalar argument.
+
+```Modula-2
+PROCEDURE ABS ( x : T1 ) : T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*signed*</sub> &cap; *T*<sub>*scalar*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### SGN ###
+
+Function `SGN` returns the [[signum value|Language-Description#signum-value]]
+of its argument.
+
+```Modula-2
+PROCEDURE SGN ( value : T1 ) : T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*signed*</sub> &cap; *T*<sub>*scalar*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### MIN ###
+
+Function `MIN` returns the smallest value in its variadic argument list.
+
+```Modula-2
+PROCEDURE MIN ( values : ARGLIST OF T1 ) : T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*countable*</sub> &cup; *T*<sub>*scalar*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### MAX ###
+
+Function `MAX` returns the largest value in its variadic argument list.
+
+```Modula-2
+PROCEDURE MAX ( values : ARGLIST OF T1 ) : T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*countable*</sub> &cup; *T*<sub>*scalar*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### LOG2 ###
+
+Function `LOG2` returns the truncated [binary logarithm](https://en.wikipedia.org/wiki/Binary_logarithm)
+of its cardinal argument.
+
+```Modula-2
+PROCEDURE LOG2 ( n : T1 ) : T2;
+```
+where *n* &ne; 0 &and;
+*T*<sub>*1*</sub> &in; *T*<sub>*cardinal*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### POW2 ###
+
+Function `POW2` returns the value of its argument raised to the [power of 2](https://en.wikipedia.org/wiki/Power_of_two).
+
+```Modula-2
+PROCEDURE POW2 ( n : T1 ) : T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*cardinal*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### ENTIER ###
+
+Function `ENTIER` returns the [[largest integer|Language-Description#largest-integer-or-entier]] or **entier** of its real number argument.
+
+```Modula-2
+PROCEDURE ENTIER ( r : T1 ) : T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*real*</sub> &and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### PRED ###
+
+Function `PRED` returns the predecessor of its countable argument.
+
+```Modula-2
+PROCEDURE PRED ( value : T1 ) : T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*countable*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### SUCC ###
+
+Function `SUCC` returns the successor of its countable argument.
+
+```Modula-2
+PROCEDURE SUCC ( value : T1 ) : T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*countable*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>.
+
+
+### PTR ###
+
+Function `PTR` returns a pointer to its argument.
+```Modula-2
+PROCEDURE PTR ( value : T1 ) : POINTER TO T2;
+```
+where *T*<sub>*1*</sub> &in; *T*<sub>*any*</sub>
+&and; *T*<sub>*2*</sub> = *T*<sub>*1*</sub>
+
+
+### CAPACITY ###
+
+Function `CAPACITY` returns the [[capacity|Language-Description#capacity]] of its argument.
+
+```Modula-2
+PROCEDURE CAPACITY ( entity : T ) : LONGCARD;
+```
+where *T* &in; *T*<sub>*collection*</sub>
+
+
+### COUNT ###
+
+Function `COUNT` returns the [[cardinality|Language-Description#cardinality]] of its argument.
+
+```Modula-2
+PROCEDURE COUNT ( entity : T ) : LONGCARD;
+```
+where *T* &in; *T*<sub>*collection*</sub> &#8726; *T*<sub>*string*</sub> &#8726; *T*<sub>*octetseq*</sub>
+
+The argument must be either (1) an instance of a collection type that is not a string type, or (2) the identifier of a formal open array parameter whose value type is not a character type, or (3) the identifier of a variadic argument list.
+
+
+### LENGTH ###
+
+Function `LENGTH` returns the [[length|Language-Description#length]] of the character string or octet sequence denoted by its argument.
+
+```Modula-2
+PROCEDURE LENGTH ( s : T ) : LONGCARD;
+```
+where *T* &in; *T*<sub>*collection*</sub> &#8726; *T*<sub>*octetseq*</sub>
+
+The argument must be either (1) a value of a string type, or (2) the identifier of an pen array parameter whose value type is a character type, or (3) the identifier of a record field or formal parameter of type `OCTETSEQ`.
+
+
+### FIRST ###
+
+Function `FIRST` returns the first key of the dictionary denoted by its argument.
+
+```Modula-2
+PROCEDURE FIRST ( dict : T1 ) : T2;
+```
+where *T* &in; *T*<sub>*dictionary*</sub> &and; *T*<sub>2</sub> **is-keytype-of** *T*<sub>1</sub>
+
+The dictionary type must be a library ADT that implements key/value storage and provides a binding to `FIRST` otherwise a compile time error will occur. The function returns `NIL` if its argument is an empty dictionary.
+
+### LAST ###
+
+Function `LAST` returns the last key of the dictionary denoted by its argument.
+
+```Modula-2
+PROCEDURE LAST ( dict : T1 ) : T2;
+```
+where *T* &in; *T*<sub>*dictionary*</sub> &and; *T*<sub>2</sub> **is-keytype-of** *T*<sub>1</sub>
+
+The dictionary type must be a library ADT that implements key/value storage and provides a binding to `LAST` otherwise a compile time error will occur. The function returns `NIL` if its argument is an empty dictionary.
+
+
+### PREV ###
+
+Function `PREV` returns the key that precedes the given key of the given dictionary.
+
+```Modula-2
+PROCEDURE PREV ( dict : T1; key : T2 ) : T2;
+```
+where *T* &in; *T*<sub>*dictionary*</sub> &and; *T*<sub>2</sub> **is-keytype-of** *T*<sub>1</sub>
+
+The dictionary type must be a library ADT that implements key/value storage and provides a binding to `PREV` otherwise a compile time error will occur. The function returns `NIL` if the second argument is the first key.
+
+
+### NEXT ###
+
+Function `NEXT` returns the key that succeeds the given key of the given dictionary.
+
+```Modula-2
+PROCEDURE NEXT ( dict : T1; key : T2 ) : T2;
+```
+where *T* &in; *T*<sub>*dictionary*</sub> &and; *T*<sub>2</sub> **is-keytype-of** *T*<sub>1</sub>
+
+The dictionary type must be a library ADT that implements key/value storage and provides a binding to `NEXT` otherwise a compile time error will occur. The function returns `NIL` if the second argument is the last key.
+
+
+## Built-in Macros ##
+
+### TMIN ###
+
+An invocation of macro `TMIN` is replaced by the smallest value of the type denoted by its argument.
+
+```Modula-2
+(*MACRO*) PROCEDURE TMIN ( TypeIdent ) : T;
+```
+where `TypeIdent` = **id** *T* &and; *T* &in; *T*<sub>*countable*</sub> &cup; *T*<sub>*scalar*</sub>
+
+
+### TMAX ###
+
+An invocation of macro `TMAX` is replaced by the largest value of the type denoted by its argument.
+
+```Modula-2
+(*MACRO*) PROCEDURE TMAX ( TypeIdent ) : T;
+```
+where `TypeIdent` = **id** *T* &and; *T* &in; *T*<sub>*countable*</sub> &cup; *T*<sub>*scalar*</sub>
+
+
+### TSIZE ###
+
+An invocation of macro `TSIZE` is replaced by the [[allocation size|Language-Description#allocation-size]] of the type denoted by its argument.
+
+If the (primary) argument does **not** denote an indeterminate type, no second argument may be passed.
+```Modula-2
+(*MACRO*) PROCEDURE TSIZE ( TypeIdent ) : LONGCARD;
+```
+
+If the primary argument denotes a pointer type with indeterminate target, a second argument must be passed,
+```Modula-2
+(*MACRO*) PROCEDURE TSIZE ( TypeIdent; capacity : LONGCARD ) : LONGCARD;
+```
+and the result is the [[allocation size|Language-Description#allocation-size]] for the target with the capacity given by the second argument.
+
+In any event, the (primary) argument must be a type identifier.
+
+
+### TLIMIT ###
+
+An invocation of macro `TLIMIT` is replaced by the [[capacity limit|Language-Description#capacity-limit]] of the type denoted by its argument.
+
+```Modula-2
+(*MACRO*) PROCEDURE TLIMIT ( TypeIdent ) : LONGCARD;
+```
+The argument must be the identifier of a collection type.
+
+
+## Primitives ##
+
+Primitives are **internal-use** procedures or macros that represent certain built-in syntax forms. They are **not** **callable** by user code but may be targeted by syntax bindings in ADT library modules. When a syntax form that is implemented by a primitive is found, it is internally replaced with an invocation of the associated primitive. The identifiers of primitives are reserved.
+
+The following primitives are defined:
+
+[`VALUE`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-VALUE),
+[`ATVALUE`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-ATVALUE),
+[`STORE`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-STORE),
+[`ATSTORE`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-ATSTORE),
+[`ATINSERT`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-ATINSERT),
+[`ATREMOVE`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-ATREMOVE),
+[`ALLOC`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-ALLOC),
+[`DEALLOC`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-DEALLOC),
+[`STDIN`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-STDIN),
+[`STDOUT`](https://github.com/m2sf/m2bsk/wiki/Language-Specification-(9)-:-Predefined-Identifiers#Primitive-STDOUT);
+
+
+### Primitive VALUE ###
+
+Primitive `VALUE` implements R-value subscript designators for dictionary types.
+It returns the value stored for a given key in a key/value collection.
+
+```Modula-2
+PROCEDURE VALUE ( CONST dict : DictType; key : KeyType ) : KeyType;
+```
+Any R-value subscript designator `dict[key]` is replaced by a function call `VALUE(dict, key)`.
+
+
+### Primitive ATVALUE ###
+
+Primitive `ATVALUE` implements R-value subscript designators for array types.
+
+It returns the value stored at a given index in an indexed collection.
+
+```Modula-2
+PROCEDURE ATVALUE ( CONST c : Collection; atIndex : LONGCARD ) : ValueType;
+```
+Any R-value subscript designator `a[i]` is replaced by a function call `ATVALUE(a, i)`.
+
+
+### Primitive STORE ###
+
+Primitive `STORE` implements L-value subscript designators for dictionary types.
+It stores a given value for a given key in a key/value collection.
+
+```Modula-2
+PROCEDURE STORE ( VAR dict : DictType; key : KeyType; value : ValueType );
+```
+A statement of the form `dict[key] := value` is replaced by a procedure call `STORE(dict, key, value)`.
+
+
+### Primitive ATSTORE ###
+
+Primitive `ATSTORE` implements L-value subscript designators for array types.
+It stores a given value at a given index in an indexed collection.
+
+```Modula-2
+PROCEDURE ATSTORE ( VAR c : Collection; atIndex : LONGCARD; value : ValueType );
+```
+A statement of the form `a[i] := v` is replaced by a procedure call `ATSTORE(a, i, v)`.
+
+
+### Primitive ATINSERT ###
+
+Primitive `ATINSERT` implements L-value subscript insertion designators.
+It inserts one or more values into an indexed collection starting at a given index.
+
+```Modula-2
+PROCEDURE ATINSERT ( VAR c : Collection; atIndex : LONGCARD; values : ARGLIST OF ValueType );
+```
+A statement of the form `a[i..] := v` is replaced by a procedure call `ATINSERT(a, i, v)`.
+
+
+### Primitive ATREMOVE ###
+
+Primitive `ATREMOVE` implements syntax for indexed value removal.
+It removes a range of values from an indexed collection within a given index range.
+
+```Modula-2
+PROCEDURE ATREMOVE ( VAR c : Collection; startIndex, endIndex : LONGCARD );
+```
+For values `a` of an array type, `s` of a string type, and `c` of any indexed collection type
+* a statement of the form `a := {}` is replaced by a procedure call `ATREMOVE(a, 0, COUNT(a)-1)`
+* a statement of the form `s := ""` is replaced by a procedure call `ATREMOVE(s, 0, LENGTH(s)-1)`
+* a statement of the form `REMOVE(c, i, j)` is replaced by a procedure call `ATREMOVE(c, i, j)`
+
+
+### Primitive ALLOC ###
+
+Primitive `ALLOC` implements type independent memory allocation for `NEW` statements.
+
+It allocates a memory block of a given size in octets and passes a pointer to it in its first argument.
+
+```Modula-2
+PROCEDURE ALLOC ( VAR p : CAST ADDRESS; size : LONGCARD );
+```
+
+### Primitive DEALLOC ###
+
+Primitive `DEALLOC` implements type independent memory deallocation for `RELEASE` statements.
+
+It deallocates a memory block pointed to by its argument and passes `NIL` back therein.
+
+```Modula-2
+PROCEDURE DEALLOC ( VAR p : CAST ADDRESS );
+```
+
+
+### Primitive STDIN ###
+
+Primitive `STDIN` inserts the default value for an omitted input channel in `READ` statements.
+
+```Modula-2
+PROCEDURE STDIN : LibraryDefinedChannelType;
+```
+
+
+### Primitive STDOUT ###
+
+Primitive `STDOUT` inserts the default value for an omitted output channel in `WRITE` statements.
+
+```Modula-2
+PROCEDURE STDOUT : LibraryDefinedChannelType;
+```
+
+
+## Restrictions ##
+
+Predefined constants may be passed to function `UNSAFE.CAST()` but may not be passed to functions `PTR()` and `UNSAFE.ADR()`. Predefined procedures, functions and macros may not be assigned and may not be passed as arguments to any procedure, function or macro.
+
+---
+
+# Chapter 10 : Syntax Binding #
+> This is the chapter headline
+
+Syntax Binding is the process of mapping library defined procedures to built-in syntax. A library defined procedure is bound to a given built-in syntax form by including a binding specifier within the procedure’s header. The binding specifier determines to which syntax form the procedure is bound, and it must be included in both the procedure’s definition and declaration.
+
+```antlr
+procedureHeader :=
+  PROCEDURE ( '[' bindingSpecifier ']')? procedureSignature ;
+
+bindingSpecifier :=
+  NEW ( ARGLIST | CAPACITY )? | RETAIN | RELEASE |
+  READ NEW? | WRITE ( '#' )? | bindableIdent ;
+
+bindableIdent := Pervasive | Primitive ;
+```
+A syntax form to which library defined procedures may be bound is said to be bindable. Procedures bound to it are called its bindings. While bindable syntax forms are type agnostic, their bindings are type specific, that is to say, each binding supports arguments of a specific type. For each type to be supported by a bindable syntax form, a binding specific to arguments of the type is required.
+
+A bindable syntax form `S` is said to have a binding for type `T` when a library procedure `p` that supports arguments of `T` has been bound to `S`. Procedure `p` is said to be bound to `S` in respect of `T`.
+
+
+## Syntax Transformation ##
+
+Bindable syntax forms act as [[Wirthian macro|Language-Description#wirthian-macro]]s. A syntax form `S` with binding `p` for type `T`, an occurrence of `S` with a primary argument or argument list `a` of type `T` is resolved into a procedure call to `p`, passing `a`.
+
+`S a ...` &longrightarrow; `T.p(a...)`
+
+
+
+## Memory Management Bindings ##
+
+### Binding to NEW ###
+
+Statement `NEW` has three bindable syntax forms.
+
+### NEW without Arguments ###
+
+An ADT module `Foo` with a binding
+
+```Modula-2
+PROCEDURE [NEW] New ( VAR p : Foo );
+```
+binds ADT library procedure `Foo.New()` to the `NEW` statement in respect of type `Foo`.
+
+Any use of the `NEW` statement with a designator of type `Foo` and without initialiser nor capacity specifier is then
+replaced by a call to procedure `Foo.New()`.
+
+Given the following import and declaration within a client module
+
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+a statement of the form
+
+```Modula-2
+NEW foo;
+```
+is resolved into a library call
+
+```Modula-2
+Foo.New(foo);
+```
+
+
+### NEW with Initialiser ###
+
+An ADT module `Foo` with the binding
+
+```Modula-2
+PROCEDURE [NEW ARGLIST] NewWithArgs ( VAR p : Foo; initVal : ARGLIST OF Value );
+```
+bind ADT library procedure `Foo.NewWithArgs()` to the `NEW` statement in respect of type `Foo`.
+
+Any use of the `NEW` statement with a designator of type `Foo` and an initialiser is then resolved into a call to
+procedure `Foo.NewWithArgs()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+a statement of the form
+```Modula-2
+NEW foo := { a, b, c };
+```
+is resolved into a library call
+```Modula-2
+Foo.NewWithArgs(foo, a, b, c);
+```
+
+
+### NEW with Capacity ###
+
+An ADT module `Foo` with a binding
+
+```Modula-2
+PROCEDURE [NEW CAPACITY] NewWithCapacity ( VAR p : Foo; capacity : LONGCARD );
+```
+binds ADT library procedure `Foo.NewWithCapacity()` to the `NEW` statements in respect of type `Foo`.
+
+Any use of the `NEW` statement with a designator of type `Foo` and a capacity specifier is then resolved into a call to procedure `Foo.NewWithCapacity()`.
+
+Given the following import and declaration within a client module
+
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+
+a statement of the form
+```Modula-2
+NEW foo CAPACITY n;
+```
+is resolved into a library call
+```Modula-2
+Foo.NewWithCapacity(foo, n);
+```
+
+
+### Binding to RETAIN ###
+
+An ADT module Foo with a binding
+```Modula-2
+PROCEDURE [RETAIN] Retain ( p : Foo );
+```
+binds ADT library procedure `Retain()` to the `RETAIN` statement in respect of type `Foo`.
+
+Any use of `RETAIN` with a designator of type `Foo` is then resolved into a call to procedure `Foo.Retain()`.
+
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+a statement of the form
+```Modula-2
+RETAIN foo;
+```
+is resolved into a library cal
+```Modula-2
+Foo.Retain(foo);
+```
+
+
+### Binding to RELEASE ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [RELEASE] Release ( VAR p : Foo );
+```
+binds ADT library procedure `Release()` to the `RELEASE` statement in respect of type `Foo`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+a statement of the form
+```Modula-2
+RELEASE foo;
+```
+is resolved into a library cal
+```Modula-2
+Foo.Release(foo);
+```
+
+
+## I/O Bindings ##
+
+### Binding to READ ###
+
+Statement `READ` has two associated bindings.
+* `[READ]` bindings are used to generate calls for **plain** designators in a `READ` statement
+* `[READ NEW]` bindings are used to generate calls for `NEW`-prefixed designators in a `READ` statement
+
+An IO module `FooIO` with a binding
+
+```Modula-2
+PROCEDURE [READ] Read ( chan : IOChannel; VAR value : Foo );
+```
+binds IO library procedure `Read()` to the `READ` statement in respect of type `Foo`.
+
+Any plain designator of type `Foo` within a `READ` statement will then generate a call to procedure `FooIO.Read()`.
+
+An IO module `FooIO` with a binding
+```Modula-2
+PROCEDURE [READ NEW] ReadNew ( chan : IOChannel; VAR ptr : Foo ); (* Foo is a pointer type *)
+```
+binds IO library procedure `ReadNew()` to the `READ` statement in respect of pointer type `Foo`.
+
+Any `NEW`-prefixed designator of pointer type `Foo` within a `READ` statement will then generate a call to procedure `FooIO.ReadNew()`.
+
+
+#### READ with Explicit IO Channel ####
+
+Given the following imports and declaration within a client module
+```Modula-2
+IMPORT Foo, FooIO, IOChannel; VAR foo : Foo; file : IOChannel;
+```
+* a statement of the form `READ @file : foo` is resolved into a library call `FooIO.Read(file, foo)`
+* a statement of the form `READ @file : NEW foo` is resolved into a library call `FooIO.ReadNew(file, foo)`
+
+
+#### READ with Default IO Channel ####
+
+If the IO channel argument is omitted, default input channel primitive `STDIN` is automatically inserted. In order to resolve `STDIN` an appropriate IO library must be imported to bind an input channel to `STDIN` and make it visible within the current module scope. Import of module `StdIO` binds `StdIO.in()` to `STDIN`.
+
+Given the following imports and declaration within a client module
+```Modula-2
+IMPORT Foo, FooIO, StdIO; VAR foo : Foo;
+```
+* a statement of the form `READ foo` is resolved into a library call `FooIO.Read(StdIO.in(), foo)`
+* a statement of the form `READ NEW foo` is resolved into a library call `FooIO.ReadNew(StdIO.in(), foo)`
+
+
+#### READ with Multiple Arguments ####
+
+Given modules `Foo`, `Bar`, `Baz` and `Bam`, their respective IO modules `FooIO`, `BarIO`, `BazIO` and `BamIO`
+with bindings to for their respective types and the following imports and declaration within a client module
+```Modula-2
+IMPORT Foo, FooIO, Bar, BarIO, Baz, BazIO, Bam, BamIO, StdIO;
+VAR foo : Foo; bar : Bar; baz : Baz; bam : Bam;
+```
+a statement of the form
+```Modula-2
+READ foo, NEW bar, baz, NEW bam;
+```
+is resolved into a statement sequence
+```Modula-2
+FooIO.Read(StdIO.in(), foo); BarIO.ReadNew(StdIO.in(), bar);
+BazIO.Read(StdIO.in(), baz); BamIO.ReadNew(StdIO.in(), bam);
+```
+
+
+#### Binding to WRITE ####
+
+Statement `WRITE` has two associated bindings.
+* `[WRITE]` bindings are used to generate calls for **unformatted** output values in a `WRITE` statement
+* `[WRITE #]` bindings are used to generate calls for **formatted** output values in a `WRITE` statement
+
+An IO module `FooIO` with a binding
+```Modula-2
+PROCEDURE [WRITE] Write ( chan : IOChannel; value : Foo );
+```
+binds IO library procedure `Write()` to the `WRITE` statement in respect of type `Foo`.
+
+Any unformatted output value of type `Foo` within a `WRITE` statement will then generate a call to procedure
+`FooIO.Write()`.
+
+An IO module `FooIO` with a binding
+```Modula-2
+PROCEDURE [WRITE #] WriteF ( chan : IOChannel; CONST fmtStr : ARRAY OF CHAR; value : Foo );
+```
+binds IO library procedure `WriteF()` to the `WRITE` statement in respect of type `Foo`.
+
+Any formatted output value of type `Foo` within a `WRITE` statement will then generate a call to procedure
+`FooIO.WriteF()`.
+
+
+#### WRITE with Explicit IO Channel ####
+
+Given the following imports and declaration within a client module
+```Modula-2
+IMPORT Foo, FooIO, IOChannel; VAR foo : Foo; file : IOChannel;
+```
+* a statement of the form `WRITE @file : foo` is resolved into a library cal `FooIO.Write(file, foo)`
+* a statement of the form `WRITE @file : #(fmt, foo)` is resolved into a library call `FooIO.WriteF(file, fmt, foo)`
+
+
+#### WRITE with Default IO Channel ####
+
+If the IO channel argument is omitted, default output channel primitive `STDOUT` is automatically inserted. In order to resolve `STDOUT` an appropriate IO library must be imported to bind an output channel to `STDOUT` and make it visible within the current module scope. Import of module `StdIO` binds `StdIO.out()` to `STDOUT`.
+
+Given the following imports and declaration within a client module
+* a statement of the form `WRITE foo` is resolved into a library call `FooIO.Write(StdIO.out(), foo)`
+* a statement of the form `WRITE #(fmt, foo)` is resolved into a call `FooIO.WriteF(StdIO.out(), fmt, foo)`
+
+
+#### WRITE with Multiple Arguments ####
+
+Given modules `Foo`, `Bar`, `Baz` and `Bam`, their respective IO modules `FooIO`, `BarIO`, `BazIO` and `BamIO`
+with bindings to for their respective types and the following imports and declaration within a client module
+
+```Modula-2
+IMPORT Foo, FooIO, Bar, BarIO, Baz, BazIO, Bam, BamIO, StdIO;
+VAR foo : Foo; bar : Bar; baz : Baz; bam : Bam;
+```
+a statement of the form
+```Modula-2
+WRITE foo, #(fmt1, bar), baz, #(fmt2, bam);
+```
+is resolved into a statement sequence
+```Modula-2
+FooIO.Write(StdIO.out(), foo); BarIO.WriteF(StdIO.out(), fmt1, bar);
+BazIO.Write(StdIO.out(), baz); BarIO.WriteF(StdIO.out(), fmt2, bam);
+```
+
+
+## Binding to Pervasives ##
+
+### Binding to Procedure APPEND ##
+
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [APPEND] Append ( VAR a : Foo; values : ARGLIST OF Value );
+```
+binds ADT library procedure `Foo.Append()` to pervasive procedure `APPEND()` in respect of type `Foo`.
+
+Any call to `APPEND()` with a first argument of type `Foo` is then resolved into a call to procedure `Foo.Append()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+an invocation of the form `APPEND(foo, v1, v2, v3)` is resolved into a library call `Foo.Append(foo, v1, v2, v3)`.
+
+
+### Binding to Procedure REMOVE ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [REMOVE] Remove ( VAR a : Foo; keys : ARGLIST OF Keys );
+```
+binds ADT library procedure `Foo.Remove()` to pervasive procedure `REMOVE()` in respect of type `Foo`.
+
+Any call to `REMOVE()` with a first argument of type `Foo` is then resolved into a call to procedure `Foo.Remove()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+an invocation of the form `REMOVE(foo, k1, k2, k3)` is resolved into a library call `Foo.Append(foo, k1, k2, k3)`.
+
+
+### Binding to Function COUNT ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [COUNT] count ( VAR a : Foo ) : LONGCARD;
+```
+binds ADT library function `Foo.count()` to pervasive function `COUNT()` in respect of type `Foo`.
+
+Any invocation of `COUNT()` with an argument of type `Foo` is then resolved into a call to function `Foo.count()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+an invocation of the form `COUNT(foo)` is resolved into a library call `Foo.count(foo)`.
+
+Within any given ADT module, bindings to `COUNT` and `LENGTH` are mutually exclusive.
+
+
+### Binding to Function LENGTH ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [LENGTH] length ( VAR a : Foo ) : LONGCARD;
+```
+binds ADT library function `Foo.length()` to pervasive function `LENGTH()` in respect of type `Foo`.
+
+Any invocation of `LENGTH()` with an argument of type `Foo` is then resolved into a call to function `Foo.length()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+an invocation of the form `LENGTH(foo)` is resolved into a library call `Foo.length(foo)`.
+
+Within any given ADT module, bindings to `COUNT` and `LENGTH` are mutually exclusive.
+
+
+### Binding to Function FIRST ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [FIRST] firstKey ( a : Foo ) : KeyType (* of Foo *);
+```
+binds ADT library function `Foo.firstKey()` to pervasive function `FIRST()` in respect of type `Foo`.
+
+Any invocation of `FIRST()` with an argument of type `Foo` is then resolved into a call to function `Foo.firstKey()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+an invocation of the form `FIRST(foo)` is resolved into a library call `Foo.firstKey(foo)`.
+
+
+### Binding to Function LAST ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [LAST] lastKey ( a : Foo ) : KeyType (* of Foo *);
+```
+binds ADT library function `Foo.lastKey()` to pervasive function `LAST()` in respect of type `Foo`.
+
+Any invocation of `LAST()` with an argument of type `Foo` is then resolved into a call to function `Foo.lastKey()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo;
+```
+an invocation of the form `LAST(foo)` is resolved into a library call `Foo.lastKey(foo)`.
+
+
+### Binding to Function PREV ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [PREV] prevKey ( VAR a : Foo; key : Key ) : Key;
+```
+binds ADT library function `Foo.prevKey()` to pervasive function `PREV()` in respect of type `Foo`.
+
+Any invocation of `PREV()` with an argument of type `Foo` is then resolved into a call to function `Foo.prevKey()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo; key : Foo.Key;
+```
+an invocation of the form `PREV(foo, key)` is resolved into a library call `Foo.prevKey(foo, key)`.
+
+
+### Binding to Function NEXT ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [NEXT] nextKey ( VAR a : Foo; key : Key ) : Key;
+```
+binds ADT library function `Foo.nextKey()` to pervasive function `NEXT()` in respect of type `Foo`.
+
+Any invocation of `NEXT()` with an argument of type `Foo` is then resolved into a call to function `Foo.nextKey()`.
+
+Given the following import and declaration within a client module
+```Modula-2
+IMPORT Foo; VAR foo : Foo; key : Foo.Key;
+```
+an invocation of the form `NEXT(foo, key)` is resolved into a library call `Foo.nextKey(foo, key)`.
+
+
+### Binding to Macro TLIMIT ##
+
+An ADT module `Foo` with a binding
+```Modula-2
+CONST [TLIMIT] Capacity = 1000;
+```
+binds library constant `Foo.Capacity` to pervasive macro `TLIMIT()` in respect of type `Foo`.
+
+Given an import directive `IMPORT Foo;` within a client module,
+
+an expression of the form `TLIMIT(Foo)` is replaced by library constant `Foo.Capacity`.
+ 
+
+## Binding to the Collation Table ##
+
+A library module may bind an array constant to the language processor’s internal collation table.
+```Modula-2
+CONST [COLLATION] Order = { index0, index1, index2, ... index94 };
+```
+where value `Order[i]` defines the collation index of character `CHR(i+32)` for `i` in range `[0..94]`.
+
+Such a library is called a collation library. Import of a collation library causes pervasive function `COLLATION()` and thereby all string comparisons to use the library defined order within the scope of the importing module.
+
+
+## Binding to Primitives ##
+
+### Binding to Primitive VALUE ###
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [VALUE] valueForKey ( VAR a : Foo; key : Key ) : Value;
+```
+binds function `Foo.valueForKey()` to primitive `VALUE` in respect of type `Foo`.
+
+Any (internal) use of primitive `VALUE` with a first argument of type `Foo` is then resolved into a library call to
+function `Foo.valueForKey()` during translation of syntax forms that are synthesised using primitive `VALUE`.
+
+
+### Binding to Primitive ATVALUE ###
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [ATVALUE] valueAtIndex ( VAR a : Foo; atIndex : LONGCARD ) : Value;
+```
+binds function `Foo.valueAtIndex()` to primitive `ATVALUE` in respect of type `Foo`.
+
+Any (internal) use of primitive `ATVALUE` with a first argument of type `Foo` is then resolved into a library call to
+function `Foo.valueAtIndex()` during translation of syntax forms that are synthesised using primitive `ATVALUE`.
+
+
+### Binding to Primitive STORE ###
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [STORE] StoreKeyValue ( VAR a : Foo; key : Key; value : Value );
+```
+binds procedure `Foo.StoreKeyValue` to primitive `STORE` in respect of type `Foo`.
+
+Any (internal) use of primitive `STORE` with a first argument of type `Foo` is then resolved into a library call to
+procedure `Foo.StoreKeyValue` during translation of syntax forms that are synthesised using primitive `STORE`.
+
+
+### Binding to Primitive ATSTORE ###
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [ATSTORE] StoreAtIndex ( VAR a : Foo; atIndex : LONGCARD; value : Value );
+```
+binds procedure `Foo.StoreAtIndex` to primitive `ATSTORE` in respect of type `Foo`.
+
+Any (internal) use of primitive `ATSTORE` with a first argument of type `Foo` is then resolved into a library call to
+procedure `Foo.StoreAtIndex` during translation of syntax forms that are synthesised using primitive `ATSTORE`.
+
+
+### Binding to Primitive ATINSERT ###
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [ATINSERT] AtInsert ( VAR a : Foo; atIndex : LONGCARD; values : ARGLIST OF Value );
+```
+binds procedure `Foo.AtInsert` to primitive `ATINSERT` in respect of type `Foo`.
+
+Any (internal) use of primitive `ATINSERT` with a first argument of type `Foo` is then resolved into a library call to
+procedure `Foo.AtInsert` during translation of syntax forms that are synthesised using primitive `ATINSERT`.
+
+
+### Binding to Primitive ATREMOVE ###
+
+An ADT module `Foo` with a binding
+```Modula-2
+PROCEDURE [ATREMOVE] AtRemove ( VAR a : Foo; startIndex, endIndex : LONGCARD );
+```
+binds procedure `Foo.AtRemove` to primitive `ATREMOVE` in respect of type `Foo`.
+
+Any (internal) use of primitive `ATREMOVE` with a first argument of type `Foo` is then resolved into a library call to
+procedure `Foo.AtRemove` during translation of syntax forms that are synthesised using primitive `ATREMOVE`.
+
+
+### Binding to Primitive ALLOC ###
+
+A storage library module `MyStorage` with a binding
+```Modula-2
+PROCEDURE [ALLOC] Allocate ( VAR p : CAST ADDRESS; size : LONGCARD );
+```
+binds procedure `MyStorage.Allocate` to primitive `ALLOC`.
+
+Any (internal) use of primitive `ALLOC` is then resolved into a library call to procedure `MyStorage.Allocate` during translation of `NEW` statements for types that do not provide type specific bindings to `NEW`.
+
+
+### Binding to Primitive DEALLOC ###
+
+A storage library module `MyStorage` with a binding
+```Modula-2
+PROCEDURE [DEALLOC] Deallocate ( VAR p : CAST ADDRESS );
+```
+binds procedure `MyStorage.Deallocate` to primitive `DEALLOC`.
+
+Any (internal) use of primitive `DEALLOC` is then resolved into a library call to procedure `MyStorage.Deallocate` during translation of `RELEASE` statements for types that do not provide type specific bindings to `RELEASE`.
+
+
+### Binding to Primitive STDIN ###
+
+An IO module `MyIO` with a binding
+```Modula-2
+PROCEDURE [STDIN] stdIn : ArbitraryIOChannelType;
+```
+binds `MyIO.stdIn()` to primitive `STDIN`. (Internal) use of `STDIN` is then resolved to `MyIO.stdIn()`.
+
+
+### Binding to Primitive STDOUT ###
+
+An IO module `MyIO` with a binding
+```Modula-2
+PROCEDURE [STDOUT] stdOut : ArbitraryIOChannelType;
+```
+binds `MyIO.stdOut()` to primitive `STDOUT`. (Internal) use of `STDOUT` is then resolved to `MyIO.stdOut()`.
+
+---
+
+# Chapter 11 : Low-Level Facilities #
+> This is the chapter headline
+
+Low-level facilities are provided by special module `UNSAFE`. Although presented as a library it is built into the language. Its facilities are potentially unsafe, their use may bypass the type safety of the language and they must therefore be used with caution. The module must be imported before its facilities can be used.
+
+Module `UNSAFE` provides the following identifiers:
+
+[`BitsPerByte`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bitsperbyte),
+[`BytesPerWord`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bytesperword),
+[`BytesPerLongWord`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bytesperlongword),
+[`BitsPerAddress`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bitsperaddress),
+[`MachineTypeMaxBits`](https://github.com/m2sf/m2bsk/wiki/Language-Description#machinebytesmaxbits),
+[`BitOpsMaxBits`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bitopsmaxbits),
+[`BYTE`](https://github.com/m2sf/m2bsk/wiki/Language-Description#byte),
+[`WORD`](https://github.com/m2sf/m2bsk/wiki/Language-Description#word),
+[`LONGWORD`](https://github.com/m2sf/m2bsk/wiki/Language-Description#longword),
+[`ADDRESS`](https://github.com/m2sf/m2bsk/wiki/Language-Description#address),
+[`ADD`](https://github.com/m2sf/m2bsk/wiki/Language-Description#add),
+[`SUB`](https://github.com/m2sf/m2bsk/wiki/Language-Description#sub),
+[`SETBIT`](https://github.com/m2sf/m2bsk/wiki/Language-Description#setbit),
+[`HALT`](https://github.com/m2sf/m2bsk/wiki/Language-Description#halt),
+[`ADR`](https://github.com/m2sf/m2bsk/wiki/Language-Description#adr),
+[`CAST`](https://github.com/m2sf/m2bsk/wiki/Language-Description#cast),
+[`BIT`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bit),
+[`SHL`](https://github.com/m2sf/m2bsk/wiki/Language-Description#shl),
+[`SHR`](https://github.com/m2sf/m2bsk/wiki/Language-Description#shr),
+[`ASHR`](https://github.com/m2sf/m2bsk/wiki/Language-Description#ashr),
+[`BWNOT`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bwnot),
+[`BWAND`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bwand),
+[`BWOR`](https://github.com/m2sf/m2bsk/wiki/Language-Description#bwor);
+
+
+## Low-Level Constants ##
+
+### BitsPerByte ###
+
+Constant `BitsPerByte` represents the bit width of the smallest addressable machine unit of the target architecture measured in bits. Its value is therefore target architecture dependent. For the overwhelming majority of platforms in use this value will be eight.
+
+Memory allocation in Modula-2 is strictly in units of eight bits and multiples thereof. On (legacy) targets where the smallest addressable machine unit is not eight bits, the mapping of type `OCTET` to machine types is implementation defined.
+
+### BytesPerWord ###
+
+Constant `BytesPerWord` represents the size of a machine register of the target architecture smaller than the
+largest machine register. Its value is target architecture dependent.
+
+### BytesPerLongWord ###
+
+Constant `BytesPerLongWord` represents the size of the largest machine register of the target architecture. Its value is target architecture dependent. If the target architecture does not support machine registers of different sizes, `BytesPerLongWord` is equal to `BytesPerWord`.
+
+### BitsPerAddress ###
+
+Constant `BitsPerAddress` represents the bit width of type `ADDRESS`.
+
+### MachineTypeMaxBits ###
+
+Constant `MachineTypeMaxBits` represents the bit width of the largest machine type.
+
+### BitOpsMaxBits ###
+
+Constant `BitOpsMaxBits` represents the bit width of the largest operand supported by the `UNSAFE` bit operations `ADD()`, `SUB()`, `SETBIT()`, `BIT()`, `SHL()`, `SHR()`, `ASHR()`, `BWNOT()`, `BWAND()` and `BWOR()`.
+
+
+## Low-Level Types ##
+
+### BYTE ###
+
+Type `BYTE` is a machine type.
+
+It represents the smallest addressable storage unit of the target architecture.
+
+Its bit width is defined by constant `BitsPerByte`.
+
+Its value range is `[0..POW2(BitsPerByte)-1]`.
+
+Whole number literals are compatible with type `BYTE`.
+
+
+### WORD ###
+
+Type `WORD` is a machine type.
+
+It represents a storage unit equivalent to the size of a machine register of the target architecture.
+
+Its bit width is defined by constants `BitsPerByte` and `BytesPerWord`.
+
+Its value range is `[0..POW2(BitsPerByte*BytesPerWord)-1]`.
+
+Whole number literals are compatible with type `WORD`.
+
+
+### LONGWORD ###
+
+Type `LONGWORD` is a machine type.
+
+It represents a storage unit equivalent to the size of the largest machine register of the target architecture.
+
+Its bit width is defined by constants `BitsPerByte` and `BytesPerLongWord`.
+
+Its value range is `[0..POW2(BitsPerByte*BytesPerLongWord)-1]`.
+
+Whole number literals are compatible with type `LONGWORD`.
+
+
+### ADDRESS ###
+
+Type `ADDRESS` is a (semi-abstract) reference type.
+
+It represents the addressable memory space available to the Modula-2 runtime environment.
+
+Its bit width is defined by constant `BitsPerAddress`.
+
+Its value range is `[0..POW2(BitsPerAddress)-1]`.
+
+Whole number literals and `NIL` are compatible with type `ADDRESS`.
+
+#### Address Mapping ###
+
+On platforms where the smallest addressable storage unit is eight bits, type `ADDRESS` represents machine addresses of the target architecture. On (legacy) platforms where the smallest addressable unit is not eight bits, the type represents abstract addresses that need to be mapped to the platform’s actual address space. On such platforms, address mapping is implementation defined.
+
+Regardless of the underlying architecture, type `ADDRESS` is classified as a machine type.
+
+
+#### Dual Representation ####
+
+Type `ADDRESS` exhibits type duality. It is presented both as a pointer type and as an octet sequence. It may thus be thought of as having two overlapping definitions
+```Modula-2
+TYPE ADDRESS = (* Pseudo-Definition *)
+| POINTER TO OCTET
+| OCTETSEQ [POW2(BitsPerAddress)]
+END; (* ADDRESS *)
+```
+
+##### Presentation as a Pointer #####
+
+An entity `a` of type `ADDRESS` may be dereferenced using the `^` operator. An expression of the form `a^` is of type `OCTET` and represents the octet value stored at address `a`.
+```Modula-2
+adr := UNSAFE.ADR(x);
+WRITE "octet value at address ", adr, " is ", adr^;
+```
+
+##### Presentation as a Stream #####
+
+An entity `a` of type `ADDRESS` may also be referenced by subscript. An expression of the form `a[n]` is of type `OCTET` and represents the octet value stored at address `a+n`, where `n` is an offset of type `LONGCARD`. Negative indices are not supported.
+```Modula-2
+adr := UNSAFE.ADR(x);
+WRITE "octet value at address ", adr, "[", offset, "] is ", adr[offset];
+```
+
+### Casting Formal Types ###
+
+Import of module `UNSAFE` enables the use of casting formal type syntax `CAST` `ADDRESS` and `CAST` `OCTETSEQ` within the importing module scope. Without such import the syntax is unavailable and any attempt to use it will cause a syntax error at compile time.
+
+#### CAST ADDRESS ####
+
+An argument passed to a parameter of formal type `CAST` `ADDRESS` is cast to type `ADDRESS`. That is, within the body of the procedure, the argument is interpreted as a value of type `ADDRESS`. It must be of a pointer type.
+```Modula-2
+PROCEDURE Allocate ( VAR ptr : CAST ADDRESS; size : LONGCARD );
+...
+TYPE FooPtr = POINTER TO Foo; VAR foo : FooPtr;
+Allocate(foo, TSIZE(Foo));
+```
+All pointer types are passing compatible to formal type `CAST` `ADDRESS`.
+
+#### CAST OCTETSEQ ####
+
+An argument passed to a parameter of formal type `CAST` `OCTETSEQ` is cast to an octet sequence*. That is, within the body of the procedure, the parameter is interpreted as a stream of values of type OCTET , individually addressable by subscript. The argument may be of any type.
+
+[*] This replaces the implicit casting semantics of `ARRAY` `OF` `WORD` and `ARRAY` `OF` `LOC` in earlier versions of Modula-2.
+
+```Modula-2
+PROCEDURE HexDump ( dataSeq : CAST OCTETSEQ );
+...
+VAR foo : Foo; bar : Bar; baz : Baz;
+HexDump(foo), HexDump(bar); HexDump(baz);
+```
+Any entity regardless of its type is passing compatible to formal parameters of type `CAST` `OCTETSEQ`, but a parameter of type `OCTETSEQ` is passing compatible only to formal parameters of type `OCTETSEQ`.
+
+When an argument is passed to a parameter of formal type `CAST` `OCTETSEQ`, the allocation size of the argument is passed as a hidden parameter of type `LONGCARD` immediately before the casting parameter.
+```Modula-2
+PROCEDURE HexDump ( (*hidden size : LONGCARD;*) dataSeq : CAST OCTETSEQ );
+```
+The value of the hidden parameter may be obtained within the procedure body by calling function `LENGTH` with the identifier of the casting parameter as its argument.
+```Modula-2
+LENGTH(dataSeq) (* number of octets passed to dataSeq *)
+```
+
+Operations on parameters of type `OCTETSEQ` are strictly limited to subscript, `FOR` iteration, `ADR()` , `CAST()` and `LENGTH()`. The limitation does not apply to the octet values of an octet sequence parameter.
+
+##### Addressing by Subscript #####
+
+The values of an octet sequence parameter are addressable by subscript. Negative indices are not supported.
+```Modula-2
+WRITE "octet value at index ", index, " is ", dataSeq[index];
+```
+
+##### Iteration by FOR Loop #####
+
+An octet sequence parameter is iterable by `FOR` loop.
+```Modula-2
+PROCEDURE HexDump ( VAR dataSeq : CAST OCTETSEQ );
+BEGIN
+  FOR value IN dataSeq DO
+    WRITE value, " "
+  END (* FOR *)
+  WRITE "\n", LENGTH(dataSeq), " values\n"
+END HexDump;
+```
+
+
+## Low-Level Procedures ##
+
+### ADD ###
+
+Procedure `ADD` interprets the bit patterns of its operands as unsigned numbers and adds the value of the second to the first operand, ignoring overflow.
+
+```Modula-2
+PROCEDURE ADD ( VAR x : T1; y : T2 );
+```
+where `T1`, `T2` &in; *T*<sub>*builtin*</sub> &#8726; *T*<sub>*real*</sub>
+&and; **tsize** `T1` &ge; **tsize** `T2`
+
+
+### SUB ###
+
+Procedure `SUB` interprets the bit patterns of its operands as unsigned numbers and subtracts the value of the second from the first operand, ignoring underflow.
+
+```Modula-2
+PROCEDURE SUB ( VAR x : T1; y : T2 );
+```
+where `T1`, `T2` &in; *T*<sub>*builtin*</sub> &#8726; *T*<sub>*real*</sub>
+&and; **tsize** `T1` &ge; **tsize** `T2`
+
+
+### SETBIT ###
+
+Procedure `SETBIT` sets the bit at the zero-based index given by its second argument of the value given by its first argument to the bit value given by its third argument.
+
+```Modula-2
+PROCEDURE SETBIT ( VAR target : T1; bitIndex : T2; bit : BOOLEAN );
+```
+where `T1`, `T2` &in; *T*<sub>*builtin*</sub>
+&and; `T2` &in; *T*<sub>*cardinal*</sub>
+&and; 0 &le; `bitIndex` &le; 8 &middot; **tsize** `T1`
+
+The bit index of the least significant bit is always zero.
+
+
+### HALT ###
+
+Procedure `HALT` aborts the running program and passes an exit value to its host environment. On host environments that do not support an exit value, the exit value is discarded. On host environments that support an exit value, the range and meaning of exit values is dependent on the host environment.
+
+```Modula-2
+PROCEDURE HALT ( exitValue : T );
+```
+where `T` &in; *T*<sub>*whole*</sub>
+
+
+## Low-Level Functions ##
+
+### ADR ###
+
+Function `ADR` returns the address of its argument.
+
+```Modula-2
+PROCEDURE ADR ( value : T ) : ADDRESS;
+```
+where `T` &in; *T*<sub>*any*</sub>
+
+
+### CAST ###
+
+Function `CAST` represents an unsafe type transfer operation. It returns the value of its second argument, interpreted as if it was of the type given by its first argument, regardless of whether the value makes sense for the target type or not.
+
+```Modula-2
+PROCEDURE CAST ( TypeIdent; value : T1 ) : T2;
+```
+where `T` &in; *T*<sub>*any*</sub>
+&and; `TypeIdent` = **id** `T2`
+&and; **tsize** `T1` &le; **tsize** `T2`
+
+If the second argument is a compile time expression, then it must be any of `NIL`, `TRUE` or `FALSE`, or it must be an explicitly typed expression of the form `expr :: T`.
+
+If the allocation size of the second argument is smaller than the allocation size of the target type, the higher bits will be filled with zeroes up to the bit width of the target type.
+
+
+### BIT ###
+
+Function `BIT` returns `TRUE` if the bit at the zero-based index given by its second argument of the value given by its first argument is set, otherwise `FALSE`.
+
+```Modula-2
+PROCEDURE BIT ( value : T1; bitIndex : T2 ) : BOOLEAN;
+```
+where `T1` &in; *T*<sub>*builtin*</sub>
+&and; `T2` &in; *T*<sub>*cardinal*</sub>
+&and; 0 &le; `bitIndex` &lt; 8 &middot; **tsize** `T1`
+
+The bit index of the least significant bit is always zero.
+
+
+### SHL ###
+
+Function `SHL` returns the value of its first argument bit-shifted to the left by the number of positions passed in its second argument.
+```Modula-2
+PROCEDURE SHL ( value : T1; shiftFactor : T2 ) : T3;
+```
+where `T1` &in; *T*<sub>*builtin*</sub>
+&and; `T2` &in; *T*<sub>*cardinal*</sub>
+&and; `T3` = `T1`
+
+Bits that are shifted out to the left are discarded and will not cause overflow.
+
+
+### SHR ###
+
+Function `SHR` returns the value of its first argument bit-shifted **logically** to the right by the number of positions passed in its second argument.
+```Modula-2
+PROCEDURE SHR ( value : T1; shiftFactor : T2 ) : T3;
+```
+where `T1` &in; *T*<sub>*builtin*</sub>
+&and; `T2` &in; *T*<sub>*cardinal*</sub>
+&and; `T3` = `T1`
+
+Bits that are shifted out to the right are discarded and will not cause underflow.
+
+
+### ASHR ###
+
+Function `ASHR` returns the value of its first argument bit-shifted **arithmetically** to the right by the number of positions passed in its second argument.
+```Modula-2
+PROCEDURE ASHR ( value : T1; shiftFactor : T2 ) : T3;
+```
+where `T1` &in; *T*<sub>*builtin*</sub>
+&and; `T2` &in; *T*<sub>*cardinal*</sub>
+&and; `T3` = `T1`
+
+Bits that are shifted out to the right are discarded and will not cause underflow.
+
+
+### BWNOT ###
+
+Function `BWNOT` returns the bitwise logical negation of its argument.
+```Modula-2
+PROCEDURE BWNOT ( value : T1 ) : T2;
+```
+where `T1` &in; *T*<sub>*builtin*</sub>
+&and; `T2` = `T1`
+
+
+### BWAND ###
+
+Function `BWAND` returns the bitwise logical conjunction of its first argument and a bit mask given by its second argument.
+```Modula-2
+PROCEDURE BWAND ( value : T1; mask : T2 ) : T3;
+```
+where `T1` &in; *T*<sub>*builtin*</sub>
+&and; `T2` &in; *T*<sub>*cardinal*</sub>
+&and; **tsize** `T2` = **tsize** `T1`
+&and; `T3` = `T1`
+
+
+### BWOR ###
+
+Function `BWOR` returns the bitwise logical disjunction of its first argument and a bit mask given by its second argument.
+```Modula-2
+PROCEDURE BWOR ( value : T1; mask : T2 ) : T3;
+```
+where `T1` &in; *T*<sub>*builtin*</sub>
+&and; `T2` &in; *T*<sub>*cardinal*</sub>
+&and; **tsize** `T2` = **tsize** `T1`
+&and; `T3` = `T1`
+
+## Restrictions ##
+
+Procedures and functions provided by module `UNSAFE` may not be assigned and may not be passed as arguments to any procedure, function or macro.
+
+---
+
+# Chapter 12 : File Name Extensions #
+
+In order to allow portability of source code libraries between different language processors, their file name extensions shall be standardised as follows:
+
+* `.if` for source files representing interface modules
+* `.mod` for source files representing implementation and program modules
+* `.prag` for pragma files containing pragmas to control compiler settings **(optional)**
+
+---
+
+# Terms of Reference #
+
+### Allocation Size ###
+
+The *allocation size* of a type *T*, denoted as **tsize** *T* is the size of the memory required to allocate an instance of&nbsp;*T*. It is measured in units of 8 bits called octets.
+
+
+### Capacity ###
+
+The *capacity* of a collection *c* is the maximal number of values that can be stored in *c*. Its value is determined by the type of of *c*. Its definition is
+* **capacity** *c* = **tlimit** *T* where *T* is the type of *c*.
+
+The *capacity* of a ***pass-by-value*** open array parameter *p<sub>val</sub>* is equivalent to the [[cardinality|Language-Description#cardinality]] or [[value count|Language-Description#value-count]] of the collection passed to *p<sub>val</sub>*. Its definition is
+* **capacity** *p<sub>val</sub>* = **count** *c* where *c* is the collection passed to *p<sub>val</sub>*.
+
+The *capacity* of a ***pass-by-reference*** open array parameter *p<sub>ref</sub>* is equivalent to the capacity of the collection passed to *p<sub>ref</sub>*. Its definition is
+* **capacity** *p<sub>ref</sub>* = **capacity** *c* where *c* is the collection passed to *p<sub>ref</sub>*.
+
+
+### Capacity Limit ###
+
+The *capacity limit* of a collection type *T*, denoted as **tlimit** *T* is the maximum number of items that an instance of *T* can store. A capacity limit of zero indicates that the collection type does not impose any hard limit.
+
+
+### Cardinality ###
+
+In mathematics, the *cardinality* of a set *A*, denoted as |*A*| or **card** *A* is a measure of the number of elements in *A*. In this specification, the definition is extended to include collections, open array parameters and variadic argument lists.
+* the cardinality of a collection *c* is the number of components stored in *c*
+* the cardinality of an open array parameter *p* is that of of the collection passed in *p*
+* the cardinality of a variadic argument list *v* is the number of arguments passed in *v*
+
+
+### Compatibility ###
+
+*Compatibility* is a property that determines whether one entity may be assigned to, copied to, passed to or used in an expression with another entity.
+
+* a literal is *fully compatible* with type *T* if it is assignment, copy, by&#8209;value and by&#8209;reference passing compatible to and expression compatible with type&nbsp;*T*
+* type *T*<sub>*1*</sub> is *fully compatible* with type *T*<sub>*2*</sub> if it is assignment, copy, by&#8209;value and by&#8209;reference passing compatible to and expression compatible with type&nbsp;*T*<sub>*2*</sub>
+
+
+### Compatibility, Assignment ###
+
+*Assignment compatibility* is a property that determines whether one entity may be assigned to another entity.
+
+* a literal is *assignment compatible* to type *T* if it may be assigned to a value of type&nbsp;*T*
+* type *T*<sub>*1*</sub> is *assignment compatible* to type *T*<sub>*2*</sub> if an R&#8209;value of type&nbsp;*T*<sub>*1*</sub> may be assigned to an L&#8209;value of type&nbsp;*T*<sub>*2*</sub>
+
+
+### Compatibility, Copy ###
+
+*Copy compatibility* is a property that determines whether one entity may be copied to another entity.
+
+* a literal is *copy compatible* to type *T* if it may be copied to a value of type&nbsp;*T*
+* type *T*<sub>*1*</sub> is *copy compatible* to type *T*<sub>*2*</sub> if an R&#8209;value of type&nbsp;*T*<sub>*1*</sub> may be copied to an L&#8209;value of type&nbsp;*T*<sub>*2*</sub>
+
+
+### Compatibility, Passing ###
+
+Parameter *passing compatibility* is a property that determines whether an entity may be passed to a formal parameter.
+
+* a literal is *by-value passing compatible* to type *T* if it may be passed to a formal by&#8209;value parameter of type&nbsp;*T*
+* a literal is *by-reference passing compatible* to type *T* if it may be passed to a formal `CONST`&nbsp;parameter of type *T*
+* type *T*<sub>*1*</sub> is *by-value passing compatible* to type *T*<sub>*2*</sub> if a value of type&nbsp;*T*<sub>*1*</sub> may be passed to a formal by&#8209;value parameter of type&nbsp;*T*<sub>*2*</sub>
+* type *T*<sub>*1*</sub> is *by-reference passing compatible* to type *T*<sub>*2*</sub> if a value of type&nbsp;*T*<sub>*1*</sub> may be passed to a formal by&#8209;reference parameter of type&nbsp;*T*<sub>*2*</sub>
+
+
+### Compatibility, Expression ###
+
+*Expression compatibility* is a property that determines whether an entity may be used together with another entity as operands in a binary expression.
+
+* a literal is *expression compatible* to type *T* in respect of operation&nbsp;*M* if it may be used together with a value of type&nbsp;*T* as the operands in a binary expression with any operator representing operation&nbsp;*M*
+* types *T*<sub>*1*</sub> and *T*<sub>*2*</sub> are *expression compatible* in respect of operation&nbsp;*M* if a value of type&nbsp;*T*<sub>*1*</sub> and a value of type&nbsp;*T*<sub>*2*</sub> may be used together as the operands in a binary expression with any operator representing operation&nbsp;*M*
+
+
+### Constant Expression ###
+
+A constant expression is an expression that is computable at compile time. A constant expression does not reference any variables nor invoke any library functions.
+
+
+### Fractional Part ###
+
+The *fractional part* of a real number *x* is the value that represents the digits of *x* after the decimal point if *x* was to be written out in decimal notation without an exponent.
+
+Its definition is
+* **frac** *x* = *x* - **int** *x*
+
+
+### Integral Part ###
+
+The *integral part* of a real number *x* is the value that represents the digits of *x* before the decimal point if *x* was to be written out in decimal notation without an exponent.
+
+Its definition is
+* **int** *x* = **sgn** *x* &middot; **entier** **abs** *x*
+
+
+### Largest Integer or Entier ###
+
+The *entier* value of a real number *x* is the largest integer less than *x*. Its definition is
+* **entier** *x* = **max** *i* for *i* &in; { &#8484; | i < x }
+
+
+### Length ###
+
+The *length* of a character string *s* is the number of characters stored in *s* excluding its NUL terminator. Its definition is
+* **length** *s* = **min** *n* for *n* &in; { &#8469; | *s*<sub>*n*</sub> = ASCII.NUL }
+
+The *length* of an octet sequence *s* is the allocation size of the actual parameter *p* passed in to a formal parameter of type octet sequence. Its definition is
+* **length** *s* = **tsize** *p* where *p* **passed-to** *s*
+
+
+### Number Sets ###
+
+In this specification abstract number sets are defined as follows:
+* the set of the abstract natural numbers ℕ = { 0, 1, 2, 3, ... &infin; }
+* the set of the abstract ordinal numbers 𝕆 = { 0, 1, 2, 3, ..., ω, ω+1, ω+2, ... }
+* the set of the abstract whole numbers ℤ = { -&infin; ... -3, -2, -1, 0, 1, 2, 3, ... +&infin; }
+
+
+### Odd Value ###
+
+The *odd* value of a whole number *i* indicates whether *i* is odd. Its definition is
+* **odd** *i* = ***true*** for *i* &in; { &#8484; | **abs** *i* **mod** 2 = 1 }
+* **odd** *i* = ***false*** for *i* &in; { &#8484; | **abs** *i* **mod** 2 = 0 }
+
+### Signum Value ###
+
+The *signum* or ***sgn*** value of a signed number *x* indicates the sign of *x*. Its definition is
+* **sgn** *x* = 1 for *x* &in; { &#8477; | *x* > 0 }
+* **sgn** *x* = 0 for *x* &in; { &#8477; | *x* = 0 }
+* **sgn** *x* = -1 for *x* &in; { &#8477; | *x* < 0 }
+
+
+### Type, Any ###
+
+A *type* is a classification of storage units defined by a set of three properties: storage representation, value range and semantics.
+
+The set of all types is denoted *T*<sub>*any*</sub>.
+
+
+### Type, Builtin ###
+
+A *builtin type* is a type that is built into the language, that is, either a predefined type or a type provided by builtin module `UNSAFE`.
+
+The set of all builtin types is denoted *T*<sub>*builtin*</sub>.
+
+
+### Type, Countable ###
+
+A *countable type* is a type that represents a set of values with a 1:1 correspondence to the first *m* ordinal numbers 𝕆 where *m* &in; 𝕆.
+* **countable** *T* if &exist; *f* : *T* &rarr; 𝕆;
+
+The set of all countable types is denoted *T*<sub>*countable*</sub>.
+* &forall; **countable** *T*, *T* &in; *T*<sub>*countable*</sub>
+
+
+### Type, Enumerated ###
+
+An *enumerated type* is a type that represents a finite ordered set of identifiers.
+* **enumerated** *T* if &forall; *e* &in; { *T* | **identifier** *e* } &and; &exist; *f* : *T* &rarr; &#8469;
+
+The set of all enumerated types is denoted *T*<sub>*enum*</sub>.
+* &forall; **enumerated** *T*, *T* &in; *T*<sub>*enum*</sub>
+
+
+### Type, Machine ###
+
+A *machine type* is a type that represents storage units that precisely match the storage units of the target architecture and have modular arithmetic semantics.
+
+The set of all machine types is denoted *T*<sub>*machine*</sub>.
+
+
+### Type, Signed ###
+
+A *signed type* is a numeric type that represents both positive and negative scalar numeric values..
+* **signed** *T* if &exist; *x*, *y* &in; { *T* | *x* < 0 &and; *y* > 0 }
+
+The set of all signed types is denoted *T*<sub>*signed*</sub>.
+* &forall; **signed** *T*, *T* &in; *T*<sub>*signed*</sub>
+
+
+### Type, Unsigned ###
+
+An *unsigned type* is a numeric type that represents non-negative scalar numeric values.
+* **unsigned** *T* if &forall; *x* &in; { *T* | *x* &ge; 0 }
+
+The set of all unsigned types is denoted *T*<sub>*unsigned*</sub>.
+* &forall; **unsigned** *T*, *T* &in; *T*<sub>*unsigned*</sub>
+
+
+### Type, Whole Number ###
+
+A *whole number type* is a numeric type that represents a subset of the set of integers &#8484;.
+* **whole** *T* if &forall; *n* &in; { *T* | *n* &in; &#8484; }
+
+The set of all whole number types is denoted *T*<sub>*whole*</sub>.
+* &forall; **whole** *T*, *T* &in; *T*<sub>*whole*</sub>
+
+
+### Type, Real Number ###
+
+A *real number type* is a numeric type that represents a subset of the set of real numbers &#8477;.
+* **real** *T* if &forall; *r* &in; { *T* | *r* &in; &#8477; }
+
+The set of all real number types is denoted *T*<sub>*real*</sub>.
+* &forall; **real** *T*, *T* &in; *T*<sub>*real*</sub>
+
+
+### Type, Cardinal ###
+
+A *cardinal type* is a numeric type that represents a subset of the unsigned whole numbers &#8484;&#8314;.
+* **cardinal** *T* if **unsigned** *T* &and; **whole** *T*
+
+The set of all cardinal types is denoted *T*<sub>*cardinal*</sub>.
+* &forall; **cardinal** *T*, *T* &in; *T*<sub>*cardinal*</sub>
+
+
+### Type, Integer ###
+
+An *integer type* is a numeric type that represents a subset of the signed whole numbers &#8484;.
+* **integer** *T* if **signed** *T* &and; **whole** *T*
+
+The set of all integer types is denoted *T*<sub>*integer*</sub>.
+* &forall; **integer** *T*, *T* &in; *T*<sub>*integer*</sub>
+
+
+### Type, Scalar ###
+
+A *scalar type* is a numeric type that represents scalar values.
+
+The set of all scalar types is denoted *T*<sub>*scalar*</sub>.
+
+
+### Type, Collection ###
+
+A *collection type* represents n-tuples of an arbitrary component type, where *n* is bounded by its capacity.
+
+The set of all collection types is denoted *T*<sub>*collection*</sub>.
+
+
+### Type, Array ###
+
+An *array type* is an ordered collection type whose components are mapped to the set of the first *m* ordinal numbers 𝕆 where *m* is the [[capacity limit|Language-Description#capacity-limit]] of the array type.
+
+The set of all array types is denoted *T*<sub>*array*</sub>.
+
+
+### Type, String ###
+
+An *string type* is an array type whose components are characters.
+
+The set of all string types is denoted *T*<sub>*string*</sub>.
+
+
+### Type, Record ###
+
+The set of all record types is denoted *T*<sub>*record*</sub>.
+
+
+### Type, Extensible Record ###
+
+The set of all extensible record types is denoted *T*<sub>*extrec*</sub>.
+
+
+### Type, Extensible Record Pointer ###
+
+The set of all extensible record pointer types is denoted *T*<sub>*recptr*</sub>.
+
+* *T*<sub>*recptr*</sub> = { *T* &in; *T*<sub>*pointer*</sub> &#8726; *T*<sub>*opaque*</sub> | **target-type** *T* &in; *T*<sub>*extrec*</sub> }
+
+
+### Type, Opaque ###
+
+The set of all opaque types is denoted *T*<sub>*opaque*</sub>.
+
+
+### Type, Open Array ###
+
+An *open array type* is a formal array type whose capacity is indeterminate at compile time.
+
+The set of all open array types is denoted *T*<sub>*openarray*</sub>.
+
+
+### Type, Variadic Parameter List ###
+
+A *variadic parameter list* is a formal collection type whose cardinality is indeterminate at compile time.
+
+The set of all variadic parameter lists is denoted *T*<sub>*arglist*</sub>.
+
+
+### Value Count ###
+
+The *value count* of an entity *e* is synonym with the [[cardinality|Language-Description#cardinality]] of *e*. Its definition is
+* **count** *e* &equiv; **card** *e*, where **card** *e* is the cardinality of entity *e*
+
+
+### Wirthian Macro ###
+
+A *Wirthian macro* is a built-in syntactic entity whose occurrence is replaced with an appropriate library call, possibly filling in omitted arguments. The macro may be a statement or a built-in procedure or function. The mapped-to library must be explicitly imported.
+
+Wirthian macros allow more convenient syntax than ordinary library calls and make a facility such as memory management or I/O&nbsp;appear to be built into the language even though it is actually provided by a library. Classic examples of Wirthian macros are procedures `NEW` and `DISPOSE` in earlier versions of Modula-2.
+
