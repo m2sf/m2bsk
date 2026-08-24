@@ -1,0 +1,32 @@
+BLUEPRINT ProtoInteger;
+
+TYPE ProtoInteger = OPAQUE(INTEGER);
+
+CONST [SXF], [TMIN], [TMAX];
+
+(* arithmetic operations *)
+PROCEDURE [ABS] abs ( value : ProtoInteger ) : ProtoInteger
+PROCEDURE [SGN] sgn ( value : ProtoInteger ) : ProtoInteger
+PROCEDURE [+] sum ( left, right : ProtoInteger ) : ProtoInteger;
+PROCEDURE [-] diff ( left, right : ProtoInteger ) : ProtoInteger;
+PROCEDURE [*] prod ( left, right : ProtoInteger ) : ProtoInteger;
+PROCEDURE [TDIV] tdiv ( dividend, divisor : ProtoInteger ) : ProtoInteger;
+PROCEDURE [TMOD] tmod ( dividend, divisor : ProtoInteger ) : ProtoInteger;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : ProtoInteger ) : BOOLEAN;
+PROCEDURE [>] isGt ( left, right : ProtoInteger ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( left, right : ProtoInteger ) : BOOLEAN;
+
+(* literal assignment *)
+PROCEDURE [:=] Assign
+  ( VAR target : ProtoInteger; isNeg : BOOLEAN; CONST lexeme : ARRAY OF CHAR );
+
+(* conversion operations *)
+PROCEDURE [>SXF] ToSXF
+  ( source : ProtoInteger; VAR sxf : SXF; VAR status : SXFStatus );
+
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR target : ProtoInteger; VAR status : SXFStatus );
+
+END ProtoInteger.
