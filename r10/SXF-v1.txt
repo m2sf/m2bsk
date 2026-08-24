@@ -1,0 +1,133 @@
+Scalar Exchange Format (SXF) Version 1
+
+Basic SXF Record
+
+0x00      0x01                                                             0x1F
+┌──────────┬────────────────────────────────────────────────────────────────────┐
+│  Header  │                           Payload Data                             │
+│ (1 Byte) │                       (31 Bytes / 248 Bits)                        │
+└──────────┴────────────────────────────────────────────────────────────────────┘
+
+Basic Header Bit Layout (Byte 0x00):
+┌───┬───┬───┬───┬───┬───┬───┬───┐
+│ 7 │ 6 │ 5 │ 4 │ 3 │ 2 │ 1 │ 0 │
+└───┴───┴───┴───┴───┴───┴───┴───┘
+  └─── Version ───┘   └───┘   └── Extension Flag (0 = 1B Header, 1 = 2B Header)
+      (Bits 7-3)        Encoding (Bits 2-1)
+                         00 = Binary Cardinal
+                         01 = Binary Integer
+                         10 = Scaled Binary
+                         11 = Scaled Decimal
+
+Encoding 0b00 - Binary Cardinal
+
+ 0x01                                                               0x1F
+┌───────────────────────────────────────────────────────────────────────┐
+│              Contiguous, Unsegmented Raw Unsigned Binary              │
+└───────────────────────────────────────────────────────────────────────┘
+ └────────────────────────── 31 Bytes / 248 Bits ──────────────────────┘
+
+ Maximum Range: 0 to (2^248 - 1)
+ Maximum Decimal Digits (Input): 74 digits
+ Maximum Decimal Digits (Output): 75 digits
+
+Encoding 0b01 - Binary Integer
+
+ 0x01                                                               0x1F
+┌───────────────────────────────────────────────────────────────────────┐
+│              Contiguous, Unsegmented Signed Two's Complement          │
+└───────────────────────────────────────────────────────────────────────┘
+ └────────────────────────── 31 Bytes / 248 Bits ──────────────────────┘
+
+ Maximum Range: -2^247 to (2^247 - 1)
+ Maximum Decimal Digits (Input): 74 digits
+ Maximum Decimal Digits (Output): 75 digits
+
+Encoding 0b10 - Scaled Binary
+
+ 0x01         0x02         0x03                                     0x1F
+┌─────────────────────────┬─────────────────────────────────────────────┐
+│   Signed Scale Factor   │    Signed Significand (Two's Complement)    │
+└─────────────────────────┴─────────────────────────────────────────────┘
+ └── 2 Bytes / 16 Bits ──┘ └─────────── 29 Bytes / 232 Bits ───────────┘
+
+ Maximum Exponent Range: 2^-32768 to 2^32767
+ Maximum Decimal Precision (Input): 69 digits
+ Maximum Decimal Precision (Output): 70 digits
+
+Encoding 0b11 - Scaled Decimal
+
+ 0x01         0x02         0x03                                     0x1F
+┌─────────────────────────┬─────────────────────────────────────────────┐
+│   Signed Scale Factor   │    Signed Significand (Two's Complement)    │
+└─────────────────────────┴─────────────────────────────────────────────┘
+ └── 2 Bytes / 16 Bits ──┘ └─────────── 29 Bytes / 232 Bits ───────────┘
+
+ Maximum Exponent Range: 10^-32768 to 10^32767
+ Maximum Decimal Precision (Input): 69 digits
+ Maximum Decimal Precision (Output): 70 digits
+
+Extended SXF Record
+
+ 0x00      0x01       0x02                                                  0x3F       
+┌─────────────────────┬─────────────────────────────────────────────────────────┐
+│   Extended Header   │                Payload Data                             │
+│      (2 Bytes)      │            (62 Bytes / 496 Bits)                        │
+└─────────────────────┴─────────────────────────────────────────────────────────┘
+
+Extension Header Bit Layout (Byte 0x01):
+┌───┬───┬───┬───┬───┬───┬───┬───┐
+│ 7 │ 6 │ 5 │ 4 │ 3 │ 2 │ 1 │ 0 │
+└───┴───┴───┴───┴───┴───┴───┴───┘
+  └───┘   └──── Reserved ─────┘ 
+   Payload Size (Bits 7-6)
+    00 =  496 Bits  10 = Reserved
+    01 = Reserved   11 = Reserved
+
+Encoding 0b00 - Binary Cardinal
+
+ 0x02                                                               0x3F
+┌───────────────────────────────────────────────────────────────────────┐
+│              Contiguous, Unsegmented Raw Unsigned Binary              │
+└───────────────────────────────────────────────────────────────────────┘
+ └────────────────────────── 62 Bytes / 496 Bits ──────────────────────┘
+
+ Maximum Range: 0 to (2^496 - 1)
+ Maximum Decimal Digits (Input): 149 digits
+ Maximum Decimal Digits (Output): 150 digits
+
+Encoding 0b01 - Binary Integer
+
+ 0x02                                                               0x3F
+┌───────────────────────────────────────────────────────────────────────┐
+│              Contiguous, Unsegmented Signed Two's Complement          │
+└───────────────────────────────────────────────────────────────────────┘
+ └────────────────────────── 31 Bytes / 248 Bits ──────────────────────┘
+
+ Maximum Range: -2^495 to (2^495 - 1)
+ Maximum Decimal Digits (Input): 149 digits
+ Maximum Decimal Digits (Output): 150 digits
+
+Encoding 0b10 - Scaled Binary
+
+ 0x02         0x03         0x04                                     0x3F
+┌─────────────────────────┬─────────────────────────────────────────────┐
+│   Signed Scale Factor   │    Signed Significand (Two's Complement)    │
+└─────────────────────────┴─────────────────────────────────────────────┘
+ └── 2 Bytes / 16 Bits ──┘ └─────────── 60 Bytes / 480 Bits ───────────┘
+
+ Maximum Exponent Range: 2^-32768 to 2^32767
+ Maximum Decimal Precision (Input): 144 digits
+ Maximum Decimal Precision (Output): 145 digits
+
+Encoding 0b11 - Scaled Decimal
+
+ 0x02         0x03         0x04                                     0x3F
+┌─────────────────────────┬─────────────────────────────────────────────┐
+│   Signed Scale Factor   │    Signed Significand (Two's Complement)    │
+└─────────────────────────┴─────────────────────────────────────────────┘
+ └── 2 Bytes / 16 Bits ──┘ └─────────── 60 Bytes / 480 Bits ───────────┘
+
+ Maximum Exponent Range: 10^-32768 to 10^32767
+ Maximum Decimal Precision (Input): 144 digits
+ Maximum Decimal Precision (Output): 145 digits
