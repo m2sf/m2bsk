@@ -1,0 +1,32 @@
+BLUEPRINT ProtoCardinal;
+
+TYPE ProtoCardinal = OPAQUE(CARDINAL);
+
+INHIBIT [ABS], [SGN];
+
+CONST [SXF], [TMIN], [TMAX];
+
+(* arithmetic operations *)
+PROCEDURE [+] sum ( left, right : ProtoCardinal ) : ProtoCardinal;
+PROCEDURE [-] diff ( left, right : ProtoCardinal ) : ProtoCardinal;
+PROCEDURE [*] prod ( left, right : ProtoCardinal ) : ProtoCardinal;
+PROCEDURE [TDIV] tdiv ( dividend, divisor : ProtoCardinal ) : ProtoCardinal;
+PROCEDURE [TMOD] tmod ( dividend, divisor : ProtoCardinal ) : ProtoCardinal;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : ProtoCardinal ) : BOOLEAN;
+PROCEDURE [>] isGt ( left, right : ProtoCardinal ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( left, right : ProtoCardinal ) : BOOLEAN;
+
+(* literal assignment *)
+PROCEDURE [:=] Assign
+  ( VAR target : ProtoCardinal; CONST lexeme : ARRAY OF CHAR );
+
+(* conversion operations *)
+PROCEDURE [>SXF] ToSXF
+  ( source : ProtoCardinal; VAR sxf : SXF; VAR status : SXFStatus );
+
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR target : ProtoCardinal; VAR status : SXFStatus );
+
+END ProtoCardinal.
