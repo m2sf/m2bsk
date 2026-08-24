@@ -1,0 +1,37 @@
+INTERFACE MODULE REAL128 [ProtoReal];
+
+TYPE REAL128 = OPAQUE(REAL);
+
+(* TMIN(REAL128) = -3.630'772'385'733'739'517'473'630'757'531'760E+4927 *)
+CONST [TMIN] TMin : REAL128 = { 0xFF, 0xEF, 0xFF REPEAT 14 };
+
+(* TMAX(REAL128) =  3.630'772'385'733'739'517'473'630'757'531'760E+4927 *)
+CONST [TMAX] TMax : REAL128 = { 0x7F, 0xEF, 0xFF REPEAT 14 };
+
+(* arithmetic operations *)
+PROCEDURE [ABS] abs ( value : REAL128 ) : REAL128;
+PROCEDURE [SGN] sgn ( value : REAL128 ) : REAL128;
+PROCEDURE [+] sum ( left, right : REAL128 ) : REAL128;
+PROCEDURE [-] diff ( left, right : REAL128 ) : REAL128;
+PROCEDURE [*] prod ( left, right : REAL128 ) : REAL128;
+PROCEDURE [/] quot ( dividend, divisor : REAL128 ) : REAL128;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : REAL128 ) : BOOLEAN;
+PROCEDURE [>] isGt ( left, right : REAL128 ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( left, right : REAL128 ) : BOOLEAN;
+
+(* literal assignment *)
+PROCEDURE [:=] Assign
+  ( VAR target : REAL128; isNeg : BOOLEAN; CONST lexeme : ARRAY OF CHAR );
+
+(* conversion operations *)
+CONST [SXF] SXFVer = 1;
+
+PROCEDURE [>SXF] ToSXF
+  ( source : REAL128; VAR sxf : SXF; VAR status : SXFStatus );
+
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR target : REAL128; VAR status : SXFStatus );
+
+END REAL128.
