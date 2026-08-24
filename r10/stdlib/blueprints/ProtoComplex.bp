@@ -1,0 +1,16 @@
+BLUEPRINT ProtoComplex;
+
+TYPE ProtoComplex = RECORD(REAL, REAL);
+
+INHIBIT [SXF], [TMIN], [TMAX], [ABS], [SGN], [>], [>=];
+
+(* arithmetic operations *)
+PROCEDURE [+] sum ( left, right : ProtoComplex ) : ProtoComplex;
+PROCEDURE [-] diff ( left, right : ProtoComplex ) : ProtoComplex;
+PROCEDURE [*] prod ( left, right : ProtoComplex ) : ProtoComplex;
+PROCEDURE [/] quot ( dividend, divisor : ProtoComplex ) : ProtoComplex;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : ProtoComplex ) : BOOLEAN;
+
+END ProtoComplex.
