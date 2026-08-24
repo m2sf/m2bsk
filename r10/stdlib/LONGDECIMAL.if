@@ -1,0 +1,37 @@
+INTERFACE MODULE LONGDECIMAL [ProtoReal];
+
+TYPE LONGDECIMAL = OPAQUE(REAL);
+
+(* TMIN(LONGDECIMAL) = -3.602'879'701'896'396'8E+127 *)
+CONST [TMIN] TMin : LONGDECIMAL = { 0x7F, 0x80, 0x00 REPEAT 6 };
+
+(* TMAX(LONGDECIMAL) =  3.602'879'701'896'396'7E+127 *)
+CONST [TMAX] TMax : LONGDECIMAL = { 0x7F, 0x7F, 0xFF REPEAT 6 };
+
+(* arithmetic operations *)
+PROCEDURE [ABS] abs ( value : LONGDECIMAL ) : LONGDECIMAL;
+PROCEDURE [SGN] sgn ( value : LONGDECIMAL ) : LONGDECIMAL;
+PROCEDURE [+] sum ( left, right : LONGDECIMAL ) : LONGDECIMAL;
+PROCEDURE [-] diff ( left, right : LONGDECIMAL ) : LONGDECIMAL;
+PROCEDURE [*] prod ( left, right : LONGDECIMAL ) : LONGDECIMAL;
+PROCEDURE [/] quot ( dividend, divisor : LONGDECIMAL ) : LONGDECIMAL;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : LONGDECIMAL ) : BOOLEAN;
+PROCEDURE [>] isGt ( left, right : LONGDECIMAL ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( left, right : LONGDECIMAL ) : BOOLEAN;
+
+(* literal assignment *)
+PROCEDURE [:=] Assign
+  ( VAR target : LONGDECIMAL; isNeg : BOOLEAN; CONST lexeme : ARRAY OF CHAR );
+
+(* conversion operations *)
+CONST [SXF] SXFVer = 1;
+
+PROCEDURE [>SXF] ToSXF
+  ( source : LONGDECIMAL; VAR sxf : SXF; VAR status : SXFStatus );
+
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR target : LONGDECIMAL; VAR status : SXFStatus );
+
+END LONGDECIMAL.
