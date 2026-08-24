@@ -1,4 +1,6 @@
-INTERFACE MODULE DECIMAL [ProtoReal];
+INTERFACE MODULE DECIMAL [ProtoReal]; (* 32-bit Decimal Real Number Type *)
+
+IMPORT SXF, SXFStatus;
 
 TYPE DECIMAL = OPAQUE(REAL);
 

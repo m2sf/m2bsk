@@ -1,4 +1,4 @@
-INTERFACE MODULE COMPLEX128 [ProtoComplex];
+INTERFACE MODULE COMPLEX128 [ProtoComplex]; (* Complex Number Type, based on REAL128 *)
 
 IMPORT REAL128;
 

@@ -1,4 +1,4 @@
-INTERFACE MODULE LONGCOMPLEX [ProtoComplex];
+INTERFACE MODULE LONGCOMPLEX [ProtoComplex]; (* Complex Number Type, based on LONGREAL *)
 
 TYPE LONGCOMPLEX = RECORD re, im : LONGREAL END;
 

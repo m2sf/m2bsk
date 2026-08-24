@@ -1,4 +1,4 @@
-INTERFACE MODULE COMPLEX [ProtoComplex];
+INTERFACE MODULE COMPLEX [ProtoComplex]; (* Complex Number Type, based on REAL *)
 
 TYPE COMPLEX = RECORD re, im : REAL END;
 

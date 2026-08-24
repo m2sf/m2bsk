@@ -1,4 +1,6 @@
-INTERFACE MODULE REAL128 [ProtoReal];
+INTERFACE MODULE REAL128 [ProtoReal]; (* 128-bit Real Number Type *)
+
+IMPORT SXF, SXFStatus;
 
 TYPE REAL128 = OPAQUE(REAL);
 
