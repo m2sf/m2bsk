@@ -1,0 +1,31 @@
+BLUEPRINT ProtoReal;
+
+TYPE ProtoReal = OPAQUE(REAL);
+
+CONST [SXF], [TMIN], [TMAX];
+
+(* arithmetic operations *)
+PROCEDURE [ABS] abs ( value : ProtoReal ) : ProtoReal;
+PROCEDURE [SGN] sgn ( value : ProtoReal ) : ProtoReal;
+PROCEDURE [+] sum ( left, right : ProtoReal ) : ProtoReal;
+PROCEDURE [-] diff ( left, right : ProtoReal ) : ProtoReal;
+PROCEDURE [*] prod ( left, right : ProtoReal ) : ProtoReal;
+PROCEDURE [/] quot ( dividend, divisor : ProtoReal ) : ProtoReal;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : ProtoReal ) : BOOLEAN;
+PROCEDURE [>] isGt ( left, right : ProtoReal ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( left, right : ProtoReal ) : BOOLEAN;
+
+(* literal assignment *)
+PROCEDURE [:=] Assign
+  ( VAR target : ProtoReal; isNeg : BOOLEAN; CONST lexeme : ARRAY OF CHAR );
+
+(* conversion operations *)
+PROCEDURE [>SXF] ToSXF
+  ( source : ProtoReal; VAR sxf : SXF; VAR status : SXFStatus );
+
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR target : ProtoReal; VAR status : SXFStatus );
+
+END ProtoReal.
