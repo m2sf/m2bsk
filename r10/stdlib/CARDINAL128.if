@@ -1,0 +1,36 @@
+INTERFACE MODULE CARDINAL128 [ProtoCardinal]; (* 128-bit Cardinal Type *)
+
+TYPE CARDINAL128 = OPAQUE(CARDINAL);
+
+(* TMIN(CARDINAL128) = 0 *)
+CONST [TMIN] TMin = { 0x00 REPEAT 16 };
+
+(* TMAX(CARDINAL128) = 340'282'366'920'938'463'463'374'607'431'768'211'455 *)
+CONST [TMAX] TMax = { 0xFF REPEAT 16 };
+
+(* arithmetic operations *)
+PROCEDURE [+] sum ( left, right : CARDINAL128 ) : CARDINAL128;
+PROCEDURE [-] diff ( left, right : CARDINAL128 ) : CARDINAL128;
+PROCEDURE [*] prod ( left, right : CARDINAL128 ) : CARDINAL128;
+PROCEDURE [TDIV] tdiv ( dividend, divisor : CARDINAL128 ) : CARDINAL128;
+PROCEDURE [TMOD] tmod ( dividend, divisor : CARDINAL128 ) : CARDINAL128;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : CARDINAL128 ) : BOOLEAN;
+PROCEDURE [>] isGt ( left, right : CARDINAL128 ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( left, right : CARDINAL128 ) : BOOLEAN;
+
+(* literal assignment *)
+PROCEDURE [:=] Assign
+  ( VAR target : CARDINAL128; CONST lexeme : ARRAY OF CHAR );
+
+(* conversion operations *)
+CONST [SXF] SXFVer = 1;
+
+PROCEDURE [>SXF] ToSXF
+  ( source : CARDINAL128; VAR sxf : SXF; VAR status : SXFStatus );
+
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR target : CARDINAL128; VAR status : SXFStatus );
+
+END CARDINAL128.
