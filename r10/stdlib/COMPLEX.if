@@ -1,0 +1,14 @@
+INTERFACE MODULE COMPLEX [ProtoComplex];
+
+TYPE COMPLEX = RECORD re, im : REAL END;
+
+(* arithmetic operations *)
+PROCEDURE [+] sum ( left, right : COMPLEX ) : COMPLEX;
+PROCEDURE [-] diff ( left, right : COMPLEX ) : COMPLEX;
+PROCEDURE [*] prod ( left, right : COMPLEX ) : COMPLEX;
+PROCEDURE [/] quot ( dividend, divisor : COMPLEX ) : COMPLEX;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : COMPLEX ) : BOOLEAN;
+
+END COMPLEX.
