@@ -1,0 +1,16 @@
+INTERFACE MODULE COMPLEX128 [ProtoComplex];
+
+IMPORT REAL128;
+
+TYPE COMPLEX128 = RECORD re, im : REAL128 END;
+
+(* arithmetic operations *)
+PROCEDURE [+] sum ( left, right : COMPLEX128 ) : COMPLEX128;
+PROCEDURE [-] diff ( left, right : COMPLEX128 ) : COMPLEX128;
+PROCEDURE [*] prod ( left, right : COMPLEX128 ) : COMPLEX128;
+PROCEDURE [/] quot ( dividend, divisor : COMPLEX128 ) : COMPLEX128;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : COMPLEX128 ) : BOOLEAN;
+
+END COMPLEX128.
