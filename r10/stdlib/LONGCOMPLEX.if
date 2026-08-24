@@ -1,0 +1,14 @@
+INTERFACE MODULE LONGCOMPLEX [ProtoComplex];
+
+TYPE LONGCOMPLEX = RECORD re, im : LONGREAL END;
+
+(* arithmetic operations *)
+PROCEDURE [+] sum ( left, right : LONGCOMPLEX ) : LONGCOMPLEX;
+PROCEDURE [-] diff ( left, right : LONGCOMPLEX ) : LONGCOMPLEX;
+PROCEDURE [*] prod ( left, right : LONGCOMPLEX ) : LONGCOMPLEX;
+PROCEDURE [/] quot ( dividend, divisor : LONGCOMPLEX ) : LONGCOMPLEX;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : LONGCOMPLEX ) : BOOLEAN;
+
+END LONGCOMPLEX.
