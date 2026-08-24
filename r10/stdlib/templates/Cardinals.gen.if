@@ -1,0 +1,43 @@
+/* -------------------------------------------------------------------------
+   Interface Template for Cardinal Types of arbitrary size 
+   -------------------------------------------------------------------------
+   Placeholders:
+     TypeIdent  : type identifier of the cardinal type
+     OctetWidth : number of octets to determine the bitwidth
+     BitWidth   : bitwidth of the cardinal type used in comment only
+   ------------------------------------------------------------------------- */
+INTERFACE MODULE <#TypeIdent#>; (* <#BitWidth#>-bit Cardinal Type *)
+
+IMPORT SXF, SXFStatus;
+
+TYPE <#TypeIdent#> = OPAQUE(CARDINAL);
+
+CONST [TMIN] TMin : <#TypeIdent#> = { 0x00 REPEAT <#OctetWidth#> };
+
+CONST [TMAX] TMax : <#TypeIdent#> = { 0xFF REPEAT <#OctetWidth#> };
+
+(* arithmetic operations *)
+PROCEDURE [+] sum ( left, right : <#TypeIdent#> ) : <#TypeIdent#>;
+PROCEDURE [-] diff ( left, right : <#TypeIdent#> ) : <#TypeIdent#>;
+PROCEDURE [*] prod ( left, right : <#TypeIdent#> ) : <#TypeIdent#>;
+PROCEDURE [TDIV] tdiv ( n, m : <#TypeIdent#> ) : <#TypeIdent#>;
+PROCEDURE [TMOD] tmod ( n, m : <#TypeIdent#> ) : <#TypeIdent#>;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( a, b : <#TypeIdent#> ) : BOOLEAN;
+PROCEDURE [>] isGt ( a, b : <#TypeIdent#> ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( a, b : <#TypeIdent#> ) : BOOLEAN;
+
+(* conversion operations *)
+CONST [SXF#] SXFVer = 1;
+
+PROCEDURE [:=] Assign
+  ( VAR n : <#TypeIdent#>; CONST lexeme : ARRAY OF CHAR );
+
+PROCEDURE [>SXF] ToSXF
+  ( n : <#TypeIdent#>; VAR sxf : SXF; VAR status : SXFStatus );
+  
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR n : <#TypeIdent#>; VAR status : SXFStatus );
+
+END <#TypeIdent#>.
