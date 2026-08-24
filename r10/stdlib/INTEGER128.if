@@ -1,0 +1,38 @@
+INTERFACE MODULE INTEGER128 [ProtoInteger]; (* 128-bit Integer Type *)
+
+TYPE INTEGER128 = OPAQUE(INTEGER);
+
+(* TMIN(INTEGER128) = -170'141'183'460'469'231'731'687'303'715'884'105'728 *)
+CONST [TMIN] TMin : INTEGER128 = { 0x80, 0x00 REPEAT 15 };
+
+(* TMAX(INTEGER128) = 170'141'183'460'469'231'731'687'303'715'884'105'727 *)
+CONST [TMAX] TMax : INTEGER128 = { 0x7F, 0xFF REPEAT 15 };
+
+(* arithmetic operations *)
+PROCEDURE [ABS] abs ( value : INTEGER128 ) : INTEGER128;
+PROCEDURE [SGN] sgn ( value : INTEGER128 ) : INTEGER128;
+PROCEDURE [+] sum ( left, right : INTEGER128 ) : INTEGER128;
+PROCEDURE [-] diff ( left, right : INTEGER128 ) : INTEGER128;
+PROCEDURE [*] prod ( left, right : INTEGER128 ) : INTEGER128;
+PROCEDURE [TDIV] tdiv ( dividend, divisor : INTEGER128 ) : INTEGER128;
+PROCEDURE [TMOD] tmod ( dividend, divisor : INTEGER128 ) : INTEGER128;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : INTEGER128 ) : BOOLEAN;
+PROCEDURE [>] isGt ( left, right : INTEGER128 ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( left, right : INTEGER128 ) : BOOLEAN;
+
+(* literal assignment *)
+PROCEDURE [:=] Assign
+  ( VAR target : INTEGER128; isNeg : BOOLEAN; CONST lexeme : ARRAY OF CHAR );
+
+(* conversion operations *)
+CONST [SXF] SXFVer = 1;
+
+PROCEDURE [>SXF] ToSXF
+  ( source : INTEGER128; VAR sxf : SXF; VAR status : SXFStatus );
+
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR target : INTEGER128; VAR status : SXFStatus );
+
+END INTEGER128.
