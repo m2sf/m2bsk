@@ -1,0 +1,37 @@
+INTERFACE MODULE DECIMAL [ProtoReal];
+
+TYPE DECIMAL = OPAQUE(REAL);
+
+(* TMIN(DECIMAL) = -8.388'608E+127 *)
+CONST [TMIN] TMin : DECIMAL = { 0x7F, 0x80, 0x00, 0x00 };
+
+(* TMAX(DECIMAL) =  8.388'607E+127 *)
+CONST [TMAX] TMax : DECIMAL = { 0x7F, 0x7F, 0xFF, 0xFF };
+
+(* arithmetic operations *)
+PROCEDURE [ABS] abs ( value : DECIMAL ) : DECIMAL;
+PROCEDURE [SGN] sgn ( value : DECIMAL ) : DECIMAL;
+PROCEDURE [+] sum ( left, right : DECIMAL ) : DECIMAL;
+PROCEDURE [-] diff ( left, right : DECIMAL ) : DECIMAL;
+PROCEDURE [*] prod ( left, right : DECIMAL ) : DECIMAL;
+PROCEDURE [/] quot ( dividend, divisor : DECIMAL ) : DECIMAL;
+
+(* relational operations *)
+PROCEDURE [=] isEq ( left, right : DECIMAL ) : BOOLEAN;
+PROCEDURE [>] isGt ( left, right : DECIMAL ) : BOOLEAN;
+PROCEDURE [>=] isGtEq ( left, right : DECIMAL ) : BOOLEAN;
+
+(* literal assignment *)
+PROCEDURE [:=] Assign
+  ( VAR target : DECIMAL; isNeg : BOOLEAN; CONST lexeme : ARRAY OF CHAR );
+
+(* conversion operations *)
+CONST [SXF] SXFVer = 1;
+
+PROCEDURE [>SXF] ToSXF
+  ( source : DECIMAL; VAR sxf : SXF; VAR status : SXFStatus );
+
+PROCEDURE [SXF>] FromSXF
+  ( CONST sxf : SXF; VAR target : DECIMAL; VAR status : SXFStatus );
+
+END DECIMAL.
